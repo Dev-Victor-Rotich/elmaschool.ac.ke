@@ -29,6 +29,11 @@ import ClassTeacherPortal from "./pages/staff/ClassTeacherPortal";
 import LibrarianPortal from "./pages/staff/LibrarianPortal";
 import ChaplainPortal from "./pages/staff/ChaplainPortal";
 import ClassRepPortal from "./pages/students/ClassRepPortal";
+import MagicLinkLogin from "./pages/MagicLinkLogin";
+import AuthCallback from "./pages/AuthCallback";
+import SuperAdminDashboardNew from "./pages/SuperAdminDashboard";
+import BursarDashboard from "./pages/BursarDashboard";
+import StudentDashboard from "./pages/StudentDashboard";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +53,11 @@ const App = () => (
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/admissions" element={<Admissions />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/login" element={<MagicLinkLogin />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/dashboard/superadmin" element={<SuperAdminDashboardNew />} />
+          <Route path="/dashboard/bursar" element={<BursarDashboard />} />
+          <Route path="/dashboard/student" element={<StudentDashboard />} />
           <Route path="/auth" element={<NewAuth />} />
           <Route path="/auth-old" element={<Auth />} />
           <Route path="/admin/dashboard" element={<SuperAdminDashboard />} />
