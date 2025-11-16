@@ -216,6 +216,33 @@ export type Database = {
           },
         ]
       }
+      magic_link_tokens: {
+        Row: {
+          created_at: string | null
+          email: string
+          expires_at: string
+          id: string
+          token_hash: string
+          used: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          expires_at: string
+          id?: string
+          token_hash: string
+          used?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          token_hash?: string
+          used?: boolean | null
+        }
+        Relationships: []
+      }
       otp_codes: {
         Row: {
           attempts: number | null
@@ -392,6 +419,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_expired_magic_links: { Args: never; Returns: undefined }
       count_super_admins: { Args: never; Returns: number }
       has_role: {
         Args: {
