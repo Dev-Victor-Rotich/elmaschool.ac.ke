@@ -32,6 +32,8 @@ const MagicLinkLogin = () => {
       if (data?.error) {
         toast.error(data.error);
       } else {
+        console.log("Magic link data received:", data);
+        console.log("Magic link URL:", data?.magicLink);
         setEmailSent(true);
         setMagicLink(data?.magicLink ?? null);
         toast.success(data?.magicLink ? "Magic link generated. You can open it below." : "Magic link sent! Check your email.");
