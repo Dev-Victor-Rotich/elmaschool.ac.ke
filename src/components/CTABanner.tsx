@@ -1,8 +1,24 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Phone } from "lucide-react";
+import { ArrowRight, Phone, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const CTABanner = () => {
+  const { data: banner } = useQuery({
+    queryKey: ["cta-banner"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("cta_banner")
+        .select("*")
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  if (!banner) return null;
+
   return (
     <section className="py-20 relative overflow-hidden">
       {/* Animated Background Layers */}
@@ -31,7 +47,7 @@ const CTABanner = () => {
                 <div className="absolute inset-0 rounded-full bg-white animate-ping" />
               </div>
               <span className="text-lg font-black tracking-wider text-white drop-shadow-lg">
-                🎓 NOW ENROLLING 2026 🎓
+                {banner.badge_text}
               </span>
               <div className="h-4 w-4 rounded-full bg-white animate-pulse shadow-premium relative">
                 <div className="absolute inset-0 rounded-full bg-white animate-ping" />
@@ -40,51 +56,51 @@ const CTABanner = () => {
           </div>
 
           <h2 className="text-3xl md:text-5xl font-bold leading-tight animate-fade-in-up">
-            Ready to Give Your Child<br />the Best Education?
+            {banner.heading}
           </h2>
           
           <p className="text-lg md:text-xl opacity-95 max-w-2xl mx-auto animate-fade-in-up">
-            Join hundreds of families who trust us with their children's future. Admissions for 2026 are now open.
+            {banner.description}
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center pt-4 animate-scale-in">
-            <Link to="/admissions">
+            <Link to={banner.cta1_link || "/admissions"}>
               <Button size="lg" variant="secondary" className="gap-2 shadow-glow hover:scale-110 transition-all duration-300 text-primary font-bold animate-pulse">
                 <Phone className="h-5 w-5" />
-                Apply Now for 2026
+                {banner.cta1_text}
               </Button>
             </Link>
-            <Link to="/contact">
+            <Link to={banner.cta2_link || "/contact"}>
               <Button 
                 size="lg" 
                 variant="outline" 
                 className="gap-2 bg-white/10 border-white text-white hover:bg-white hover:text-primary shadow-hover hover:scale-105 transition-smooth backdrop-blur"
               >
-                Schedule a Visit
+                {banner.cta2_text}
                 <ArrowRight className="h-5 w-5" />
               </Button>
             </Link>
           </div>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-8 text-sm opacity-90">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center backdrop-blur">
-                ✓
+            {banner.feature1_text && (
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5" />
+                <span>{banner.feature1_text}</span>
               </div>
-              <span>Modern Facilities</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center backdrop-blur">
-                ✓
+            )}
+            {banner.feature2_text && (
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5" />
+                <span>{banner.feature2_text}</span>
               </div>
-              <span>Qualified Teachers</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center backdrop-blur">
-                ✓
+            )}
+            {banner.feature3_text && (
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-5 w-5" />
+                <span>{banner.feature3_text}</span>
               </div>
-              <span>Safe Environment</span>
-            </div>
+            )}
           </div>
         </div>
       </div>
