@@ -548,11 +548,13 @@ const About = () => {
                   <Card key={index} className="group shadow-soft border-0 hover:shadow-premium transition-all duration-300 bg-card overflow-hidden hover:scale-105">
                     {/* Student Image with Overlay */}
                     <div className="relative h-48 overflow-hidden">
-                      <img 
-                        src={result.image} 
-                        alt={result.student}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
+                      {result.image_url && (
+                        <img 
+                          src={result.image_url} 
+                          alt={result.student_name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                      )}
                       <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/50 to-transparent" />
                       <div className="absolute bottom-4 left-4 right-4">
                         <div className="flex items-center justify-between">
@@ -569,18 +571,24 @@ const About = () => {
                         {/* Mean Grade Badge */}
                         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30">
                           <Trophy className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-bold text-primary">Mean Grade: {result.meanGrade}</span>
+                          <span className="text-sm font-bold text-primary">Mean Grade: {result.mean_grade}</span>
                         </div>
                         
                         <div>
                           <p className="text-xs text-muted-foreground mb-1">Top Student</p>
-                          <p className="font-bold text-lg text-foreground">{result.student}</p>
+                          <p className="font-bold text-lg text-foreground">{result.student_name}</p>
                         </div>
                         
                         <div>
                           <p className="text-xs text-muted-foreground mb-1">Course Pursued</p>
-                          <p className="text-sm leading-relaxed text-muted-foreground">{result.course}</p>
+                          <p className="text-sm leading-relaxed text-muted-foreground">{result.course_pursued}</p>
                         </div>
+                        {result.university && (
+                          <div>
+                            <p className="text-xs text-muted-foreground mb-1">University</p>
+                            <p className="text-sm text-muted-foreground">{result.university}</p>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
