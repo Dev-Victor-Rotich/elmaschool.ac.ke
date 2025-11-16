@@ -1,18 +1,25 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Image as ImageIcon } from "lucide-react";
-import gallery1 from "@/assets/gallery-1.jpg";
-import gallery2 from "@/assets/gallery-2.jpg";
-import gallery3 from "@/assets/gallery-3.jpg";
-import gallery4 from "@/assets/gallery-4.jpg";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const GalleryPreview = () => {
-  const images = [
-    { src: gallery1, alt: "Students in classroom" },
-    { src: gallery2, alt: "School activities" },
-    { src: gallery3, alt: "Campus facilities" },
-    { src: gallery4, alt: "Student life" },
-  ];
+  const { data: images } = useQuery({
+    queryKey: ["gallery-media-preview"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("gallery_media")
+        .select("*")
+        .eq("media_type", "image")
+        .order("display_order", { ascending: true })
+        .limit(4);
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  if (!images?.length) return null;
 
   return (
     <section className="py-20 bg-background">
@@ -30,17 +37,23 @@ const GalleryPreview = () => {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-6xl mx-auto mb-8">
           {images.map((image, index) => (
             <div
-              key={index}
+              key={image.id}
               className="relative aspect-square rounded-lg overflow-hidden group animate-scale-in shadow-soft hover:shadow-hover transition-smooth"
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               <img
-                src={image.src}
-                alt={image.alt}
+                src={image.file_url}
+                alt={image.title || "Gallery image"}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
                 loading="lazy"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                {image.title && (
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <p className="text-white font-semibold">{image.title}</p>
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>

@@ -80,10 +80,11 @@ const HomeContentManager = () => {
 
         <TabsContent value="more">
           <Tabs defaultValue="duty-roster" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="duty-roster">Duty Roster</TabsTrigger>
               <TabsTrigger value="events">Events</TabsTrigger>
               <TabsTrigger value="testimonials">Testimonials</TabsTrigger>
+              <TabsTrigger value="gallery">Gallery</TabsTrigger>
               <TabsTrigger value="faqs">FAQs</TabsTrigger>
               <TabsTrigger value="cta">CTA Banner</TabsTrigger>
             </TabsList>
@@ -126,6 +127,20 @@ const HomeContentManager = () => {
                 </CardHeader>
                 <CardContent>
                   <TestimonialsManager />
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="gallery">
+              <Card>
+                <CardHeader>
+                  <CardTitle>Gallery</CardTitle>
+                  <CardDescription>
+                    Manage images and videos displayed on the website
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <GalleryManager />
                 </CardContent>
               </Card>
             </TabsContent>
