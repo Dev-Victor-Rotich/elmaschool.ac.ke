@@ -12,6 +12,7 @@ const MagicLinkLogin = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [magicLink, setMagicLink] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const handleMagicLink = async (e: React.FormEvent) => {
@@ -32,7 +33,8 @@ const MagicLinkLogin = () => {
         toast.error(data.error);
       } else {
         setEmailSent(true);
-        toast.success("Magic link sent! Check your email.");
+        setMagicLink(data?.magicLink ?? null);
+        toast.success(data?.magicLink ? "Magic link generated. You can open it below." : "Magic link sent! Check your email.");
       }
     } catch (error: any) {
       console.error("Error sending magic link:", error);
@@ -62,12 +64,30 @@ const MagicLinkLogin = () => {
                 Click the link in your email to access your dashboard. The link will expire in 15 minutes.
               </AlertDescription>
             </Alert>
+            {magicLink && (
+              <div className="space-y-2">
+                <Button className="w-full" onClick={() => (window.location.href = magicLink)}>
+                  Open Login Link
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="w-full"
+                  onClick={() => {
+                    navigator.clipboard.writeText(magicLink);
+                    toast.success("Magic link copied");
+                  }}
+                >
+                  Copy Magic Link
+                </Button>
+              </div>
+            )}
             <Button
               variant="outline"
               className="w-full"
               onClick={() => {
                 setEmailSent(false);
                 setEmail("");
+                setMagicLink(null);
               }}
             >
               Try a Different Email
