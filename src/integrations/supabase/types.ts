@@ -433,6 +433,51 @@ export type Database = {
         }
         Relationships: []
       }
+      cta_banner: {
+        Row: {
+          badge_text: string | null
+          cta1_link: string | null
+          cta1_text: string | null
+          cta2_link: string | null
+          cta2_text: string | null
+          description: string
+          feature1_text: string | null
+          feature2_text: string | null
+          feature3_text: string | null
+          heading: string
+          id: string
+          updated_at: string | null
+        }
+        Insert: {
+          badge_text?: string | null
+          cta1_link?: string | null
+          cta1_text?: string | null
+          cta2_link?: string | null
+          cta2_text?: string | null
+          description?: string
+          feature1_text?: string | null
+          feature2_text?: string | null
+          feature3_text?: string | null
+          heading?: string
+          id?: string
+          updated_at?: string | null
+        }
+        Update: {
+          badge_text?: string | null
+          cta1_link?: string | null
+          cta1_text?: string | null
+          cta2_link?: string | null
+          cta2_text?: string | null
+          description?: string
+          feature1_text?: string | null
+          feature2_text?: string | null
+          feature3_text?: string | null
+          heading?: string
+          id?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       department_staff: {
         Row: {
           bio: string | null
@@ -624,6 +669,33 @@ export type Database = {
         }
         Relationships: []
       }
+      faqs: {
+        Row: {
+          answer: string
+          created_at: string | null
+          display_order: number | null
+          id: string
+          question: string
+          updated_at: string | null
+        }
+        Insert: {
+          answer: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          question: string
+          updated_at?: string | null
+        }
+        Update: {
+          answer?: string
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          question?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       fee_payments: {
         Row: {
           amount_due: number
@@ -709,6 +781,87 @@ export type Database = {
           media_type?: string
           thumbnail_url?: string | null
           title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      hero_content: {
+        Row: {
+          badge1_text: string | null
+          badge2_text: string | null
+          badge3_text: string | null
+          cta1_link: string | null
+          cta1_text: string | null
+          cta2_link: string | null
+          cta2_text: string | null
+          description: string
+          enrollment_badge_text: string | null
+          heading_line1: string
+          heading_line2: string
+          id: string
+          image_url: string
+          updated_at: string | null
+        }
+        Insert: {
+          badge1_text?: string | null
+          badge2_text?: string | null
+          badge3_text?: string | null
+          cta1_link?: string | null
+          cta1_text?: string | null
+          cta2_link?: string | null
+          cta2_text?: string | null
+          description?: string
+          enrollment_badge_text?: string | null
+          heading_line1?: string
+          heading_line2?: string
+          id?: string
+          image_url: string
+          updated_at?: string | null
+        }
+        Update: {
+          badge1_text?: string | null
+          badge2_text?: string | null
+          badge3_text?: string | null
+          cta1_link?: string | null
+          cta1_text?: string | null
+          cta2_link?: string | null
+          cta2_text?: string | null
+          description?: string
+          enrollment_badge_text?: string | null
+          heading_line1?: string
+          heading_line2?: string
+          id?: string
+          image_url?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      home_features: {
+        Row: {
+          created_at: string | null
+          description: string
+          display_order: number | null
+          icon_name: string
+          id: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          display_order?: number | null
+          icon_name: string
+          id?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          display_order?: number | null
+          icon_name?: string
+          id?: string
+          title?: string
           updated_at?: string | null
         }
         Relationships: []
@@ -1036,6 +1189,39 @@ export type Database = {
         }
         Relationships: []
       }
+      site_stats: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          icon_name: string
+          id: string
+          label: string
+          suffix: string
+          updated_at: string | null
+          value: number
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          icon_name: string
+          id?: string
+          label: string
+          suffix?: string
+          updated_at?: string | null
+          value: number
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          icon_name?: string
+          id?: string
+          label?: string
+          suffix?: string
+          updated_at?: string | null
+          value?: number
+        }
+        Relationships: []
+      }
       staff_registry: {
         Row: {
           created_at: string | null
@@ -1201,6 +1387,36 @@ export type Database = {
           description?: string
           display_order?: number | null
           icon_name?: string | null
+          id?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      trust_badges: {
+        Row: {
+          created_at: string | null
+          description: string
+          display_order: number | null
+          icon_name: string
+          id: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description: string
+          display_order?: number | null
+          icon_name: string
+          id?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string
+          display_order?: number | null
+          icon_name?: string
           id?: string
           title?: string
           updated_at?: string | null

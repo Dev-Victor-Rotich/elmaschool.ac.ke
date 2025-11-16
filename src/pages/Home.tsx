@@ -7,7 +7,7 @@ import EnhancedFooter from "@/components/EnhancedFooter";
 import TrustBadges from "@/components/TrustBadges";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { BookOpen, Users, Award, Heart, Calendar, Quote, HelpCircle, Handshake, Phone } from "lucide-react";
-import heroImage from "@/assets/hero-school.jpg";
+
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const Home = () => {
@@ -87,7 +87,7 @@ const Home = () => {
 
   return (
     <div className="min-h-screen">
-      <Hero image={heroImage} />
+      <Hero />
 
       {/* Trust Badges */}
       <TrustBadges />
