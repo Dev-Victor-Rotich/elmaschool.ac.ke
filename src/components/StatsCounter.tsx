@@ -1,16 +1,20 @@
 import { useEffect, useRef, useState } from "react";
-import { Users, Award, BookOpen, TrendingUp } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import * as Icons from "lucide-react";
 
 const StatsCounter = () => {
   const [isVisible, setIsVisible] = useState(false);
   const sectionRef = useRef<HTMLDivElement>(null);
 
-  const stats = [
-    { icon: Users, value: 500, suffix: "+", label: "Students Enrolled", color: "from-primary to-accent" },
-    { icon: Award, value: 98, suffix: "%", label: "Success Rate", color: "from-accent to-primary" },
-    { icon: BookOpen, value: 10, suffix: "+", label: "Years of Excellence", color: "from-primary to-accent" },
-    { icon: TrendingUp, value: 95, suffix: "%", label: "Further Learning", color: "from-accent to-primary" },
-  ];
+  const { data: stats } = useQuery({
+    queryKey: ["site-stats"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("site_stats").select("*").order("display_order");
+      if (error) throw error;
+      return data;
+    },
+  });
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -58,7 +62,8 @@ const StatsCounter = () => {
         {count}{suffix}
       </span>
     );
-  };
+
+  if (!stats?.length) return null;
 
   return (
     <section ref={sectionRef} className="py-20 bg-gradient-to-br from-primary/5 to-accent/5 relative overflow-hidden">
@@ -74,15 +79,11 @@ const StatsCounter = () => {
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 max-w-6xl mx-auto">
           {stats.map((stat, index) => {
-            const Icon = stat.icon;
+            const IconComponent = Icons[stat.icon_name as keyof typeof Icons] as any;
             return (
-              <div
-                key={index}
-                className="text-center group animate-scale-in"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
+              <div key={stat.id} className="text-center group animate-scale-in" style={{ animationDelay: `${index * 0.1}s` }}>
                 <div className="inline-flex items-center justify-center w-16 h-16 md:w-20 md:h-20 rounded-full bg-gradient-to-br from-primary/10 to-accent/10 mb-4 group-hover:scale-110 transition-smooth">
-                  <Icon className="w-8 h-8 md:w-10 md:h-10 text-primary" />
+                  {IconComponent && <IconComponent className="w-8 h-8 md:w-10 md:h-10 text-primary" />}
                 </div>
                 <div className="mb-2">
                   <Counter target={stat.value} suffix={stat.suffix} />
