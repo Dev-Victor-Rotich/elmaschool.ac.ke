@@ -2,30 +2,27 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Star, Quote } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+
 const Testimonials = () => {
-  const testimonials = [
-    {
-      name: "Sarah Njeri",
-      role: "Parent",
-      content: "The transformation in my daughter has been incredible. The teachers genuinely care about each student's success and the CBC curriculum has helped her develop practical skills.",
-      rating: 5,
-      initials: "SN",
+  const { data: testimonials = [] } = useQuery({
+    queryKey: ["community-testimonials"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("community_testimonials")
+        .select("*")
+        .order("display_order");
+      if (error) throw error;
+      return data.map((t: any) => ({
+        name: t.name,
+        role: t.role,
+        content: t.review,
+        rating: t.rating || 5,
+        initials: t.name.split(" ").map((n: string) => n[0]).join("").toUpperCase().slice(0, 2),
+      }));
     },
-    {
-      name: "David Kimani",
-      role: "Former Student",
-      content: "Elma School gave me more than education - it gave me confidence and leadership skills. I'm now studying engineering at university, and I owe so much to my teachers here.",
-      rating: 5,
-      initials: "DK",
-    },
-    {
-      name: "Grace Wanjiku",
-      role: "Parent",
-      content: "What sets this school apart is the sense of community. My son feels safe, valued, and excited to learn every day. The boarding facilities are excellent too.",
-      rating: 5,
-      initials: "GW",
-    },
-  ];
+  });
 
   return (
     <section className="py-20 bg-muted/30 relative overflow-hidden">

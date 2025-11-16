@@ -1,11 +1,71 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Target, Heart, Trophy, Users, Star, School, MapPin, GraduationCap, BookOpen, Award, TrendingUp, Phone, Building2, Utensils, Home, FlaskConical, BookMarked, Church } from "lucide-react";
-import victorImage from "@/assets/victor-rotich.jpg";
 import heroImage from "@/assets/hero-school.jpg";
-import principalImage from "@/assets/principal.jpg";
 import EnhancedFooter from "@/components/EnhancedFooter";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const About = () => {
+  const { data: principalMessage } = useQuery({
+    queryKey: ["principal-message"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("principal_message")
+        .select("*")
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: facilities = [] } = useQuery({
+    queryKey: ["facilities"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("facilities")
+        .select("*")
+        .order("display_order");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: academicExcellence = [] } = useQuery({
+    queryKey: ["academic-excellence"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("academic_excellence")
+        .select("*")
+        .order("display_order");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: alumni = [] } = useQuery({
+    queryKey: ["notable-alumni"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("notable_alumni")
+        .select("*")
+        .order("display_order");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: parentTestimonials = [] } = useQuery({
+    queryKey: ["parent-testimonials"],
+    queryFn: async () => {
+      const { data, error} = await supabase
+        .from("parent_testimonials")
+        .select("*")
+        .order("display_order");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const values = [
     { icon: Target, title: "Excellence", description: "We encourage every student to do their best" },
     { icon: Heart, title: "Respect", description: "We treat everyone with kindness and dignity" },
@@ -254,24 +314,20 @@ const About = () => {
                 <div className="flex-shrink-0">
                   <div className="relative w-48 h-48 md:w-56 md:h-56 rounded-2xl overflow-hidden shadow-hover ring-4 ring-primary/10">
                     <img 
-                      src={principalImage} 
-                      alt="Principal Opiyo Ouma Henry" 
+                      src={principalMessage?.image_url} 
+                      alt={principalMessage?.name} 
                       className="w-full h-full object-cover"
                     />
                   </div>
                   <div className="mt-4 text-center">
-                    <p className="font-bold text-lg">Opiyo Ouma Henry</p>
+                    <p className="font-bold text-lg">{principalMessage?.name}</p>
                     <p className="text-muted-foreground">School Principal</p>
                   </div>
                 </div>
                 <div className="flex-1">
                   <p className="text-lg leading-relaxed italic mb-4">
-                    "At Elma Kamonong High School, we see education as more than textbooks and tests. It's about building character, discovering talents, and preparing for a bright future. We're proud to walk alongside each student and their family on this journey."
+                    {principalMessage?.message}
                   </p>
-                  <p className="text-lg leading-relaxed italic mb-4">
-                    "Our commitment is to provide a Christ-centered learning environment where every student can thrive academically, spiritually, and socially. Together with our dedicated teachers and staff, we are building a community of excellence."
-                  </p>
-                  <p className="font-semibold text-lg">— Principal Opiyo Ouma Henry</p>
                 </div>
               </div>
             </CardContent>
@@ -488,16 +544,7 @@ const About = () => {
               </div>
               
               <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[
-                  { year: "2024", student: "Grace Muthoni", course: "Bachelor of Medicine and Surgery, Kenyatta University", meanGrade: "A- 10.5", image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop" },
-                  { year: "2023", student: "Jane Wanjiku", course: "Bachelor of Medicine and Surgery, University of Nairobi", meanGrade: "A- 10.2", image: "https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?w=400&h=400&fit=crop" },
-                  { year: "2022", student: "Victor Rotich", course: "Bachelor of Education Science, University of Kabianga", meanGrade: "A- 10.8", image: victorImage },
-                  { year: "2021", student: "Mary Akinyi", course: "Bachelor of Law, Moi University", meanGrade: "A 11.2", image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=400&fit=crop" },
-                  { year: "2020", student: "Peter Omondi", course: "Bachelor of Commerce, Strathmore University", meanGrade: "A- 10.4", image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop" },
-                  { year: "2019", student: "Sarah Njeri", course: "Bachelor of Education, Egerton University", meanGrade: "A- 10.1", image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=400&h=400&fit=crop" },
-                  { year: "2018", student: "John Kamau", course: "Bachelor of Computer Science, Technical University of Kenya", meanGrade: "A- 10.6", image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop" },
-                  { year: "2017", student: "Faith Chebet", course: "Bachelor of Pharmacy, University of Nairobi", meanGrade: "A 11.0", image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop" }
-                ].map((result, index) => (
+                {academicExcellence.map((result, index) => (
                   <Card key={index} className="group shadow-soft border-0 hover:shadow-premium transition-all duration-300 bg-card overflow-hidden hover:scale-105">
                     {/* Student Image with Overlay */}
                     <div className="relative h-48 overflow-hidden">

@@ -10,80 +10,55 @@ import { BookOpen, Users, Award, Heart, Calendar, Quote, HelpCircle, Handshake, 
 
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
-const Home = () => {
-  const features = [
-    {
-      icon: BookOpen,
-      title: "Modern CBC Curriculum",
-      description: "Hands-on learning that builds real-world skills and critical thinking"
-    },
-    {
-      icon: Users,
-      title: "Supportive Community",
-      description: "Caring teachers and staff who know every student by name"
-    },
-    {
-      icon: Award,
-      title: "Student Leadership",
-      description: "Opportunities to grow confidence through clubs, sports, and projects"
-    },
-    {
-      icon: Heart,
-      title: "Character Building",
-      description: "Focus on values, respect, and becoming responsible citizens"
-    }
-  ];
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
-  const events = [
-    {
-      date: "15 Jan 2025",
-      title: "New Term Begins",
-      description: "First term of 2025 academic year starts"
+const Home = () => {
+  const { data: homeFeatures = [] } = useQuery({
+    queryKey: ["home-features"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("home_features")
+        .select("*")
+        .order("display_order");
+      if (error) throw error;
+      return data;
     },
-    {
-      date: "20 Feb 2025",
-      title: "Parents Meeting",
-      description: "Quarterly parent-teacher conference"
+  });
+
+  const { data: events = [] } = useQuery({
+    queryKey: ["events"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("events")
+        .select("*")
+        .eq("approved", true)
+        .order("display_order");
+      if (error) throw error;
+      return data.map((e: any) => ({
+        date: new Date(e.event_date).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }),
+        title: e.title,
+        description: e.description,
+      }));
     },
-    {
-      date: "15 Mar 2025",
-      title: "Science Fair",
-      description: "Annual student science exhibition and competition"
+  });
+
+  const { data: faqs = [] } = useQuery({
+    queryKey: ["faqs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("faqs")
+        .select("*")
+        .order("display_order");
+      if (error) throw error;
+      return data;
     },
-    {
-      date: "10 Apr 2025",
-      title: "Mid-Term Break",
-      description: "One week break for students and staff"
-    }
-  ];
+  });
 
   const quote = {
     text: "Education is the most powerful weapon which you can use to change the world.",
     author: "Nelson Mandela"
   };
-
-  const faqs = [
-    {
-      question: "What is the admission process?",
-      answer: "Visit our Admissions page for detailed information on requirements, fees, and how to apply for 2026. You can also contact us directly at +254 715 748 735."
-    },
-    {
-      question: "Do you offer boarding facilities?",
-      answer: "Yes, we are exclusively a boarding school. We do not admit day scholars. Our boarding facilities are well-maintained with proper supervision to ensure a safe and nurturing environment for all students."
-    },
-    {
-      question: "What curriculum do you follow?",
-      answer: "We follow the Competency-Based Curriculum (CBC) which focuses on hands-on learning and real-world skills development."
-    },
-    {
-      question: "What are the school hours?",
-      answer: "School starts at 7:30 AM and ends at 4:00 PM. As a boarding school, all students have supervised evening prep sessions and structured activities throughout the day."
-    },
-    {
-      question: "How can parents track student progress?",
-      answer: "We conduct regular parent-teacher meetings and provide termly progress reports. Parents can also schedule one-on-one meetings with teachers."
-    }
-  ];
 
   return (
     <div className="min-h-screen">
