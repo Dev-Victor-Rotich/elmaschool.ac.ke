@@ -20,6 +20,8 @@ import { StaffRegistryManager } from "@/components/admin/StaffRegistryManager";
 import { AuditLogs } from "@/components/admin/AuditLogs";
 import { OwnershipTransfer } from "@/components/admin/OwnershipTransfer";
 import { ContactInfoManager } from "@/components/admin/ContactInfoManager";
+import { DutyRosterManager } from "@/components/admin/DutyRosterManager";
+import SchoolOccasionsManager from "@/components/admin/SchoolOccasionsManager";
 
 const SuperAdminDashboard = () => {
   const navigate = useNavigate();
@@ -75,8 +77,10 @@ const SuperAdminDashboard = () => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="home">
+          <TabsContent value="home" className="space-y-6">
             <HomeContentManager />
+            <DutyRosterManager />
+            <SchoolOccasionsManager />
           </TabsContent>
 
           <TabsContent value="about">
