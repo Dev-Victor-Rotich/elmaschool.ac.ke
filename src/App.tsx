@@ -13,7 +13,7 @@ import Gallery from "./pages/Gallery";
 import Contact from "./pages/Contact";
 import Admissions from "./pages/Admissions";
 import NotFound from "./pages/NotFound";
-import Auth from "./pages/Auth";
+
 import NewAuth from "./pages/NewAuth";
 import AdminDashboard from "./pages/admin/Dashboard";
 import SuperAdminDashboard from "./pages/admin/SuperAdminDashboard";
@@ -59,7 +59,7 @@ const App = () => (
           <Route path="/dashboard/bursar" element={<BursarDashboard />} />
           <Route path="/dashboard/student" element={<StudentDashboard />} />
           <Route path="/auth" element={<NewAuth />} />
-          <Route path="/auth-old" element={<Auth />} />
+          
           <Route path="/admin/dashboard" element={<SuperAdminDashboard />} />
           <Route path="/admin" element={<AdminPortal />} />
           <Route path="/admin/manage-students" element={<ManageStudents />} />

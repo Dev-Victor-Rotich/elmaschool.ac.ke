@@ -127,15 +127,126 @@ export type Database = {
         }
         Relationships: []
       }
+      community_testimonials: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          id: string
+          name: string
+          rating: number | null
+          review: string
+          role: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          name: string
+          rating?: number | null
+          review: string
+          role: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          name?: string
+          rating?: number | null
+          review?: string
+          role?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      contact_info: {
+        Row: {
+          address: string
+          email: string
+          id: string
+          office_hours: string | null
+          phone: string
+          social_media: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          address: string
+          email: string
+          id?: string
+          office_hours?: string | null
+          phone: string
+          social_media?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string
+          email?: string
+          id?: string
+          office_hours?: string | null
+          phone?: string
+          social_media?: Json | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      duty_rosters: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          end_date: string
+          id: string
+          month: string
+          quote: string
+          quote_author: string
+          start_date: string
+          teachers_on_duty: Json
+          term: string
+          updated_at: string | null
+          week_number: number
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          end_date: string
+          id?: string
+          month: string
+          quote: string
+          quote_author: string
+          start_date: string
+          teachers_on_duty?: Json
+          term: string
+          updated_at?: string | null
+          week_number: number
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          end_date?: string
+          id?: string
+          month?: string
+          quote?: string
+          quote_author?: string
+          start_date?: string
+          teachers_on_duty?: Json
+          term?: string
+          updated_at?: string | null
+          week_number?: number
+        }
+        Relationships: []
+      }
       events: {
         Row: {
           approved: boolean | null
           created_at: string
           created_by: string | null
           description: string | null
+          display_order: number | null
           event_date: string
           event_type: string
           id: string
+          location: string | null
+          status: string | null
           title: string
           updated_at: string
         }
@@ -144,9 +255,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          display_order?: number | null
           event_date: string
           event_type: string
           id?: string
+          location?: string | null
+          status?: string | null
           title: string
           updated_at?: string
         }
@@ -155,9 +269,12 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           description?: string | null
+          display_order?: number | null
           event_date?: string
           event_type?: string
           id?: string
+          location?: string | null
+          status?: string | null
           title?: string
           updated_at?: string
         }
@@ -215,6 +332,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      gallery_media: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          file_url: string
+          id: string
+          media_type: string
+          thumbnail_url: string | null
+          title: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          file_url: string
+          id?: string
+          media_type: string
+          thumbnail_url?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          file_url?: string
+          id?: string
+          media_type?: string
+          thumbnail_url?: string | null
+          title?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       magic_link_tokens: {
         Row: {
