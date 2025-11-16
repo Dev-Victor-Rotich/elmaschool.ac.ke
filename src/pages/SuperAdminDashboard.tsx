@@ -1,12 +1,12 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Home, Users, Phone, LogOut } from "lucide-react";
+import { Home, Users, Phone, LogOut, BookOpen, Award, Video, FileText, GraduationCap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import HomeContentManager from "./admin/HomeContentManager";
+import AboutContentManager from "./admin/AboutContentManager";
 
 const SuperAdminDashboard = () => {
   const navigate = useNavigate();
@@ -31,23 +31,70 @@ const SuperAdminDashboard = () => {
 
       <div className="container py-8">
         <Tabs defaultValue="home" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-7 gap-2">
             <TabsTrigger value="home">
               <Home className="h-4 w-4 mr-2" />
-              Home Content
+              Home
+            </TabsTrigger>
+            <TabsTrigger value="about">
+              <BookOpen className="h-4 w-4 mr-2" />
+              About
+            </TabsTrigger>
+            <TabsTrigger value="programs">
+              <Award className="h-4 w-4 mr-2" />
+              Programs
+            </TabsTrigger>
+            <TabsTrigger value="student">
+              <Video className="h-4 w-4 mr-2" />
+              Student Voice
+            </TabsTrigger>
+            <TabsTrigger value="admissions">
+              <FileText className="h-4 w-4 mr-2" />
+              Admissions
             </TabsTrigger>
             <TabsTrigger value="users">
               <Users className="h-4 w-4 mr-2" />
-              User Management
+              Users
             </TabsTrigger>
             <TabsTrigger value="contact">
               <Phone className="h-4 w-4 mr-2" />
-              Contact Info
+              Contact
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="home">
             <HomeContentManager />
+          </TabsContent>
+
+          <TabsContent value="about">
+            <AboutContentManager />
+          </TabsContent>
+
+          <TabsContent value="programs">
+            <Card>
+              <CardHeader>
+                <CardTitle>Programs & CBC Content</CardTitle>
+                <CardDescription>Coming soon - Manage programs, subjects, departments</CardDescription>
+              </CardHeader>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="student">
+            <Card>
+              <CardHeader>
+                <CardTitle>Student Voice Content</CardTitle>
+                <CardDescription>Coming soon - Manage student ambassador, videos, clubs</CardDescription>
+              </CardHeader>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="admissions">
+            <Card>
+              <CardHeader>
+                <CardTitle>Admissions Management</CardTitle>
+                <CardDescription>Coming soon - Manage admission requests and letters</CardDescription>
+              </CardHeader>
+            </Card>
           </TabsContent>
 
           <TabsContent value="users">
