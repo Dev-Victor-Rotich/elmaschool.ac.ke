@@ -41,12 +41,13 @@ const Student = () => {
     },
   });
 
-  const { data: leadershipPrograms } = useQuery({
-    queryKey: ["leadership-programs"],
+  const { data: studentStats } = useQuery({
+    queryKey: ["student-stats"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("leadership_programs")
+        .from("site_stats")
         .select("*")
+        .in("label", ["Active Students", "Clubs & Activities", "Student Satisfaction"])
         .order("display_order", { ascending: true });
       if (error) throw error;
       return data;
@@ -99,18 +100,14 @@ const Student = () => {
           )}
 
           <div className="mt-12 grid md:grid-cols-3 gap-6">
-            <Card className="border-0 shadow-soft text-center p-6">
-              <div className="text-4xl font-bold text-primary mb-2">450+</div>
-              <p className="text-muted-foreground">Active Students</p>
-            </Card>
-            <Card className="border-0 shadow-soft text-center p-6">
-              <div className="text-4xl font-bold text-accent mb-2">15+</div>
-              <p className="text-muted-foreground">Clubs & Activities</p>
-            </Card>
-            <Card className="border-0 shadow-soft text-center p-6">
-              <div className="text-4xl font-bold text-primary mb-2">98%</div>
-              <p className="text-muted-foreground">Student Satisfaction</p>
-            </Card>
+            {studentStats?.map((stat, index) => (
+              <Card key={stat.id} className="border-0 shadow-soft text-center p-6">
+                <div className={`text-4xl font-bold mb-2 ${index % 2 === 0 ? 'text-primary' : 'text-accent'}`}>
+                  {stat.value}{stat.suffix}
+                </div>
+                <p className="text-muted-foreground">{stat.label}</p>
+              </Card>
+            ))}
           </div>
 
           {/* Clubs Section */}

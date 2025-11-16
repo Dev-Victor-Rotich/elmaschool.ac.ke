@@ -45,6 +45,42 @@ const Programs = () => {
     },
   });
 
+  const { data: departmentStaff } = useQuery({
+    queryKey: ["department-staff"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("department_staff")
+        .select("*")
+        .order("display_order", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: leadershipPrograms } = useQuery({
+    queryKey: ["leadership-programs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("leadership_programs")
+        .select("*")
+        .order("display_order", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: programMembers } = useQuery({
+    queryKey: ["program-members"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("program_members")
+        .select("*")
+        .order("display_order", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const getIcon = (iconName: string) => {
     const Icon = (Icons as any)[iconName];
     return Icon || BookOpen;
@@ -194,55 +230,69 @@ const Programs = () => {
             <div className="mb-12">
               <h3 className="text-2xl font-bold text-center mb-8">Our Student Leaders</h3>
               
-              {/* School President */}
-              <Card className="shadow-elegant border-0 bg-gradient-to-br from-primary/10 via-background to-accent/5 mb-8 overflow-hidden">
-                <CardContent className="pt-6">
-                  <div className="flex flex-col md:flex-row items-center gap-6">
-                    <div className="relative w-40 h-40 rounded-full overflow-hidden flex-shrink-0 ring-4 ring-primary/30">
-                      <img 
-                        src="https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=300&h=300&fit=crop" 
-                        alt="School President"
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                    <div className="flex-1 text-center md:text-left">
-                      <div className="inline-block px-4 py-1 rounded-full bg-gradient-to-r from-primary to-accent text-white text-sm font-semibold mb-2">
-                        SCHOOL PRESIDENT
-                      </div>
-                      <h4 className="text-2xl font-bold mb-2">Brian Kipchoge</h4>
-                      <p className="text-muted-foreground mb-3">Form 4 Student</p>
-                      <p className="text-foreground leading-relaxed">
-                        "As school president, my goal is to ensure every student feels heard and supported. Together, we're building a community where leadership, integrity, and excellence thrive."
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              {leadershipPrograms?.map((program) => {
+                const members = programMembers?.filter((m: any) => m.program_id === program.id);
+                const president = members?.find((m: any) => m.display_order === 0);
+                const otherMembers = members?.filter((m: any) => m.id !== president?.id);
 
-              {/* Student Council Members */}
-              <h4 className="text-xl font-bold mb-6 text-center">Student Council Members</h4>
-              <div className="grid md:grid-cols-4 gap-6 mb-8">
-                {[
-                  { name: "Mercy Wanjiru", position: "Vice President", image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&h=300&fit=crop" },
-                  { name: "Kevin Omondi", position: "Sports Captain", image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&h=300&fit=crop" },
-                  { name: "Faith Achieng", position: "Head Prefect (Girls)", image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=300&h=300&fit=crop" },
-                  { name: "Daniel Mutua", position: "Head Prefect (Boys)", image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&h=300&fit=crop" }
-                ].map((leader, index) => (
-                  <Card key={index} className="shadow-soft hover:shadow-hover transition-smooth border-0 text-center group">
-                    <CardContent className="pt-6">
-                      <div className="relative w-28 h-28 mx-auto mb-4 rounded-full overflow-hidden ring-2 ring-primary/20 group-hover:ring-4 group-hover:ring-primary/40 transition-all">
-                        <img 
-                          src={leader.image} 
-                          alt={leader.name}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <h5 className="font-bold text-lg mb-1">{leader.name}</h5>
-                      <p className="text-sm text-muted-foreground">{leader.position}</p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                return (
+                  <div key={program.id} className="mb-12">
+                    <h4 className="text-xl font-bold text-center mb-6">{program.title}</h4>
+                    
+                    {president && (
+                      <Card className="shadow-elegant border-0 bg-gradient-to-br from-primary/10 via-background to-accent/5 mb-8 overflow-hidden">
+                        <CardContent className="pt-6">
+                          <div className="flex flex-col md:flex-row items-center gap-6">
+                            {president.image_url && (
+                              <div className="relative w-40 h-40 rounded-full overflow-hidden flex-shrink-0 ring-4 ring-primary/30">
+                                <img 
+                                  src={president.image_url} 
+                                  alt={president.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              </div>
+                            )}
+                            <div className="flex-1 text-center md:text-left">
+                              <div className="inline-block px-4 py-1 rounded-full bg-gradient-to-r from-primary to-accent text-white text-sm font-semibold mb-2">
+                                {program.title.toUpperCase()}
+                              </div>
+                              <h4 className="text-2xl font-bold mb-2">{president.name}</h4>
+                              {president.message && (
+                                <p className="text-foreground leading-relaxed">"{president.message}"</p>
+                              )}
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    )}
+
+                    {otherMembers && otherMembers.length > 0 && (
+                      <>
+                        <h4 className="text-xl font-bold mb-6 text-center">Council Members</h4>
+                        <div className="grid md:grid-cols-4 gap-6 mb-8">
+                          {otherMembers.map((member: any) => (
+                            <Card key={member.id} className="shadow-soft hover:shadow-hover transition-smooth border-0 text-center group">
+                              <CardContent className="pt-6">
+                                {member.image_url && (
+                                  <div className="relative w-28 h-28 mx-auto mb-4 rounded-full overflow-hidden ring-2 ring-primary/20 group-hover:ring-4 group-hover:ring-primary/40 transition-all">
+                                    <img 
+                                      src={member.image_url} 
+                                      alt={member.name}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  </div>
+                                )}
+                                <h5 className="font-bold text-lg mb-1">{member.name}</h5>
+                                {member.message && <p className="text-sm text-muted-foreground">{member.message}</p>}
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             <div className="grid md:grid-cols-3 gap-6 mb-8">
@@ -445,32 +495,22 @@ const Programs = () => {
           {/* Beyond the Classroom */}
           <section className="mb-16">
             <h2 className="text-3xl font-bold mb-8 text-center">Beyond the Classroom</h2>
-            <div className="grid md:grid-cols-2 gap-6">
-              {activities.map((activity, index) => {
-                const Icon = activity.icon;
-                return (
-                  <Card key={index} className="shadow-soft border-0 bg-gradient-to-br from-muted/30 to-background">
-                    <CardHeader>
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white">
-                          <Icon className="h-6 w-6" />
-                        </div>
-                        <CardTitle className="text-xl">{activity.title}</CardTitle>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <ul className="space-y-2">
-                        {activity.items.map((item, idx) => (
-                          <li key={idx} className="flex items-center gap-2">
-                            <div className="h-1.5 w-1.5 rounded-full bg-primary" />
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {beyondClassroom?.map((item) => (
+                <Card key={item.id} className="shadow-soft hover:shadow-hover transition-all duration-300 border-0">
+                  <CardContent className="p-6">
+                    {item.image_url && (
+                      <img 
+                        src={item.image_url}
+                        alt={item.title}
+                        className="w-full h-40 object-cover rounded-lg mb-4"
+                      />
+                    )}
+                    <h3 className="text-xl font-bold mb-2">{item.title}</h3>
+                    <p className="text-muted-foreground">{item.description}</p>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </section>
 
@@ -480,156 +520,64 @@ const Programs = () => {
               Our Departments
             </h2>
             
-            <div className="space-y-12">
-              {/* Mathematics & Sciences Department */}
-              <Card className="shadow-soft border-0 overflow-hidden">
-                <div className="h-2 bg-gradient-to-r from-primary to-accent"></div>
-                <CardContent className="pt-6">
-                  <h3 className="text-2xl font-bold mb-6 text-primary">Mathematics & Sciences</h3>
-                  
-                  {/* HOD Section */}
-                  <div className="mb-8 pb-6 border-b">
-                    <p className="text-sm font-semibold text-muted-foreground mb-4">HEAD OF DEPARTMENT</p>
-                    <div className="flex items-center gap-6">
-                      <div className="relative w-32 h-32 rounded-full overflow-hidden flex-shrink-0 ring-4 ring-primary/20">
-                        <img 
-                          src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=200&fit=crop" 
-                          alt="HOD Mathematics & Sciences"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div>
-                        <h4 className="text-xl font-bold mb-1">Dr. Jane Wanjiku</h4>
-                        <p className="text-muted-foreground">Head of Department - Mathematics & Sciences</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Department Staff */}
-                  <div>
-                    <p className="text-sm font-semibold text-muted-foreground mb-4">DEPARTMENT STAFF</p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {[
-                        { name: "Mr. Peter Omondi", image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=200&h=200&fit=crop" },
-                        { name: "Ms. Grace Muthoni", image: "https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?w=200&h=200&fit=crop" },
-                        { name: "Mr. David Kiprop", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&h=200&fit=crop" },
-                        { name: "Ms. Sarah Njeri", image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=200&h=200&fit=crop" }
-                      ].map((staff, index) => (
-                        <div key={index} className="text-center">
-                          <div className="relative w-24 h-24 mx-auto mb-2 rounded-full overflow-hidden ring-2 ring-accent/20">
-                            <img 
-                              src={staff.image} 
-                              alt={staff.name}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                          <p className="text-sm font-medium">{staff.name}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="grid md:grid-cols-2 gap-8">
+              {departments?.map((dept) => {
+                const deptStaff = departmentStaff?.filter((s: any) => s.department_id === dept.id);
+                const hod = deptStaff?.find((s: any) => s.position.toLowerCase().includes("head") || s.display_order === 0);
+                const otherStaff = deptStaff?.filter((s: any) => s.id !== hod?.id);
 
-              {/* Languages & Humanities Department */}
-              <Card className="shadow-soft border-0 overflow-hidden">
-                <div className="h-2 bg-gradient-to-r from-accent to-primary"></div>
-                <CardContent className="pt-6">
-                  <h3 className="text-2xl font-bold mb-6 text-accent">Languages & Humanities</h3>
-                  
-                  {/* HOD Section */}
-                  <div className="mb-8 pb-6 border-b">
-                    <p className="text-sm font-semibold text-muted-foreground mb-4">HEAD OF DEPARTMENT</p>
-                    <div className="flex items-center gap-6">
-                      <div className="relative w-32 h-32 rounded-full overflow-hidden flex-shrink-0 ring-4 ring-accent/20">
-                        <img 
-                          src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=200&h=200&fit=crop" 
-                          alt="HOD Languages & Humanities"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div>
-                        <h4 className="text-xl font-bold mb-1">Prof. Mary Akinyi</h4>
-                        <p className="text-muted-foreground">Head of Department - Languages & Humanities</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Department Staff */}
-                  <div>
-                    <p className="text-sm font-semibold text-muted-foreground mb-4">DEPARTMENT STAFF</p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {[
-                        { name: "Mr. John Kamau", image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=200&h=200&fit=crop" },
-                        { name: "Ms. Faith Chebet", image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=200&h=200&fit=crop" },
-                        { name: "Mr. James Ochieng", image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop" },
-                        { name: "Ms. Lucy Wambui", image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=200&h=200&fit=crop" }
-                      ].map((staff, index) => (
-                        <div key={index} className="text-center">
-                          <div className="relative w-24 h-24 mx-auto mb-2 rounded-full overflow-hidden ring-2 ring-primary/20">
-                            <img 
-                              src={staff.image} 
-                              alt={staff.name}
-                              className="w-full h-full object-cover"
-                            />
+                return (
+                  <Card key={dept.id} className="shadow-soft hover:shadow-hover transition-all duration-300 border-0 bg-gradient-to-br from-background to-muted/30">
+                    <CardHeader>
+                      <CardTitle className="text-2xl">{dept.name}</CardTitle>
+                      <CardDescription className="text-base">{dept.description}</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      {hod && (
+                        <div className="mb-6 p-4 bg-gradient-to-br from-primary/5 to-accent/5 rounded-lg">
+                          <div className="flex items-start gap-4">
+                            {hod.image_url && (
+                              <img 
+                                src={hod.image_url} 
+                                alt={hod.name}
+                                className="w-20 h-20 rounded-full object-cover ring-2 ring-primary/20"
+                              />
+                            )}
+                            <div className="flex-1">
+                              <div className="text-xs font-semibold text-primary uppercase mb-1">{hod.position}</div>
+                              <div className="font-bold text-lg mb-1">{hod.name}</div>
+                              {hod.bio && <p className="text-sm text-muted-foreground">{hod.bio}</p>}
+                            </div>
                           </div>
-                          <p className="text-sm font-medium">{staff.name}</p>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Business & Technology Department */}
-              <Card className="shadow-soft border-0 overflow-hidden">
-                <div className="h-2 bg-gradient-to-r from-primary to-accent"></div>
-                <CardContent className="pt-6">
-                  <h3 className="text-2xl font-bold mb-6 text-primary">Business & Technology</h3>
-                  
-                  {/* HOD Section */}
-                  <div className="mb-8 pb-6 border-b">
-                    <p className="text-sm font-semibold text-muted-foreground mb-4">HEAD OF DEPARTMENT</p>
-                    <div className="flex items-center gap-6">
-                      <div className="relative w-32 h-32 rounded-full overflow-hidden flex-shrink-0 ring-4 ring-primary/20">
-                        <img 
-                          src="https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=200&h=200&fit=crop" 
-                          alt="HOD Business & Technology"
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                      <div>
-                        <h4 className="text-xl font-bold mb-1">Mr. Robert Kimani</h4>
-                        <p className="text-muted-foreground">Head of Department - Business & Technology</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Department Staff */}
-                  <div>
-                    <p className="text-sm font-semibold text-muted-foreground mb-4">DEPARTMENT STAFF</p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {[
-                        { name: "Ms. Christine Mutua", image: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop" },
-                        { name: "Mr. Daniel Kiptoo", image: "https://images.unsplash.com/photo-1506277886164-e25aa3f4ef7f?w=200&h=200&fit=crop" },
-                        { name: "Ms. Ann Wangari", image: "https://images.unsplash.com/photo-1489424731084-a5d8b219a5bb?w=200&h=200&fit=crop" },
-                        { name: "Mr. Eric Otieno", image: "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=200&h=200&fit=crop" }
-                      ].map((staff, index) => (
-                        <div key={index} className="text-center">
-                          <div className="relative w-24 h-24 mx-auto mb-2 rounded-full overflow-hidden ring-2 ring-accent/20">
-                            <img 
-                              src={staff.image} 
-                              alt={staff.name}
-                              className="w-full h-full object-cover"
-                            />
+                      )}
+                      
+                      {otherStaff && otherStaff.length > 0 && (
+                        <div>
+                          <h4 className="text-sm font-semibold text-muted-foreground uppercase mb-3">Department Staff</h4>
+                          <div className="grid grid-cols-2 gap-3">
+                            {otherStaff.map((staff: any) => (
+                              <div key={staff.id} className="flex items-center gap-2">
+                                {staff.image_url && (
+                                  <img 
+                                    src={staff.image_url} 
+                                    alt={staff.name}
+                                    className="w-10 h-10 rounded-full object-cover"
+                                  />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium truncate">{staff.name}</div>
+                                  <div className="text-xs text-muted-foreground truncate">{staff.position}</div>
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                          <p className="text-sm font-medium">{staff.name}</p>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                      )}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </section>
         </div>
