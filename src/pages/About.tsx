@@ -1,0 +1,651 @@
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Target, Heart, Trophy, Users, Star, School, MapPin, GraduationCap, BookOpen, Award, TrendingUp, Phone, Building2, Utensils, Home, FlaskConical, BookMarked, Church } from "lucide-react";
+import victorImage from "@/assets/victor-rotich.jpg";
+import heroImage from "@/assets/hero-school.jpg";
+import principalImage from "@/assets/principal.jpg";
+import EnhancedFooter from "@/components/EnhancedFooter";
+
+const About = () => {
+  const values = [
+    { icon: Target, title: "Excellence", description: "We encourage every student to do their best" },
+    { icon: Heart, title: "Respect", description: "We treat everyone with kindness and dignity" },
+    { icon: Trophy, title: "Growth", description: "We celebrate progress and resilience" },
+    { icon: Users, title: "Community", description: "We build strong relationships and teamwork" }
+  ];
+
+  return (
+    <div className="min-h-screen">
+      {/* Hero Section */}
+      <section className="relative min-h-[600px] flex items-center justify-center overflow-hidden">
+        <div 
+          className="absolute inset-0 bg-cover bg-center transition-transform duration-[10000ms] ease-out hover:scale-105"
+          style={{ backgroundImage: `url(${heroImage})` }}
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-primary/90 to-accent/80" />
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(255,255,255,0.1),transparent_70%)]" />
+        </div>
+        
+        <div className="container relative z-10 px-4 py-20 text-center text-white">
+          {/* Enrollment Badge */}
+          <div className="relative inline-flex items-center gap-3 px-8 py-4 rounded-full bg-white/25 backdrop-blur-md border-2 border-white/50 mb-6 shadow-glow hover:scale-105 transition-all duration-300 animate-pulse-glow">
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-white/30 via-white/10 to-white/30 animate-gradient" />
+            <div className="absolute inset-0 rounded-full bg-white/20 blur-xl animate-pulse" />
+            
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full animate-ping opacity-75" />
+            <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-white rounded-full animate-ping opacity-50" style={{ animationDelay: '0.5s' }} />
+            
+            <div className="relative flex items-center gap-3 z-10">
+              <div className="h-4 w-4 rounded-full bg-white animate-pulse shadow-premium relative">
+                <div className="absolute inset-0 rounded-full bg-white animate-ping" />
+              </div>
+              <span className="text-lg font-black tracking-wider text-white drop-shadow-lg">
+                🎓 NOW ENROLLING 2026 🎓
+              </span>
+              <div className="h-4 w-4 rounded-full bg-white animate-pulse shadow-premium relative">
+                <div className="absolute inset-0 rounded-full bg-white animate-ping" />
+              </div>
+            </div>
+          </div>
+
+          <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 animate-fade-in-up leading-tight">
+            Elma School, Kamonong
+          </h1>
+          
+          <p className="text-lg md:text-2xl mb-4 opacity-95 animate-fade-in-up leading-relaxed font-semibold">
+            Knowledge and wisdom builds character
+          </p>
+          
+          <div className="flex flex-col items-center gap-3 text-lg opacity-90 mb-8">
+            <p className="flex items-center gap-2">
+              <MapPin className="h-5 w-5" />
+              Rongai sub-county, Nakuru county
+            </p>
+            <p className="flex items-center gap-2">
+              <Phone className="h-5 w-5" />
+              +254715748735
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <div className="py-16">
+        <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto">
+          
+            <div className="grid md:grid-cols-2 gap-6 mb-12">
+            <Card className="shadow-soft border-0 overflow-hidden">
+              <div className="h-2 bg-gradient-to-r from-primary to-accent"></div>
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
+                    <School className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-xl mb-2">Christian-Based Education</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      A Christ-centered quality education that nurtures both academic excellence and spiritual growth in a warm, welcoming environment.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-soft border-0 overflow-hidden">
+              <div className="h-2 bg-gradient-to-r from-accent to-primary"></div>
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center flex-shrink-0">
+                    <MapPin className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-xl mb-2">Serene Location</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      Located in Rongai sub-county, Nakuru county, along Nakuru-Eldama Ravine highway at the foot of the sprawling Kiplombe Hills, offering a peaceful learning environment.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-soft border-0 overflow-hidden">
+              <div className="h-2 bg-gradient-to-r from-primary to-accent"></div>
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center flex-shrink-0">
+                    <Users className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-xl mb-2">EBCCK Integration</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      Serves Children's Centre students after 8th grade, creating a seamless educational pathway within the EBCCK campus.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-soft border-0 overflow-hidden">
+              <div className="h-2 bg-gradient-to-r from-accent to-primary"></div>
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center flex-shrink-0">
+                    <GraduationCap className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-xl mb-2">Boarding Program</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      Accepts tuition-paying boarding students from across Kenya who value quality, Christ-centered education.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold mb-8 text-center bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Our Journey
+            </h2>
+            
+            <div className="space-y-6">
+              <Card className="shadow-soft border-0 overflow-hidden">
+                <div className="h-1 bg-gradient-to-r from-primary to-accent"></div>
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-4">
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
+                      <BookOpen className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-xl mb-3 text-primary">The Beginning (2014)</h3>
+                      <p className="text-base leading-relaxed text-muted-foreground">
+                        Elma Kamonong High School opened its doors in January 2014, with administrative offices and a single classroom for twenty form I (freshmen) students. The vision behind the project was two-fold: to accommodate the EBCC students who were graduating from 8th grade and to take the first steps towards a self-sufficient model of operation that would benefit the entire EBCCK campus.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-soft border-0 overflow-hidden">
+                <div className="h-1 bg-gradient-to-r from-accent to-primary"></div>
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-4">
+                    <div className="h-12 w-12 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 mt-1">
+                      <Award className="h-6 w-6 text-accent" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-xl mb-3 text-accent">Growth & First Graduates (2014-2017)</h3>
+                      <p className="text-base leading-relaxed text-muted-foreground">
+                        Each year, construction continued on campus resulting in a graduating form IV class in November 2017. The first principal was Mr. Richard Keter, who stepped out of retirement to offer his experience to the new school. He guided the institution through the early years, equipping the school, hiring teachers and staff, and recruiting students.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-soft border-0 overflow-hidden">
+                <div className="h-1 bg-gradient-to-r from-primary to-accent"></div>
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-4">
+                    <div className="h-12 w-12 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
+                      <Users className="h-6 w-6 text-primary" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-xl mb-3 text-primary">New Leadership (2019)</h3>
+                      <p className="text-base leading-relaxed text-muted-foreground">
+                        Having met this objective, Mr. Keter returned to enjoy his doubly-deserved retirement. In 2019, the EBCCK Board of Directors hired Mr. Opiyo Ouma Henry, a former EBCCK student, as the new principal. Almost his first task was to deal with the impact of COVID-19 on the school! We are delighted to have Principal Ouma back home at EBCCK/EKHS.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="shadow-soft border-0 overflow-hidden">
+                <div className="h-1 bg-gradient-to-r from-accent to-primary"></div>
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-4">
+                    <div className="h-12 w-12 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0 mt-1">
+                      <TrendingUp className="h-6 w-6 text-accent" />
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-xl mb-3 text-accent">Building Excellence (Present)</h3>
+                      <p className="text-base leading-relaxed text-muted-foreground mb-3">
+                        The long-term goal is to create a high school providing the best education possible—one that attracts boarding students from all over Kenya, paying fees that will help make EKHS and EBCCK self-sufficient. Our donors have enabled us to create a high school campus that meets and exceeds all requirements of Kenyan law.
+                      </p>
+                      <p className="text-base leading-relaxed text-muted-foreground">
+                        The gated compound is kept separate from the EBCC portion of the campus and includes dormitories for students, a dining hall and kitchen, general classroom buildings, and a science center. EKHS provides housing for teaching staff to attract and retain the best teachers. In 2021, we opened a new Library & Computer Centre to enhance the ability to teach computer and internet skills.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          <div className="mb-12">
+            <h2 className="text-3xl font-bold mb-6 text-center">Our Core Values</h2>
+            <div className="grid md:grid-cols-2 gap-6">
+              {values.map((value, index) => {
+                const Icon = value.icon;
+                return (
+                  <Card key={index} className="shadow-soft hover:shadow-hover transition-smooth border-0">
+                    <CardHeader>
+                      <div className="flex items-center gap-4">
+                        <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white">
+                          <Icon className="h-6 w-6" />
+                        </div>
+                        <CardTitle className="text-xl">{value.title}</CardTitle>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <CardDescription className="text-base">{value.description}</CardDescription>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+
+          <Card className="bg-gradient-to-br from-primary/5 to-accent/5 border-0 shadow-soft overflow-hidden">
+            <CardHeader>
+              <CardTitle className="text-2xl md:text-3xl text-center">Message from Our Principal</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
+                <div className="flex-shrink-0">
+                  <div className="relative w-48 h-48 md:w-56 md:h-56 rounded-2xl overflow-hidden shadow-hover ring-4 ring-primary/10">
+                    <img 
+                      src={principalImage} 
+                      alt="Principal Opiyo Ouma Henry" 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <div className="mt-4 text-center">
+                    <p className="font-bold text-lg">Opiyo Ouma Henry</p>
+                    <p className="text-muted-foreground">School Principal</p>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <p className="text-lg leading-relaxed italic mb-4">
+                    "At Elma Kamonong High School, we see education as more than textbooks and tests. It's about building character, discovering talents, and preparing for a bright future. We're proud to walk alongside each student and their family on this journey."
+                  </p>
+                  <p className="text-lg leading-relaxed italic mb-4">
+                    "Our commitment is to provide a Christ-centered learning environment where every student can thrive academically, spiritually, and socially. Together with our dedicated teachers and staff, we are building a community of excellence."
+                  </p>
+                  <p className="font-semibold text-lg">— Principal Opiyo Ouma Henry</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="mt-12 text-center">
+            <h2 className="text-3xl font-bold mb-6">Why Families Trust Us</h2>
+            <div className="grid md:grid-cols-3 gap-6 text-left">
+              <Card className="border-0 shadow-soft">
+                <CardContent className="pt-6">
+                  <h3 className="font-semibold text-lg mb-2">✓ Experienced Teachers</h3>
+                  <p className="text-muted-foreground">Caring professionals who understand each student's needs</p>
+                </CardContent>
+              </Card>
+              <Card className="border-0 shadow-soft">
+                <CardContent className="pt-6">
+                  <h3 className="font-semibold text-lg mb-2">✓ Safe Environment</h3>
+                  <p className="text-muted-foreground">A welcoming campus where students feel secure and respected</p>
+                </CardContent>
+              </Card>
+              <Card className="border-0 shadow-soft">
+                <CardContent className="pt-6">
+                  <h3 className="font-semibold text-lg mb-2">✓ Parent Partnership</h3>
+                  <p className="text-muted-foreground">Open communication and regular updates on student progress</p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          <div className="mt-12">
+            <h2 className="text-3xl font-bold mb-6 text-center">What Parents Are Saying</h2>
+            <div className="space-y-6">
+              <Card className="border-0 shadow-soft">
+                <CardContent className="pt-6">
+                  <div className="flex gap-1 mb-3">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-5 w-5 fill-primary text-primary" />
+                    ))}
+                  </div>
+                  <p className="text-lg leading-relaxed mb-4 italic">
+                    "The Christian values and academic excellence at EKHS have transformed our daughter's life. The teachers genuinely care about each student's growth."
+                  </p>
+                  <p className="font-semibold">— Grade 10 Class Representative</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-soft">
+                <CardContent className="pt-6">
+                  <div className="flex gap-1 mb-3">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-5 w-5 fill-primary text-primary" />
+                    ))}
+                  </div>
+                  <p className="text-lg leading-relaxed mb-4 italic">
+                    "We chose EKHS for the boarding program and haven't looked back. The location is peaceful, and Principal Opiyo leads with wisdom and compassion."
+                  </p>
+                  <p className="font-semibold">— Form 3 Class Representative</p>
+                </CardContent>
+              </Card>
+
+              <Card className="border-0 shadow-soft">
+                <CardContent className="pt-6">
+                  <div className="flex gap-1 mb-3">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-5 w-5 fill-primary text-primary" />
+                    ))}
+                  </div>
+                  <p className="text-lg leading-relaxed mb-4 italic">
+                    "A school that truly partners with families. The CBC curriculum is implemented thoughtfully, and our son has grown in confidence and character."
+                  </p>
+                  <p className="font-semibold">— Form 4 Class Representative</p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          <div className="mt-12">
+            <h2 className="text-3xl font-bold mb-6 text-center">Vision & Mission</h2>
+            <div className="grid md:grid-cols-2 gap-6">
+              <Card className="bg-gradient-to-br from-primary/5 to-accent/5 border-0 shadow-soft">
+                <CardHeader>
+                  <CardTitle className="text-2xl">Our Vision</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-lg leading-relaxed">
+                    To be a christ-centered institution that inspires learners to achieve academic excellence grow in faith & impact the world as servant leaders guided by biblical values
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-accent/5 to-primary/5 border-0 shadow-soft">
+                <CardHeader>
+                  <CardTitle className="text-2xl">Our Mission</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-lg leading-relaxed">
+                    To nurture & equip learners academically, spiritually & socially through christ-centered education empowering them to grow in knowledge, faith & character so they can serve God & humanity with excellence
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Facilities and Amenities Section */}
+          <div className="mt-12">
+            <h2 className="text-3xl font-bold mb-8 text-center bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              Our Facilities & Amenities
+            </h2>
+            <p className="text-center text-muted-foreground mb-8 max-w-2xl mx-auto">
+              State-of-the-art facilities designed to provide the best learning environment for our students
+            </p>
+            
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[
+                {
+                  icon: Building2,
+                  title: "Modern Classrooms",
+                  description: "Spacious, well-ventilated classrooms equipped with modern teaching aids and comfortable furniture",
+                  image: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=600&h=400&fit=crop"
+                },
+                {
+                  icon: FlaskConical,
+                  title: "Science Laboratory",
+                  description: "Fully equipped science center for practical experiments in Physics, Chemistry, and Biology",
+                  image: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=600&h=400&fit=crop"
+                },
+                {
+                  icon: BookMarked,
+                  title: "Library & Computer Centre",
+                  description: "Extensive collection of books and digital resources with high-speed internet connectivity",
+                  image: "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=600&h=400&fit=crop"
+                },
+                {
+                  icon: Home,
+                  title: "Boarding Facilities",
+                  description: "Comfortable dormitories with adequate bedding and secure storage for students' belongings",
+                  image: "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600&h=400&fit=crop"
+                },
+                {
+                  icon: Utensils,
+                  title: "Dining Hall & Kitchen",
+                  description: "Spacious dining facility serving nutritious, balanced meals prepared in our modern kitchen",
+                  image: "https://images.unsplash.com/photo-1567521464027-f127ff144326?w=600&h=400&fit=crop"
+                },
+                {
+                  icon: Church,
+                  title: "Chapel",
+                  description: "Dedicated space for worship, reflection, and spiritual growth activities",
+                  image: "https://images.unsplash.com/photo-1438032005730-c779502df39b?w=600&h=400&fit=crop"
+                },
+                {
+                  icon: Trophy,
+                  title: "Sports Facilities",
+                  description: "Well-maintained fields and courts for football, volleyball, basketball, and athletics",
+                  image: "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=600&h=400&fit=crop"
+                },
+                {
+                  icon: Users,
+                  title: "Staff Housing",
+                  description: "On-campus accommodation for teaching staff to ensure dedicated support for students",
+                  image: "https://images.unsplash.com/photo-1560184897-ae75f418493e?w=600&h=400&fit=crop"
+                },
+                {
+                  icon: School,
+                  title: "Administration Block",
+                  description: "Modern offices for school administration, counseling, and parent-teacher meetings",
+                  image: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&h=400&fit=crop"
+                }
+              ].map((facility, index) => {
+                const Icon = facility.icon;
+                return (
+                  <Card key={index} className="group shadow-soft border-0 overflow-hidden hover:shadow-premium transition-all duration-300 hover:scale-105">
+                    {/* Facility Image */}
+                    <div className="relative h-48 overflow-hidden">
+                      <img 
+                        src={facility.image} 
+                        alt={facility.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/40 to-transparent" />
+                      <div className="absolute bottom-4 left-4">
+                        <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                          <Icon className="h-6 w-6 text-white" />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <CardContent className="pt-4">
+                      <h3 className="font-bold text-lg mb-2">{facility.title}</h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {facility.description}
+                      </p>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Academic Excellence Section */}
+          <div className="mt-12 relative">
+            {/* Decorative Background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-primary/5 rounded-3xl -z-10" />
+            
+            <div className="relative z-10 py-12 px-6">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent animate-gradient">
+                  Academic Excellence
+                </h2>
+                <div className="h-1 w-32 bg-gradient-to-r from-primary to-accent mx-auto rounded-full mb-6" />
+                <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+                  Celebrating outstanding academic performance and dedication to excellence
+                </p>
+              </div>
+              
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[
+                  { year: "2024", student: "Grace Muthoni", course: "Bachelor of Medicine and Surgery, Kenyatta University", meanGrade: "A- 10.5", image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=400&h=400&fit=crop" },
+                  { year: "2023", student: "Jane Wanjiku", course: "Bachelor of Medicine and Surgery, University of Nairobi", meanGrade: "A- 10.2", image: "https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?w=400&h=400&fit=crop" },
+                  { year: "2022", student: "Victor Rotich", course: "Bachelor of Education Science, University of Kabianga", meanGrade: "A- 10.8", image: victorImage },
+                  { year: "2021", student: "Mary Akinyi", course: "Bachelor of Law, Moi University", meanGrade: "A 11.2", image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400&h=400&fit=crop" },
+                  { year: "2020", student: "Peter Omondi", course: "Bachelor of Commerce, Strathmore University", meanGrade: "A- 10.4", image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400&h=400&fit=crop" },
+                  { year: "2019", student: "Sarah Njeri", course: "Bachelor of Education, Egerton University", meanGrade: "A- 10.1", image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=400&h=400&fit=crop" },
+                  { year: "2018", student: "John Kamau", course: "Bachelor of Computer Science, Technical University of Kenya", meanGrade: "A- 10.6", image: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop" },
+                  { year: "2017", student: "Faith Chebet", course: "Bachelor of Pharmacy, University of Nairobi", meanGrade: "A 11.0", image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop" }
+                ].map((result, index) => (
+                  <Card key={index} className="group shadow-soft border-0 hover:shadow-premium transition-all duration-300 bg-card overflow-hidden hover:scale-105">
+                    {/* Student Image with Overlay */}
+                    <div className="relative h-48 overflow-hidden">
+                      <img 
+                        src={result.image} 
+                        alt={result.student}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/50 to-transparent" />
+                      <div className="absolute bottom-4 left-4 right-4">
+                        <div className="flex items-center justify-between">
+                          <span className="text-2xl font-bold text-primary bg-background/80 backdrop-blur px-3 py-1 rounded-full">
+                            {result.year}
+                          </span>
+                          <Award className="h-8 w-8 text-primary animate-pulse" />
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <CardContent className="pt-4">
+                      <div className="space-y-3">
+                        {/* Mean Grade Badge */}
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-primary/20 to-accent/20 border border-primary/30">
+                          <Trophy className="h-4 w-4 text-primary" />
+                          <span className="text-sm font-bold text-primary">Mean Grade: {result.meanGrade}</span>
+                        </div>
+                        
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Top Student</p>
+                          <p className="font-bold text-lg text-foreground">{result.student}</p>
+                        </div>
+                        
+                        <div>
+                          <p className="text-xs text-muted-foreground mb-1">Course Pursued</p>
+                          <p className="text-sm leading-relaxed text-muted-foreground">{result.course}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Notable Alumni Section */}
+          <div className="mt-16 relative">
+            {/* Decorative Background */}
+            <div className="absolute inset-0 bg-gradient-to-br from-accent/5 via-primary/5 to-accent/5 rounded-3xl -z-10" />
+            
+            <div className="relative z-10 py-12 px-6">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-accent via-primary to-accent bg-clip-text text-transparent animate-gradient">
+                  Notable Alumni
+                </h2>
+                <div className="h-1 w-32 bg-gradient-to-r from-accent to-primary mx-auto rounded-full mb-6" />
+                <p className="text-lg text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+                  Our graduates are making a difference in their communities and beyond
+                </p>
+              </div>
+              
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {[
+                  {
+                    name: "Dr. Grace Muthoni",
+                    year: "Class of 2024",
+                    achievement: "Medical Doctor at Kenyatta National Hospital",
+                    description: "Leading innovative research in tropical diseases while serving her community with compassion.",
+                    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=500&h=500&fit=crop"
+                  },
+                  {
+                    name: "Eng. David Kiprop",
+                    year: "Class of 2022",
+                    achievement: "Civil Engineer at Kenya National Highways Authority",
+                    description: "Contributing to Kenya's infrastructure development through sustainable engineering solutions.",
+                    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&h=500&fit=crop"
+                  },
+                  {
+                    name: "Adv. Mary Akinyi",
+                    year: "Class of 2021",
+                    achievement: "Human Rights Lawyer",
+                    description: "Advocating for justice and equality, championing the rights of marginalized communities.",
+                    image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=500&h=500&fit=crop"
+                  },
+                  {
+                    name: "Peter Omondi",
+                    year: "Class of 2020",
+                    achievement: "Senior Financial Analyst at Safaricom PLC",
+                    description: "Driving financial innovation and strategic growth in Kenya's leading telecommunications company.",
+                    image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&h=500&fit=crop"
+                  },
+                  {
+                    name: "Prof. Sarah Njeri",
+                    year: "Class of 2019",
+                    achievement: "Education Lecturer at Egerton University",
+                    description: "Shaping the next generation of educators through innovative teaching methodologies.",
+                    image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=500&h=500&fit=crop"
+                  },
+                  {
+                    name: "Dr. Faith Chebet",
+                    year: "Class of 2017",
+                    achievement: "Clinical Pharmacist at Aga Khan Hospital",
+                    description: "Ensuring optimal patient care through pharmaceutical expertise and compassionate service.",
+                    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=500&h=500&fit=crop"
+                  }
+                ].map((alumni, index) => (
+                  <Card key={index} className="group shadow-soft border-0 hover:shadow-premium transition-all duration-300 bg-card overflow-hidden hover:scale-105">
+                    {/* Alumni Image with Gradient Overlay */}
+                    <div className="relative h-64 overflow-hidden">
+                      <img 
+                        src={alumni.image} 
+                        alt={alumni.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
+                      
+                      {/* Floating Badge */}
+                      <div className="absolute top-4 right-4">
+                        <div className="bg-background/90 backdrop-blur px-3 py-1 rounded-full border border-accent/30">
+                          <span className="text-xs font-semibold text-accent">{alumni.year}</span>
+                        </div>
+                      </div>
+                      
+                      {/* Name Overlay */}
+                      <div className="absolute bottom-4 left-4 right-4">
+                        <h3 className="text-xl font-bold text-foreground mb-1">{alumni.name}</h3>
+                        <div className="flex items-center gap-2">
+                          <GraduationCap className="h-4 w-4 text-accent" />
+                          <p className="text-sm font-semibold text-accent">{alumni.achievement}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <CardContent className="pt-4">
+                      <p className="text-sm text-muted-foreground leading-relaxed">
+                        {alumni.description}
+                      </p>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+      <EnhancedFooter />
+    </div>
+  );
+};
+
+export default About;
