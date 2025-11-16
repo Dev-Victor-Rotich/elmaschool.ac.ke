@@ -4,8 +4,22 @@ import { CheckCircle, FileText, Calendar, Users, Phone, Mail, MapPin, Download, 
 import { Link } from "react-router-dom";
 import heroImage from "@/assets/hero-school.jpg";
 import EnhancedFooter from "@/components/EnhancedFooter";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const Admissions = () => {
+  const { data: requiredDocuments } = useQuery({
+    queryKey: ["required-documents"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("required_documents")
+        .select("*")
+        .order("display_order", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const admissionLetters = [
     {
       category: "Form 3 Boys",
@@ -80,15 +94,6 @@ const Admissions = () => {
     }
   ];
 
-  const requirements = [
-    "Completed application form",
-    "Birth certificate copy",
-    "KCPE certificate or latest school report",
-    "Passport-size photographs (2 copies)",
-    "Transfer letter from previous school (if applicable)",
-    "Medical report",
-    "Baptism certificate (optional)"
-  ];
 
   return (
     <div className="min-h-screen">
@@ -264,10 +269,15 @@ const Admissions = () => {
             <Card className="border-0 shadow-soft">
               <CardContent className="pt-6">
                 <ul className="space-y-3">
-                  {requirements.map((requirement, index) => (
-                    <li key={index} className="flex items-start gap-3">
+                  {requiredDocuments?.map((doc) => (
+                    <li key={doc.id} className="flex items-start gap-3">
                       <CheckCircle className="h-6 w-6 text-primary flex-shrink-0 mt-0.5" />
-                      <span className="text-lg">{requirement}</span>
+                      <div>
+                        <span className="text-lg font-medium">{doc.document_name}</span>
+                        {doc.description && (
+                          <p className="text-sm text-muted-foreground mt-1">{doc.description}</p>
+                        )}
+                      </div>
                     </li>
                   ))}
                 </ul>

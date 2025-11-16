@@ -4,16 +4,51 @@ import EnhancedFooter from "@/components/EnhancedFooter";
 import heroImage from "@/assets/hero-school.jpg";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import * as Icons from "lucide-react";
 
 const Programs = () => {
-  const subjects = [
-    { icon: BookOpen, title: "Languages", description: "English, Kiswahili, and language arts" },
-    { icon: Calculator, title: "Mathematics", description: "Problem-solving and logical thinking" },
-    { icon: Beaker, title: "Sciences", description: "Biology, Chemistry, Physics, and practical experiments" },
-    { icon: Globe, title: "Social Studies", description: "History, Geography, Citizenship, and current affairs" },
-    { icon: Palette, title: "Creative Arts", description: "Visual arts, drama, and design" },
-    { icon: Music, title: "Performing Arts", description: "Music, dance, and public speaking" }
-  ];
+  const { data: subjects } = useQuery({
+    queryKey: ["subjects"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("subjects")
+        .select("*")
+        .order("display_order", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: departments } = useQuery({
+    queryKey: ["departments"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("departments")
+        .select("*")
+        .order("display_order", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: beyondClassroom } = useQuery({
+    queryKey: ["beyond-classroom"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("beyond_classroom")
+        .select("*")
+        .order("display_order", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const getIcon = (iconName: string) => {
+    const Icon = (Icons as any)[iconName];
+    return Icon || BookOpen;
+  };
 
   const activities = [
     { icon: Trophy, title: "Sports & Athletics", items: ["Football", "Volleyball", "Track & Field", "Basketball"] },
@@ -388,10 +423,10 @@ const Programs = () => {
           <section className="mb-16">
             <h2 className="text-3xl font-bold mb-8 text-center">Our Subjects</h2>
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {subjects.map((subject, index) => {
-                const Icon = subject.icon;
+              {subjects?.map((subject) => {
+                const Icon = getIcon(subject.icon_name);
                 return (
-                  <Card key={index} className="shadow-soft hover:shadow-hover transition-smooth border-0">
+                  <Card key={subject.id} className="shadow-soft hover:shadow-hover transition-all duration-300 border-0">
                     <CardHeader>
                       <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white mb-3">
                         <Icon className="h-7 w-7" />

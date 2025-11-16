@@ -18,8 +18,22 @@ import {
 import EnhancedFooter from "@/components/EnhancedFooter";
 import Hero from "@/components/Hero";
 import heroImage from "@/assets/hero-school.jpg";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 const Contact = () => {
+  const { data: contactInfo } = useQuery({
+    queryKey: ["contact-info"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("contact_info")
+        .select("*")
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const helpReasons = [
     {
       icon: GraduationCap,
@@ -59,38 +73,38 @@ const Contact = () => {
     },
   ];
 
-  const contactInfo = [
+  const contactInfoItems = contactInfo ? [
     {
       icon: Phone,
       title: "Phone",
-      details: ["+254 715 748 735"],
-      action: "tel:+254715748735",
+      details: [contactInfo.phone],
+      action: `tel:${contactInfo.phone}`,
     },
     {
       icon: Mail,
       title: "Email",
-      details: ["info@elmakamonong.ac.ke", "admissions@elmakamonong.ac.ke"],
-      action: "mailto:info@elmakamonong.ac.ke",
+      details: [contactInfo.email],
+      action: `mailto:${contactInfo.email}`,
     },
     {
       icon: MapPin,
       title: "Location",
-      details: ["Rongai Sub-County", "Nakuru County, Kenya"],
+      details: contactInfo.address.split(',').map((s: string) => s.trim()),
       action: "https://maps.google.com",
     },
     {
       icon: Clock,
       title: "Office Hours",
-      details: ["Monday - Friday: 8:00 AM - 5:00 PM", "Saturday: 9:00 AM - 1:00 PM"],
+      details: contactInfo.office_hours ? contactInfo.office_hours.split(',').map((s: string) => s.trim()) : [],
       action: null,
     },
-  ];
+  ] : [];
 
-  const socialMedia = [
-    { icon: Facebook, label: "Facebook", url: "https://facebook.com" },
-    { icon: Twitter, label: "Twitter", url: "https://twitter.com" },
-    { icon: Instagram, label: "Instagram", url: "https://instagram.com" },
-  ];
+  const socialMedia = contactInfo?.social_media ? [
+    { icon: Facebook, label: "Facebook", url: (contactInfo.social_media as any).facebook || "#" },
+    { icon: Twitter, label: "Twitter", url: (contactInfo.social_media as any).twitter || "#" },
+    { icon: Instagram, label: "Instagram", url: (contactInfo.social_media as any).instagram || "#" },
+  ] : [];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/5">
@@ -155,7 +169,7 @@ const Contact = () => {
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">
-              {contactInfo.map((info, index) => {
+              {contactInfoItems.map((info, index) => {
                 const Icon = info.icon;
                 return (
                   <Card
