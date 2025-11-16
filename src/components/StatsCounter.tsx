@@ -62,6 +62,7 @@ const StatsCounter = () => {
         {count}{suffix}
       </span>
     );
+  };
 
   if (!stats?.length) return null;
 
