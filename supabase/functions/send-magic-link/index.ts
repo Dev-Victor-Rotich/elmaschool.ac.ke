@@ -42,16 +42,45 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const userExists = users.some(user => user.email === email);
+    const allowedEmail = Deno.env.get("SUPERADMIN_EMAIL") || "chelelgorotichvictor2604@gmail.com";
+    let targetUser = users.find(user => user.email === email);
 
-    if (!userExists) {
-      console.log("Email not registered:", email);
-      return new Response(
-        JSON.stringify({ 
-          error: "This email is not registered. Contact your administrator." 
-        }),
-        { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
+    if (!targetUser) {
+      if (email === allowedEmail) {
+        console.log("Super admin email not found. Auto-provisioning:", email);
+        const { data: created, error: createErr } = await supabase.auth.admin.createUser({
+          email,
+          email_confirm: true,
+        });
+
+        if (createErr || !created?.user) {
+          console.error("Error creating super admin user:", createErr);
+          return new Response(
+            JSON.stringify({ error: "Failed to create super admin user" }),
+            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+
+        targetUser = created.user;
+
+        // Ensure the super_admin role exists for this user
+        const { error: roleErr } = await supabase
+          .from("user_roles")
+          .insert({ user_id: targetUser.id, role: "super_admin" });
+
+        if (roleErr) {
+          // Ignore duplicate errors; log others
+          console.warn("Role assignment issue (may be duplicate):", roleErr);
+        }
+      } else {
+        console.log("Email not registered:", email);
+        return new Response(
+          JSON.stringify({ 
+            error: "This email is not registered. Contact your administrator." 
+          }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
     }
 
     console.log("Generating magic link for:", email);
