@@ -15,6 +15,7 @@ import Admissions from "./pages/Admissions";
 import NotFound from "./pages/NotFound";
 import MagicLinkLogin from "./pages/MagicLinkLogin";
 import AuthCallback from "./pages/AuthCallback";
+import SetupSuperAdmin from "./pages/SetupSuperAdmin";
 import SuperAdminDashboard from "./pages/SuperAdminDashboard";
 import BursarDashboard from "./pages/BursarDashboard";
 import StudentDashboard from "./pages/StudentDashboard";
@@ -56,6 +57,7 @@ const App = () => (
           <Route path="/login" element={<MagicLinkLogin />} />
           <Route path="/auth" element={<MagicLinkLogin />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/setup" element={<SetupSuperAdmin />} />
           <Route path="/dashboard/superadmin" element={<SuperAdminDashboard />} />
           <Route path="/dashboard/bursar" element={<BursarDashboard />} />
           <Route path="/dashboard/student" element={<StudentDashboard />} />
