@@ -46,6 +46,40 @@ const Home = () => {
     },
   });
 
+  // Fetch current duty roster based on today's date
+  const { data: currentDutyRoster } = useQuery({
+    queryKey: ["current-duty-roster"],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const { data, error } = await supabase
+        .from("duty_rosters")
+        .select("*")
+        .lte("start_date", today)
+        .gte("end_date", today)
+        .single();
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    },
+  });
+
+  // Fetch current school occasion based on today's date
+  const { data: currentOccasion } = useQuery({
+    queryKey: ["current-occasion"],
+    queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const { data, error } = await supabase
+        .from("school_occasions")
+        .select("*")
+        .lte("start_date", today)
+        .gte("end_date", today)
+        .order("display_order", { ascending: true })
+        .limit(1)
+        .single();
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    },
+  });
+
   const { data: faqs = [] } = useQuery({
     queryKey: ["faqs"],
     queryFn: async () => {
@@ -58,10 +92,9 @@ const Home = () => {
     },
   });
 
-  const quote = {
-    text: "Education is the most powerful weapon which you can use to change the world.",
-    author: "Nelson Mandela"
-  };
+  // Determine if school is in session (has active duty roster) or if there's a special occasion
+  const isSchoolInSession = !!currentDutyRoster;
+  const hasSpecialOccasion = !!currentOccasion;
 
   return (
     <div className="min-h-screen">
@@ -70,58 +103,81 @@ const Home = () => {
       {/* Trust Badges */}
       <TrustBadges />
 
-      {/* Daily Quote Section */}
+      {/* Dynamic Section - Occasion Message or Duty Roster */}
       <section className="py-16 bg-gradient-to-br from-primary/10 to-accent/10">
         <div className="container mx-auto px-4">
           <Card className="max-w-3xl mx-auto border-0 shadow-hover gradient-card">
             <CardContent className="pt-6 space-y-6">
-              {/* Week Info */}
-              <div className="text-center pb-4 border-b border-border">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/10 to-accent/10 mb-2">
-                  <Calendar className="h-4 w-4 text-primary" />
-                  <span className="text-sm font-semibold text-foreground">Week of January 13-19, 2025</span>
+              {hasSpecialOccasion ? (
+                // Display Special Occasion Message
+                <div className="text-center space-y-4">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/10 to-accent/10 mb-2">
+                    <Calendar className="h-4 w-4 text-primary" />
+                    <span className="text-sm font-semibold text-foreground">{currentOccasion.name}</span>
+                  </div>
+                  <div className="text-lg md:text-xl font-medium text-foreground whitespace-pre-line">
+                    {currentOccasion.message}
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {new Date(currentOccasion.start_date).toLocaleDateString()} - {new Date(currentOccasion.end_date).toLocaleDateString()}
+                  </p>
                 </div>
-              </div>
-
-              {/* Quote */}
-              <div>
-                <Quote className="h-8 w-8 text-primary mb-4 mx-auto" />
-                <blockquote className="text-xl md:text-2xl font-medium text-center mb-4">
-                  "{quote.text}"
-                </blockquote>
-                <p className="text-center text-muted-foreground">— {quote.author}</p>
-              </div>
-
-              {/* Teachers on Duty */}
-              <div className="pt-4 border-t border-border">
-                <h3 className="text-center font-bold text-lg mb-4 text-foreground">Teachers on Duty This Week</h3>
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold">
-                      MK
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-foreground">Mr. Kamau Joseph</p>
-                      <a href="tel:+254712345678" className="text-sm text-primary hover:underline flex items-center gap-1">
-                        <Phone className="h-3 w-3" />
-                        +254 712 345 678
-                      </a>
+              ) : isSchoolInSession && currentDutyRoster ? (
+                // Display Duty Roster
+                <>
+                  {/* Week Info */}
+                  <div className="text-center pb-4 border-b border-border">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/10 to-accent/10 mb-2">
+                      <Calendar className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-semibold text-foreground">
+                        Week {currentDutyRoster.week_number} - {new Date(currentDutyRoster.start_date).toLocaleDateString()} to {new Date(currentDutyRoster.end_date).toLocaleDateString()}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-br from-accent to-primary flex items-center justify-center text-white font-bold">
-                      MA
+
+                  {/* Quote */}
+                  <div>
+                    <Quote className="h-8 w-8 text-primary mb-4 mx-auto" />
+                    <blockquote className="text-xl md:text-2xl font-medium text-center mb-4">
+                      "{currentDutyRoster.quote}"
+                    </blockquote>
+                    <p className="text-center text-muted-foreground">— {currentDutyRoster.quote_author}</p>
+                  </div>
+
+                  {/* Welfare Message */}
+                  {currentDutyRoster.welfare_message && (
+                    <div className="text-center text-muted-foreground italic">
+                      {currentDutyRoster.welfare_message}
                     </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-foreground">Mrs. Akinyi Grace</p>
-                      <a href="tel:+254723456789" className="text-sm text-primary hover:underline flex items-center gap-1">
-                        <Phone className="h-3 w-3" />
-                        +254 723 456 789
-                      </a>
+                  )}
+
+                  {/* Teachers on Duty */}
+                  <div className="pt-4 border-t border-border">
+                    <h3 className="text-center font-bold text-lg mb-4 text-foreground">Teachers on Duty This Week</h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      {(currentDutyRoster.teachers_on_duty as any[])?.map((teacher: any, index: number) => (
+                        <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+                          <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-bold">
+                            {teacher.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
+                          </div>
+                          <div className="flex-1">
+                            <p className="font-semibold text-foreground">{teacher.name}</p>
+                            <a href={`tel:${teacher.phone}`} className="text-sm text-primary hover:underline flex items-center gap-1">
+                              <Phone className="h-3 w-3" />
+                              {teacher.phone}
+                            </a>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
+                </>
+              ) : (
+                // Fallback message when no data is available
+                <div className="text-center text-muted-foreground">
+                  <p>School calendar information will be displayed here.</p>
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </div>

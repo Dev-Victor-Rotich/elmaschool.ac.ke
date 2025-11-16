@@ -1192,6 +1192,39 @@ export type Database = {
         }
         Relationships: []
       }
+      school_occasions: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          end_date: string
+          id: string
+          message: string
+          name: string
+          start_date: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          end_date: string
+          id?: string
+          message: string
+          name: string
+          start_date: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          end_date?: string
+          id?: string
+          message?: string
+          name?: string
+          start_date?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       site_stats: {
         Row: {
           created_at: string | null
