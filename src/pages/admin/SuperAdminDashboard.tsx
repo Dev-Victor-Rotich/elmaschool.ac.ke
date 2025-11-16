@@ -16,6 +16,7 @@ import HomeContentManager from "./HomeContentManager";
 import AboutContentManager from "./AboutContentManager";
 import { SubjectsManager } from "@/components/admin/SubjectsManager";
 import { DepartmentsManager } from "@/components/admin/DepartmentsManager";
+import { DepartmentStaffManager } from "@/components/admin/DepartmentStaffManager";
 import { ClubsSocietiesManager } from "@/components/admin/ClubsSocietiesManager";
 import { StudentAmbassadorManager } from "@/components/admin/StudentAmbassadorManager";
 import { ContactInfoManager } from "@/components/admin/ContactInfoManager";
@@ -24,6 +25,7 @@ import { CBCPartnershipImagesManager } from "@/components/admin/CBCPartnershipIm
 import { ActiveStudentsManager } from "@/components/admin/ActiveStudentsManager";
 import { PreviousLeadersManager } from "@/components/admin/PreviousLeadersManager";
 import { LeadershipProgramsManager } from "@/components/admin/LeadershipProgramsManager";
+import { ProgramMembersManager } from "@/components/admin/ProgramMembersManager";
 import { BeyondClassroomManager } from "@/components/admin/BeyondClassroomManager";
 import { Button } from "@/components/ui/button";
 
@@ -147,15 +149,36 @@ const SuperAdminDashboard = () => {
                 </TabsContent>
                 
                 <TabsContent value="departments">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Departments</CardTitle>
-                      <CardDescription>Manage academic departments</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <DepartmentsManager />
-                    </CardContent>
-                  </Card>
+                  <Tabs defaultValue="departments" className="space-y-6">
+                    <TabsList>
+                      <TabsTrigger value="departments">Departments</TabsTrigger>
+                      <TabsTrigger value="staff">Department Staff</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="departments">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Departments</CardTitle>
+                          <CardDescription>Manage academic departments</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <DepartmentsManager />
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+                    
+                    <TabsContent value="staff">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Department Staff</CardTitle>
+                          <CardDescription>Manage HODs and department staff members</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <DepartmentStaffManager />
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+                  </Tabs>
                 </TabsContent>
                 
                 <TabsContent value="beyond">
@@ -190,7 +213,7 @@ const SuperAdminDashboard = () => {
                   <TabsTrigger value="ambassador">Ambassador</TabsTrigger>
                   <TabsTrigger value="clubs">Clubs</TabsTrigger>
                   <TabsTrigger value="leadership">Leadership</TabsTrigger>
-                  <TabsTrigger value="active">Active</TabsTrigger>
+                  <TabsTrigger value="active">Active Stats</TabsTrigger>
                   <TabsTrigger value="previous">Previous</TabsTrigger>
                 </TabsList>
                 
@@ -219,22 +242,43 @@ const SuperAdminDashboard = () => {
                 </TabsContent>
                 
                 <TabsContent value="leadership">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Leadership Programs</CardTitle>
-                      <CardDescription>Manage leadership development programs</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <LeadershipProgramsManager />
-                    </CardContent>
-                  </Card>
+                  <Tabs defaultValue="programs" className="space-y-6">
+                    <TabsList>
+                      <TabsTrigger value="programs">Programs</TabsTrigger>
+                      <TabsTrigger value="members">Council Members</TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="programs">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Leadership Programs</CardTitle>
+                          <CardDescription>Manage leadership development programs</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <LeadershipProgramsManager />
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+                    
+                    <TabsContent value="members">
+                      <Card>
+                        <CardHeader>
+                          <CardTitle>Council Members</CardTitle>
+                          <CardDescription>Manage student council members (President, Vice President, etc.)</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                          <ProgramMembersManager />
+                        </CardContent>
+                      </Card>
+                    </TabsContent>
+                  </Tabs>
                 </TabsContent>
                 
                 <TabsContent value="active">
                   <Card>
                     <CardHeader>
-                      <CardTitle>Active Students</CardTitle>
-                      <CardDescription>Showcase current active students</CardDescription>
+                      <CardTitle>Active Student Stats</CardTitle>
+                      <CardDescription>Manage student statistics shown on Student Voice page</CardDescription>
                     </CardHeader>
                     <CardContent>
                       <ActiveStudentsManager />
