@@ -135,8 +135,11 @@ const Home = () => {
           </div>
           
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {features.map((feature, index) => {
-              const Icon = feature.icon;
+            {homeFeatures.map((feature, index) => {
+              const iconMap: Record<string, any> = {
+                BookOpen, Users, Award, Heart, Calendar, Quote, HelpCircle, Handshake, Phone
+              };
+              const Icon = iconMap[feature.icon_name] || BookOpen;
               return (
                 <Card 
                   key={index} 
