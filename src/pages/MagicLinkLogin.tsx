@@ -60,47 +60,58 @@ const MagicLinkLogin = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Alert>
-              <Info className="h-4 w-4" />
-              <AlertDescription>
-                Click the link in your email to access your dashboard. The link will expire in 15 minutes.
-              </AlertDescription>
-            </Alert>
-            {magicLink && (
-              <div className="space-y-2">
-                <Button className="w-full" onClick={() => (window.location.href = magicLink)}>
-                  Open Login Link
-                </Button>
-                <Button
-                  variant="secondary"
-                  className="w-full"
-                  onClick={() => {
-                    navigator.clipboard.writeText(magicLink);
-                    toast.success("Magic link copied");
-                  }}
-                >
-                  Copy Magic Link
-                </Button>
-              </div>
+            {magicLink ? (
+              <>
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    Click the button below to access your dashboard, or use the link sent to your email.
+                  </AlertDescription>
+                </Alert>
+                <div className="space-y-2">
+                  <Button className="w-full h-12 text-base font-semibold" onClick={() => (window.location.href = magicLink)}>
+                    Open Login Link
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    className="w-full h-12 text-base"
+                    onClick={() => {
+                      navigator.clipboard.writeText(magicLink);
+                      toast.success("Magic link copied to clipboard");
+                    }}
+                  >
+                    Copy Magic Link
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  Click the link in your email to access your dashboard. The link will expire in 15 minutes.
+                </AlertDescription>
+              </Alert>
             )}
-            <Button
-              variant="outline"
-              className="w-full"
-              onClick={() => {
-                setEmailSent(false);
-                setEmail("");
-                setMagicLink(null);
-              }}
-            >
-              Try a Different Email
-            </Button>
-            <Button
-              variant="ghost"
-              className="w-full"
-              onClick={() => navigate("/")}
-            >
-              Return to Home
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setEmailSent(false);
+                  setEmail("");
+                  setMagicLink(null);
+                }}
+              >
+                Try a Different Email
+              </Button>
+              <Button
+                variant="ghost"
+                className="flex-1"
+                onClick={() => navigate("/")}
+              >
+                Return to Home
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
