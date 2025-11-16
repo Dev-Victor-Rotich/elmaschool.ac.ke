@@ -1,22 +1,25 @@
 import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Mail, School, CheckCircle2, Info } from "lucide-react";
 import { toast } from "sonner";
-import { Mail, Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "react-router-dom";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const MagicLinkLogin = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
-  const [linkSent, setLinkSent] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const navigate = useNavigate();
 
-  const handleSendMagicLink = async (e: React.FormEvent) => {
+  const handleMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      // Call the send-magic-link edge function
       const { data, error } = await supabase.functions.invoke("send-magic-link", {
         body: { email },
       });
@@ -28,83 +31,131 @@ const MagicLinkLogin = () => {
       if (data?.error) {
         toast.error(data.error);
       } else {
-        setLinkSent(true);
+        setEmailSent(true);
         toast.success("Magic link sent! Check your email.");
-        
-        // For development - show the magic link
-        if (data?.magicLink) {
-          console.log("Magic Link:", data.magicLink);
-          toast.info("Check console for magic link (development only)");
-        }
       }
     } catch (error: any) {
       console.error("Error sending magic link:", error);
-      toast.error(error.message || "Failed to send magic link");
+      toast.error(error.message || "Failed to send magic link. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
+  if (emailSent) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md shadow-xl border-0 bg-background/95 backdrop-blur">
+          <CardHeader className="text-center space-y-4">
+            <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+              <CheckCircle2 className="w-8 h-8 text-white" />
+            </div>
+            <CardTitle className="text-2xl">Check Your Email</CardTitle>
+            <CardDescription className="text-base">
+              We've sent a secure login link to <strong>{email}</strong>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                Click the link in your email to access your dashboard. The link will expire in 15 minutes.
+              </AlertDescription>
+            </Alert>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => {
+                setEmailSent(false);
+                setEmail("");
+              }}
+            >
+              Try a Different Email
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full"
+              onClick={() => navigate("/")}
+            >
+              Return to Home
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-            <Mail className="w-6 h-6 text-primary" />
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md shadow-xl border-0 bg-background/95 backdrop-blur">
+        <CardHeader className="text-center space-y-4">
+          <div className="mx-auto w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+            <School className="w-8 h-8 text-white" />
           </div>
-          <CardTitle className="text-2xl">Welcome Back</CardTitle>
-          <CardDescription>
-            Enter your email to receive a magic link
+          <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            El Makamong High School
+          </CardTitle>
+          <CardDescription className="text-base">
+            Secure Portal Access
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {!linkSent ? (
-            <form onSubmit={handleSendMagicLink} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+          <form onSubmit={handleMagicLink} className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Email Address</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
-                  id="email"
                   type="email"
-                  placeholder="your.email@example.com"
+                  placeholder="Enter your registered email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
                   disabled={loading}
+                  className="pl-10 h-12"
                 />
               </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Sending Magic Link...
-                  </>
-                ) : (
-                  "Send Magic Link"
-                )}
-              </Button>
-            </form>
-          ) : (
-            <div className="text-center space-y-4">
-              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <p className="text-sm text-green-800 dark:text-green-200">
-                  Magic link sent to <strong>{email}</strong>
-                </p>
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Click the link in your email to sign in. The link will expire in 15 minutes.
+            </div>
+
+            <Button
+              type="submit"
+              className="w-full h-12 text-base font-semibold shadow-lg"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
+                  Sending Magic Link...
+                </>
+              ) : (
+                <>
+                  <Mail className="mr-2 h-5 w-5" />
+                  Send Magic Link
+                </>
+              )}
+            </Button>
+
+            <Alert className="border-primary/20 bg-primary/5">
+              <Info className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-sm">
+                Only registered users can access the portal. If you haven't been registered by the administrator, please contact the school office.
+              </AlertDescription>
+            </Alert>
+
+            <div className="text-center space-y-2">
+              <p className="text-xs text-muted-foreground">
+                By logging in, you agree to our Terms of Service
               </p>
               <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => {
-                  setLinkSent(false);
-                  setEmail("");
-                }}
+                type="button"
+                variant="link"
+                className="text-primary"
+                onClick={() => navigate("/")}
               >
-                Send Another Link
+                Return to Homepage
               </Button>
             </div>
-          )}
+          </form>
         </CardContent>
       </Card>
     </div>

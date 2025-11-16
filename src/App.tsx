@@ -13,10 +13,15 @@ import Gallery from "./pages/Gallery";
 import Contact from "./pages/Contact";
 import Admissions from "./pages/Admissions";
 import NotFound from "./pages/NotFound";
+import MagicLinkLogin from "./pages/MagicLinkLogin";
+import AuthCallback from "./pages/AuthCallback";
+import SuperAdminDashboard from "./pages/SuperAdminDashboard";
+import BursarDashboard from "./pages/BursarDashboard";
+import StudentDashboard from "./pages/StudentDashboard";
 
-import NewAuth from "./pages/NewAuth";
+// Legacy admin routes
 import AdminDashboard from "./pages/admin/Dashboard";
-import SuperAdminDashboard from "./pages/admin/SuperAdminDashboard";
+import SuperAdminDashboardOld from "./pages/admin/SuperAdminDashboard";
 import ManageStudents from "./pages/admin/ManageStudents";
 import ApproveUsers from "./pages/admin/ApproveUsers";
 import AssignRoles from "./pages/admin/AssignRoles";
@@ -29,11 +34,6 @@ import ClassTeacherPortal from "./pages/staff/ClassTeacherPortal";
 import LibrarianPortal from "./pages/staff/LibrarianPortal";
 import ChaplainPortal from "./pages/staff/ChaplainPortal";
 import ClassRepPortal from "./pages/students/ClassRepPortal";
-import MagicLinkLogin from "./pages/MagicLinkLogin";
-import AuthCallback from "./pages/AuthCallback";
-import SuperAdminDashboardNew from "./pages/SuperAdminDashboard";
-import BursarDashboard from "./pages/BursarDashboard";
-import StudentDashboard from "./pages/StudentDashboard";
 
 const queryClient = new QueryClient();
 
@@ -54,13 +54,13 @@ const App = () => (
           <Route path="/admissions" element={<Admissions />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/login" element={<MagicLinkLogin />} />
+          <Route path="/auth" element={<MagicLinkLogin />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
-          <Route path="/dashboard/superadmin" element={<SuperAdminDashboardNew />} />
+          <Route path="/dashboard/superadmin" element={<SuperAdminDashboard />} />
           <Route path="/dashboard/bursar" element={<BursarDashboard />} />
           <Route path="/dashboard/student" element={<StudentDashboard />} />
-          <Route path="/auth" element={<NewAuth />} />
           
-          <Route path="/admin/dashboard" element={<SuperAdminDashboard />} />
+          <Route path="/admin/dashboard" element={<SuperAdminDashboardOld />} />
           <Route path="/admin" element={<AdminPortal />} />
           <Route path="/admin/manage-students" element={<ManageStudents />} />
           <Route path="/admin/approve-users" element={<ApproveUsers />} />
