@@ -90,7 +90,7 @@ const handler = async (req: Request): Promise<Response> => {
       type: 'magiclink',
       email: email,
       options: {
-        redirectTo: `${Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '.lovable.app') || ''}/auth/callback`,
+        redirectTo: `https://elmaschoolonline.lovable.app/auth/callback`,
       }
     });
 
