@@ -11,6 +11,7 @@ import { ImageUploader } from "./ImageUploader";
 
 export const GalleryManager = () => {
   const [open, setOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [fileUrl, setFileUrl] = useState("");
@@ -41,6 +42,26 @@ export const GalleryManager = () => {
       setTitle("");
       setDescription("");
       setFileUrl("");
+      setEditingId(null);
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const { error } = await supabase
+        .from("gallery_media")
+        .update(data)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["gallery-media"] });
+      toast.success("Image updated");
+      setOpen(false);
+      setTitle("");
+      setDescription("");
+      setFileUrl("");
+      setEditingId(null);
     },
   });
 
@@ -61,13 +82,28 @@ export const GalleryManager = () => {
       toast.error("Please upload an image");
       return;
     }
-    createMutation.mutate({
+    
+    const data = {
       media_type: "image",
       file_url: fileUrl,
       title,
       description,
       display_order: (gallery?.length || 0) + 1,
-    });
+    };
+
+    if (editingId) {
+      updateMutation.mutate({ id: editingId, data });
+    } else {
+      createMutation.mutate(data);
+    }
+  };
+
+  const handleEdit = (item: any) => {
+    setEditingId(item.id);
+    setTitle(item.title || "");
+    setDescription(item.description || "");
+    setFileUrl(item.file_url);
+    setOpen(true);
   };
 
   return (
@@ -81,7 +117,7 @@ export const GalleryManager = () => {
         </DialogTrigger>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Image to Gallery</DialogTitle>
+            <DialogTitle>{editingId ? "Edit" : "Add"} Image to Gallery</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -108,7 +144,9 @@ export const GalleryManager = () => {
                 placeholder="Image description"
               />
             </div>
-            <Button type="submit" className="w-full">Add to Gallery</Button>
+            <Button type="submit" className="w-full">
+              {editingId ? "Update Image" : "Add to Gallery"}
+            </Button>
           </form>
         </DialogContent>
       </Dialog>
@@ -121,14 +159,22 @@ export const GalleryManager = () => {
               alt={item.title || "Gallery image"}
               className="w-full h-48 object-cover rounded-lg"
             />
-            <Button
-              size="icon"
-              variant="destructive"
-              className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => deleteMutation.mutate(item.id)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button
+                size="icon"
+                variant="secondary"
+                onClick={() => handleEdit(item)}
+              >
+                Edit
+              </Button>
+              <Button
+                size="icon"
+                variant="destructive"
+                onClick={() => deleteMutation.mutate(item.id)}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
             {item.title && (
               <p className="mt-2 text-sm font-medium">{item.title}</p>
             )}

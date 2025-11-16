@@ -563,6 +563,7 @@ export type Database = {
           term: string
           updated_at: string | null
           week_number: number
+          welfare_message: string | null
         }
         Insert: {
           created_at?: string | null
@@ -577,6 +578,7 @@ export type Database = {
           term: string
           updated_at?: string | null
           week_number: number
+          welfare_message?: string | null
         }
         Update: {
           created_at?: string | null
@@ -591,6 +593,7 @@ export type Database = {
           term?: string
           updated_at?: string | null
           week_number?: number
+          welfare_message?: string | null
         }
         Relationships: []
       }

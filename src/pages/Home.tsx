@@ -29,11 +29,14 @@ const Home = () => {
   const { data: events = [] } = useQuery({
     queryKey: ["events"],
     queryFn: async () => {
+      const today = new Date().toISOString().split('T')[0];
       const { data, error } = await supabase
         .from("events")
         .select("*")
         .eq("approved", true)
-        .order("display_order");
+        .gte("event_date", today)
+        .order("event_date", { ascending: true })
+        .limit(4);
       if (error) throw error;
       return data.map((e: any) => ({
         date: new Date(e.event_date).toLocaleDateString("en-US", { day: "numeric", month: "short", year: "numeric" }),

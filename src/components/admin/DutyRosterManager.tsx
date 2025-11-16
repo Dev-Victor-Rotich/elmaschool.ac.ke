@@ -22,6 +22,7 @@ export const DutyRosterManager = () => {
     month: "",
     quote: "",
     quote_author: "",
+    welfare_message: "",
     teachers: [{ name: "", phone: "" }],
   });
 
@@ -88,6 +89,7 @@ export const DutyRosterManager = () => {
       month: "",
       quote: "",
       quote_author: "",
+      welfare_message: "",
       teachers: [{ name: "", phone: "" }],
     });
     setEditingId(null);
@@ -103,6 +105,7 @@ export const DutyRosterManager = () => {
       month: formData.month,
       quote: formData.quote,
       quote_author: formData.quote_author,
+      welfare_message: formData.welfare_message,
       teachers_on_duty: formData.teachers,
     };
 
@@ -122,6 +125,7 @@ export const DutyRosterManager = () => {
       month: roster.month,
       quote: roster.quote,
       quote_author: roster.quote_author,
+      welfare_message: roster.welfare_message || "",
       teachers: roster.teachers_on_duty || [{ name: "", phone: "" }],
     });
     setEditingId(roster.id);
@@ -231,6 +235,16 @@ export const DutyRosterManager = () => {
                 onChange={(e) => setFormData({ ...formData, quote_author: e.target.value })}
                 placeholder="Author name"
                 required
+              />
+            </div>
+
+            <div>
+              <Label>Welfare Message (Optional)</Label>
+              <Textarea
+                value={formData.welfare_message}
+                onChange={(e) => setFormData({ ...formData, welfare_message: e.target.value })}
+                placeholder="Special message for holidays or school closure (e.g., 'Merry Christmas! School resumes on January 6th')"
+                rows={3}
               />
             </div>
 
