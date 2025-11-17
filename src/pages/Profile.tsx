@@ -97,9 +97,6 @@ const Profile = () => {
 
       if (updateError) throw updateError;
 
-      // Refresh the page to update navigation avatar
-      window.location.reload();
-
       toast.success("Avatar updated successfully");
     } catch (error: any) {
       console.error("Upload error:", error);
@@ -124,9 +121,6 @@ const Profile = () => {
         .eq("id", user.id);
 
       if (error) throw error;
-
-      // Refresh to update profile display
-      window.location.reload();
 
       toast.success("Profile updated successfully");
     } catch (error: any) {

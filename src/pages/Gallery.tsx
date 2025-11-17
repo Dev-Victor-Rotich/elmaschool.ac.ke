@@ -75,38 +75,12 @@ const Gallery = () => {
                   <Card key={video.id} className="group overflow-hidden shadow-soft hover:shadow-hover transition-smooth border-0">
                     <CardContent className="p-0">
                       <div className="relative overflow-hidden">
-                        {video.thumbnail_url ? (
-                          <img 
-                            src={video.thumbnail_url}
-                            alt={video.title || "Video thumbnail"}
-                            className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-110"
-                          />
-                        ) : (
-                          <video 
-                            id={`video-${video.id}`}
-                            src={video.file_url}
-                            className="w-full h-64 object-cover"
-                            preload="metadata"
-                          />
-                        )}
-                        <button
-                          onClick={() => {
-                            const videoEl = document.getElementById(`video-${video.id}`) as HTMLVideoElement;
-                            if (videoEl) {
-                              if (videoEl.paused) {
-                                videoEl.play();
-                                videoEl.controls = true;
-                              } else {
-                                videoEl.pause();
-                              }
-                            }
-                          }}
-                          className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors flex items-center justify-center"
-                        >
-                          <div className="h-16 w-16 rounded-full bg-white/90 flex items-center justify-center group-hover:scale-110 transition-transform cursor-pointer">
-                            <Play className="h-8 w-8 text-primary ml-1" fill="currentColor" />
-                          </div>
-                        </button>
+                        <video 
+                          id={`video-${video.id}`}
+                          src={video.file_url}
+                          className="w-full h-64 object-cover"
+                          controls
+                        />
                       </div>
                       <div className="p-6">
                         <h3 className="text-xl font-semibold mb-2">{video.title || "Video"}</h3>
