@@ -25,6 +25,7 @@ import { PreviousLeadersManager } from "@/components/admin/PreviousLeadersManage
 import { RequiredDocumentsManager } from "@/components/admin/RequiredDocumentsManager";
 import { ContactInfoManager } from "@/components/admin/ContactInfoManager";
 import { GalleryManager } from "@/components/admin/GalleryManager";
+import { AdmissionLettersManager } from "@/components/admin/AdmissionLettersManager";
 import { DutyRosterManager } from "@/components/admin/DutyRosterManager";
 import SchoolOccasionsManager from "@/components/admin/SchoolOccasionsManager";
 import { EventsManager } from "@/components/admin/EventsManager";
@@ -333,7 +334,26 @@ const SuperAdminDashboard = () => {
                   <h2 className="text-3xl font-bold mb-2">Admissions Management</h2>
                   <p className="text-muted-foreground">Manage admission requirements and documents</p>
                 </div>
-                <RequiredDocumentsManager />
+                
+                <Card className="shadow-soft">
+                  <CardHeader>
+                    <CardTitle>Admission Letters</CardTitle>
+                    <CardDescription>Manage admission letters for students</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <AdmissionLettersManager />
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-soft">
+                  <CardHeader>
+                    <CardTitle>Required Documents</CardTitle>
+                    <CardDescription>Manage documents required for admission</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <RequiredDocumentsManager />
+                  </CardContent>
+                </Card>
               </div>
             )}
 

@@ -12,6 +12,7 @@ import Student from "./pages/Student";
 import Gallery from "./pages/Gallery";
 import Contact from "./pages/Contact";
 import Admissions from "./pages/Admissions";
+import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import MagicLinkLogin from "./pages/MagicLinkLogin";
 import AuthCallback from "./pages/AuthCallback";
@@ -56,6 +57,7 @@ const App = () => (
           <Route path="/login" element={<MagicLinkLogin />} />
           <Route path="/auth" element={<MagicLinkLogin />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/setup" element={<SetupSuperAdmin />} />
           <Route path="/dashboard/superadmin" element={<SuperAdminDashboard />} />
           <Route path="/dashboard/bursar" element={<BursarDashboard />} />
@@ -67,6 +69,7 @@ const App = () => (
           <Route path="/admin/approve-users" element={<ApproveUsers />} />
           <Route path="/admin/assign-roles" element={<AssignRoles />} />
           <Route path="/students" element={<StudentPortal />} />
+          <Route path="/students/portal" element={<StudentPortal />} />
           <Route path="/staff/teacher" element={<TeacherPortal />} />
           <Route path="/staff/bursar" element={<BursarPortal />} />
           <Route path="/staff/hod" element={<HODPortal />} />

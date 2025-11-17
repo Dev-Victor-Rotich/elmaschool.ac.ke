@@ -20,56 +20,17 @@ const Admissions = () => {
     },
   });
 
-  const admissionLetters = [
-    {
-      category: "Form 3 Boys",
-      curriculum: "8-4-4 System",
-      gender: "Boys",
-      form: "Form 3",
-      description: "Admission letter for Form 3 boys under 8-4-4 curriculum",
-      downloadUrl: "#"
+  const { data: admissionLetters } = useQuery({
+    queryKey: ["admission-letters"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("admission_letters")
+        .select("*")
+        .order("form_grade", { ascending: true });
+      if (error) throw error;
+      return data;
     },
-    {
-      category: "Form 3 Girls",
-      curriculum: "8-4-4 System",
-      gender: "Girls",
-      form: "Form 3",
-      description: "Admission letter for Form 3 girls under 8-4-4 curriculum",
-      downloadUrl: "#"
-    },
-    {
-      category: "Form 4 Boys",
-      curriculum: "8-4-4 System",
-      gender: "Boys",
-      form: "Form 4",
-      description: "Admission letter for Form 4 boys under 8-4-4 curriculum",
-      downloadUrl: "#"
-    },
-    {
-      category: "Form 4 Girls",
-      curriculum: "8-4-4 System",
-      gender: "Girls",
-      form: "Form 4",
-      description: "Admission letter for Form 4 girls under 8-4-4 curriculum",
-      downloadUrl: "#"
-    },
-    {
-      category: "Grade 10 Boys",
-      curriculum: "CBC System",
-      gender: "Boys",
-      form: "Grade 10",
-      description: "Admission letter for Grade 10 boys under CBC curriculum",
-      downloadUrl: "#"
-    },
-    {
-      category: "Grade 10 Girls",
-      curriculum: "CBC System",
-      gender: "Girls",
-      form: "Grade 10",
-      description: "Admission letter for Grade 10 girls under CBC curriculum",
-      downloadUrl: "#"
-    }
-  ];
+  });
 
   const admissionSteps = [
     {
@@ -176,12 +137,12 @@ const Admissions = () => {
             </div>
 
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {admissionLetters.map((letter, index) => (
-                <Card key={index} className="border-0 shadow-soft hover:shadow-hover transition-smooth group">
+              {admissionLetters && admissionLetters.map((letter) => (
+                <Card key={letter.id} className="border-0 shadow-soft hover:shadow-hover transition-smooth group">
                   <CardHeader className="bg-gradient-to-br from-primary/5 to-accent/5 pb-4">
                     <div className="flex items-start justify-between">
                       <div>
-                        <CardTitle className="text-xl mb-2">{letter.category}</CardTitle>
+                        <CardTitle className="text-xl mb-2">{letter.form_grade} - {letter.gender}</CardTitle>
                         <CardDescription className="text-sm font-semibold text-primary">
                           {letter.curriculum}
                         </CardDescription>
@@ -192,18 +153,22 @@ const Admissions = () => {
                     </div>
                   </CardHeader>
                   <CardContent className="pt-6">
-                    <p className="text-muted-foreground mb-6 leading-relaxed">
-                      {letter.description}
-                    </p>
+                    <div className="space-y-2 mb-6">
+                      <p className="text-sm text-muted-foreground">
+                        <span className="font-medium">Student:</span> {letter.student_name}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        <span className="font-medium">Admission #:</span> {letter.admission_number}
+                      </p>
+                    </div>
                     <Button 
                       className="w-full bg-gradient-to-r from-primary to-accent text-white shadow-sm hover:shadow-md transition-smooth group-hover:scale-105"
-                      onClick={() => {
-                        // In a real implementation, this would trigger a PDF download
-                        console.log(`Downloading ${letter.category} admission letter`);
-                      }}
+                      asChild
                     >
-                      <Download className="h-4 w-4 mr-2" />
-                      Download Letter
+                      <a href={letter.letter_url} target="_blank" rel="noopener noreferrer" download>
+                        <Download className="h-4 w-4 mr-2" />
+                        Download Letter
+                      </a>
                     </Button>
                   </CardContent>
                 </Card>

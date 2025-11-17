@@ -16,6 +16,8 @@ const Navigation = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [userName, setUserName] = useState<string>("");
+  const [userAvatar, setUserAvatar] = useState<string>("");
+  const [userRole, setUserRole] = useState<string>("");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -33,11 +35,22 @@ const Navigation = () => {
         setUser(user);
         const { data: profile } = await supabase
           .from("profiles")
-          .select("full_name")
+          .select("full_name, avatar_url")
           .eq("id", user.id)
           .single();
         if (profile) {
           setUserName(profile.full_name);
+          setUserAvatar(profile.avatar_url || "");
+        }
+        
+        // Get user role
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .single();
+        if (roleData) {
+          setUserRole(roleData.role);
         }
       }
     };
@@ -49,6 +62,8 @@ const Navigation = () => {
       } else {
         setUser(null);
         setUserName("");
+        setUserAvatar("");
+        setUserRole("");
       }
     });
 
@@ -60,6 +75,24 @@ const Navigation = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/");
+  };
+
+  const handleDashboardClick = () => {
+    const roleRoutes: Record<string, string> = {
+      'super_admin': '/admin/dashboard',
+      'teacher': '/staff/teacher',
+      'hod': '/staff/hod',
+      'bursar': '/staff/bursar',
+      'chaplain': '/staff/chaplain',
+      'librarian': '/staff/librarian',
+      'classteacher': '/staff/classteacher',
+      'student': '/students/portal',
+      'class_rep': '/students/class-rep',
+      'student_leader': '/students/portal',
+    };
+    
+    const route = roleRoutes[userRole] || '/';
+    navigate(route);
   };
   
   const navItems = [
@@ -179,28 +212,35 @@ const Navigation = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
-                    variant={isScrolled ? "secondary" : "outline"}
-                    size="sm"
+                    variant="ghost"
                     className={cn(
-                      "ml-2 flex items-center gap-2",
-                      isScrolled && "bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30"
+                      "gap-2 relative ml-2",
+                      isScrolled ? "text-primary-foreground hover:bg-primary-foreground/10" : "text-foreground"
                     )}
                   >
-                    <Avatar className="h-5 w-5">
-                      <AvatarFallback className="text-xs">
-                        {userName?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
-                      </AvatarFallback>
+                    <Avatar className="h-8 w-8 cursor-pointer">
+                      {userAvatar ? (
+                        <img src={userAvatar} alt={userName} className="h-full w-full object-cover" />
+                      ) : (
+                        <AvatarFallback className="bg-primary text-primary-foreground">
+                          {userName ? userName.charAt(0).toUpperCase() : user.email?.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      )}
                     </Avatar>
-                    <span className="hidden lg:inline text-sm">{userName || user.email}</span>
+                    <span className="hidden lg:inline">{userName || user.email}</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => navigate("/super-admin")}>
-                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                  <DropdownMenuItem onClick={() => navigate("/profile")}>
+                    <User className="h-4 w-4 mr-2" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleDashboardClick}>
+                    <LayoutDashboard className="h-4 w-4 mr-2" />
                     Dashboard
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
+                    <LogOut className="h-4 w-4 mr-2" />
                     Logout
                   </DropdownMenuItem>
                 </DropdownMenuContent>

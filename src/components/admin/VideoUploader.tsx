@@ -33,6 +33,7 @@ export const VideoUploader = ({
       // Validate file type
       if (!file.type.startsWith("video/")) {
         toast.error("Please upload a video file");
+        setUploading(false);
         return;
       }
 
@@ -40,6 +41,7 @@ export const VideoUploader = ({
       const maxSize = maxSizeMB * 1024 * 1024;
       if (file.size > maxSize) {
         toast.error(`File size must be less than ${maxSizeMB}MB`);
+        setUploading(false);
         return;
       }
 
@@ -48,11 +50,20 @@ export const VideoUploader = ({
       const fileName = `${Math.random().toString(36).substring(2)}-${Date.now()}.${fileExt}`;
       const filePath = folder ? `${folder}/${fileName}` : fileName;
 
+      // Simulate progress during upload
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => Math.min(prev + 10, 90));
+      }, 200);
+
       // Upload to Supabase Storage
       const { data, error } = await supabase.storage
         .from(bucket)
-        .upload(filePath, file);
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
       
+      clearInterval(progressInterval);
       setUploadProgress(100);
 
       if (error) throw error;
@@ -65,12 +76,12 @@ export const VideoUploader = ({
       setPreview(publicUrl);
       onUpload(publicUrl);
       toast.success("Video uploaded successfully");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Upload error:", error);
-      toast.error("Failed to upload video");
+      toast.error(error?.message || "Failed to upload video");
     } finally {
       setUploading(false);
-      setUploadProgress(0);
+      setTimeout(() => setUploadProgress(0), 1000);
     }
   };
 
