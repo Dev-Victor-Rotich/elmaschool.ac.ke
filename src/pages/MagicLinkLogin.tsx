@@ -36,7 +36,9 @@ const MagicLinkLogin = () => {
         console.log("Magic link URL:", data?.magicLink);
         setEmailSent(true);
         setMagicLink(data?.magicLink ?? null);
-        toast.success(data?.magicLink ? "Magic link generated. You can open it below." : "Magic link sent! Check your email.");
+        toast.success(
+          data?.magicLink ? "Magic link generated. You can open it below." : "Magic link sent! Check your email.",
+        );
       }
     } catch (error: any) {
       console.error("Error sending magic link:", error);
@@ -69,7 +71,10 @@ const MagicLinkLogin = () => {
                   </AlertDescription>
                 </Alert>
                 <div className="space-y-2">
-                  <Button className="w-full h-12 text-base font-semibold" onClick={() => (window.location.href = magicLink)}>
+                  <Button
+                    className="w-full h-12 text-base font-semibold"
+                    onClick={() => (window.location.href = magicLink)}
+                  >
                     Open Login Link
                   </Button>
                   <Button
@@ -104,11 +109,7 @@ const MagicLinkLogin = () => {
               >
                 Try a Different Email
               </Button>
-              <Button
-                variant="ghost"
-                className="flex-1"
-                onClick={() => navigate("/")}
-              >
+              <Button variant="ghost" className="flex-1" onClick={() => navigate("/")}>
                 Return to Home
               </Button>
             </div>
@@ -126,11 +127,9 @@ const MagicLinkLogin = () => {
             <School className="w-8 h-8 text-white" />
           </div>
           <CardTitle className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-            El Makamong High School
+            Elma School,Kamonong
           </CardTitle>
-          <CardDescription className="text-base">
-            Secure Portal Access
-          </CardDescription>
+          <CardDescription className="text-base">Secure Portal Access</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleMagicLink} className="space-y-6">
@@ -150,11 +149,7 @@ const MagicLinkLogin = () => {
               </div>
             </div>
 
-            <Button
-              type="submit"
-              className="w-full h-12 text-base font-semibold shadow-lg"
-              disabled={loading}
-            >
+            <Button type="submit" className="w-full h-12 text-base font-semibold shadow-lg" disabled={loading}>
               {loading ? (
                 <>
                   <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
@@ -171,20 +166,14 @@ const MagicLinkLogin = () => {
             <Alert className="border-primary/20 bg-primary/5">
               <Info className="h-4 w-4 text-primary" />
               <AlertDescription className="text-sm">
-                Only registered users can access the portal. If you haven't been registered by the administrator, please contact the school office.
+                Only registered users can access the portal. If you haven't been registered by the administrator, please
+                contact the school office.
               </AlertDescription>
             </Alert>
 
             <div className="text-center space-y-2">
-              <p className="text-xs text-muted-foreground">
-                By logging in, you agree to our Terms of Service
-              </p>
-              <Button
-                type="button"
-                variant="link"
-                className="text-primary"
-                onClick={() => navigate("/")}
-              >
+              <p className="text-xs text-muted-foreground">By logging in, you agree to our Terms of Service</p>
+              <Button type="button" variant="link" className="text-primary" onClick={() => navigate("/")}>
                 Return to Homepage
               </Button>
             </div>
