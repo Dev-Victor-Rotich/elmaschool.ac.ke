@@ -22,7 +22,6 @@ import StudentDashboard from "./pages/StudentDashboard";
 
 // Legacy admin routes
 import AdminDashboard from "./pages/admin/Dashboard";
-import SuperAdminDashboardOld from "./pages/admin/SuperAdminDashboard";
 import ManageStudents from "./pages/admin/ManageStudents";
 import ApproveUsers from "./pages/admin/ApproveUsers";
 import AssignRoles from "./pages/admin/AssignRoles";
@@ -62,7 +61,7 @@ const App = () => (
           <Route path="/dashboard/bursar" element={<BursarDashboard />} />
           <Route path="/dashboard/student" element={<StudentDashboard />} />
           
-          <Route path="/admin/dashboard" element={<SuperAdminDashboardOld />} />
+          <Route path="/admin/dashboard" element={<SuperAdminDashboard />} />
           <Route path="/admin" element={<AdminPortal />} />
           <Route path="/admin/manage-students" element={<ManageStudents />} />
           <Route path="/admin/approve-users" element={<ApproveUsers />} />
