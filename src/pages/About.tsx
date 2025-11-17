@@ -360,47 +360,24 @@ const About = () => {
           <div className="mt-12">
             <h2 className="text-3xl font-bold mb-6 text-center">What Parents Are Saying</h2>
             <div className="space-y-6">
-              <Card className="border-0 shadow-soft">
-                <CardContent className="pt-6">
-                  <div className="flex gap-1 mb-3">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="h-5 w-5 fill-primary text-primary" />
-                    ))}
-                  </div>
-                  <p className="text-lg leading-relaxed mb-4 italic">
-                    "The Christian values and academic excellence at EKHS have transformed our daughter's life. The teachers genuinely care about each student's growth."
-                  </p>
-                  <p className="font-semibold">— Grade 10 Class Representative</p>
-                </CardContent>
-              </Card>
-
-              <Card className="border-0 shadow-soft">
-                <CardContent className="pt-6">
-                  <div className="flex gap-1 mb-3">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="h-5 w-5 fill-primary text-primary" />
-                    ))}
-                  </div>
-                  <p className="text-lg leading-relaxed mb-4 italic">
-                    "We chose EKHS for the boarding program and haven't looked back. The location is peaceful, and Principal Opiyo leads with wisdom and compassion."
-                  </p>
-                  <p className="font-semibold">— Form 3 Class Representative</p>
-                </CardContent>
-              </Card>
-
-              <Card className="border-0 shadow-soft">
-                <CardContent className="pt-6">
-                  <div className="flex gap-1 mb-3">
-                    {[...Array(5)].map((_, i) => (
-                      <Star key={i} className="h-5 w-5 fill-primary text-primary" />
-                    ))}
-                  </div>
-                  <p className="text-lg leading-relaxed mb-4 italic">
-                    "A school that truly partners with families. The CBC curriculum is implemented thoughtfully, and our son has grown in confidence and character."
-                  </p>
-                  <p className="font-semibold">— Form 4 Class Representative</p>
-                </CardContent>
-              </Card>
+              {parentTestimonials.map((testimonial) => (
+                <Card key={testimonial.id} className="border-0 shadow-soft">
+                  <CardContent className="pt-6">
+                    {testimonial.stars && (
+                      <div className="flex gap-1 mb-3">
+                        {[...Array(testimonial.stars)].map((_, i) => (
+                          <Star key={i} className="h-5 w-5 fill-primary text-primary" />
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-lg leading-relaxed mb-4 italic">
+                      "{testimonial.message}"
+                    </p>
+                    <p className="font-semibold">— {testimonial.parent_name}</p>
+                    <p className="text-sm text-muted-foreground">{testimonial.class_representative}</p>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           </div>
 
@@ -441,76 +418,19 @@ const About = () => {
             </p>
             
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[
-                {
-                  icon: Building2,
-                  title: "Modern Classrooms",
-                  description: "Spacious, well-ventilated classrooms equipped with modern teaching aids and comfortable furniture",
-                  image: "https://images.unsplash.com/photo-1580582932707-520aed937b7b?w=600&h=400&fit=crop"
-                },
-                {
-                  icon: FlaskConical,
-                  title: "Science Laboratory",
-                  description: "Fully equipped science center for practical experiments in Physics, Chemistry, and Biology",
-                  image: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=600&h=400&fit=crop"
-                },
-                {
-                  icon: BookMarked,
-                  title: "Library & Computer Centre",
-                  description: "Extensive collection of books and digital resources with high-speed internet connectivity",
-                  image: "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=600&h=400&fit=crop"
-                },
-                {
-                  icon: Home,
-                  title: "Boarding Facilities",
-                  description: "Comfortable dormitories with adequate bedding and secure storage for students' belongings",
-                  image: "https://images.unsplash.com/photo-1555854877-bab0e564b8d5?w=600&h=400&fit=crop"
-                },
-                {
-                  icon: Utensils,
-                  title: "Dining Hall & Kitchen",
-                  description: "Spacious dining facility serving nutritious, balanced meals prepared in our modern kitchen",
-                  image: "https://images.unsplash.com/photo-1567521464027-f127ff144326?w=600&h=400&fit=crop"
-                },
-                {
-                  icon: Church,
-                  title: "Chapel",
-                  description: "Dedicated space for worship, reflection, and spiritual growth activities",
-                  image: "https://images.unsplash.com/photo-1438032005730-c779502df39b?w=600&h=400&fit=crop"
-                },
-                {
-                  icon: Trophy,
-                  title: "Sports Facilities",
-                  description: "Well-maintained fields and courts for football, volleyball, basketball, and athletics",
-                  image: "https://images.unsplash.com/photo-1575361204480-aadea25e6e68?w=600&h=400&fit=crop"
-                },
-                {
-                  icon: Users,
-                  title: "Staff Housing",
-                  description: "On-campus accommodation for teaching staff to ensure dedicated support for students",
-                  image: "https://images.unsplash.com/photo-1560184897-ae75f418493e?w=600&h=400&fit=crop"
-                },
-                {
-                  icon: School,
-                  title: "Administration Block",
-                  description: "Modern offices for school administration, counseling, and parent-teacher meetings",
-                  image: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=600&h=400&fit=crop"
-                }
-              ].map((facility, index) => {
-                const Icon = facility.icon;
-                return (
-                  <Card key={index} className="group shadow-soft border-0 overflow-hidden hover:shadow-premium transition-all duration-300 hover:scale-105">
-                    {/* Facility Image */}
-                    <div className="relative h-48 overflow-hidden">
-                      <img 
-                        src={facility.image} 
-                        alt={facility.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/40 to-transparent" />
-                      <div className="absolute bottom-4 left-4">
-                        <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                          <Icon className="h-6 w-6 text-white" />
+              {facilities.map((facility) => (
+                <Card key={facility.id} className="group shadow-soft border-0 overflow-hidden hover:shadow-premium transition-all duration-300 hover:scale-105">
+                  {/* Facility Image */}
+                  <div className="relative h-48 overflow-hidden">
+                    <img 
+                      src={facility.image_url} 
+                      alt={facility.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/40 to-transparent" />
+                    <div className="absolute bottom-4 left-4">
+                        <div className="h-10 w-10 rounded-full bg-primary/20 backdrop-blur flex items-center justify-center">
+                          <School className="h-5 w-5 text-primary" />
                         </div>
                       </div>
                     </div>
@@ -522,8 +442,8 @@ const About = () => {
                       </p>
                     </CardContent>
                   </Card>
-                );
-              })}
+                ))}
+              </div>
             </div>
           </div>
 
@@ -614,81 +534,42 @@ const About = () => {
               </div>
               
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {[
-                  {
-                    name: "Dr. Grace Muthoni",
-                    year: "Class of 2024",
-                    achievement: "Medical Doctor at Kenyatta National Hospital",
-                    description: "Leading innovative research in tropical diseases while serving her community with compassion.",
-                    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=500&h=500&fit=crop"
-                  },
-                  {
-                    name: "Eng. David Kiprop",
-                    year: "Class of 2022",
-                    achievement: "Civil Engineer at Kenya National Highways Authority",
-                    description: "Contributing to Kenya's infrastructure development through sustainable engineering solutions.",
-                    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&h=500&fit=crop"
-                  },
-                  {
-                    name: "Adv. Mary Akinyi",
-                    year: "Class of 2021",
-                    achievement: "Human Rights Lawyer",
-                    description: "Advocating for justice and equality, championing the rights of marginalized communities.",
-                    image: "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=500&h=500&fit=crop"
-                  },
-                  {
-                    name: "Peter Omondi",
-                    year: "Class of 2020",
-                    achievement: "Senior Financial Analyst at Safaricom PLC",
-                    description: "Driving financial innovation and strategic growth in Kenya's leading telecommunications company.",
-                    image: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500&h=500&fit=crop"
-                  },
-                  {
-                    name: "Prof. Sarah Njeri",
-                    year: "Class of 2019",
-                    achievement: "Education Lecturer at Egerton University",
-                    description: "Shaping the next generation of educators through innovative teaching methodologies.",
-                    image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=500&h=500&fit=crop"
-                  },
-                  {
-                    name: "Dr. Faith Chebet",
-                    year: "Class of 2017",
-                    achievement: "Clinical Pharmacist at Aga Khan Hospital",
-                    description: "Ensuring optimal patient care through pharmaceutical expertise and compassionate service.",
-                    image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=500&h=500&fit=crop"
-                  }
-                ].map((alumni, index) => (
-                  <Card key={index} className="group shadow-soft border-0 hover:shadow-premium transition-all duration-300 bg-card overflow-hidden hover:scale-105">
+                {alumni.map((alum) => (
+                  <Card key={alum.id} className="group shadow-soft border-0 hover:shadow-premium transition-all duration-300 bg-card overflow-hidden hover:scale-105">
                     {/* Alumni Image with Gradient Overlay */}
                     <div className="relative h-64 overflow-hidden">
-                      <img 
-                        src={alumni.image} 
-                        alt={alumni.name}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
+                      {alum.image_url ? (
+                        <img 
+                          src={alum.image_url} 
+                          alt={alum.full_name}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-primary/20 to-accent/20 flex items-center justify-center">
+                          <GraduationCap className="h-24 w-24 text-primary/40" />
+                        </div>
+                      )}
                       <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
                       
                       {/* Floating Badge */}
                       <div className="absolute top-4 right-4">
                         <div className="bg-background/90 backdrop-blur px-3 py-1 rounded-full border border-accent/30">
-                          <span className="text-xs font-semibold text-accent">{alumni.year}</span>
+                          <span className="text-xs font-semibold text-accent">Class of {alum.class_year}</span>
                         </div>
                       </div>
                       
                       {/* Name Overlay */}
-                      <div className="absolute bottom-4 left-4 right-4">
-                        <h3 className="text-xl font-bold text-foreground mb-1">{alumni.name}</h3>
-                        <div className="flex items-center gap-2">
-                          <GraduationCap className="h-4 w-4 text-accent" />
-                          <p className="text-sm font-semibold text-accent">{alumni.achievement}</p>
+                      <div className="absolute bottom-0 left-0 right-0 p-4">
+                        <h3 className="font-bold text-xl mb-1 text-foreground">{alum.full_name}</h3>
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-accent/20 border border-accent/30 backdrop-blur">
+                          <Award className="h-3 w-3 text-accent" />
+                          <span className="text-xs font-semibold text-accent">{alum.current_position}</span>
                         </div>
                       </div>
                     </div>
                     
                     <CardContent className="pt-4">
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {alumni.description}
-                      </p>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{alum.achievement}</p>
                     </CardContent>
                   </Card>
                 ))}
@@ -696,8 +577,9 @@ const About = () => {
             </div>
           </div>
         </div>
+        </div>
       </div>
-      </div>
+
       <EnhancedFooter />
     </div>
   );
