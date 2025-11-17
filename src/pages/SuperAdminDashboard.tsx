@@ -19,7 +19,6 @@ import { DepartmentStaffManager } from "@/components/admin/DepartmentStaffManage
 import { LeadershipProgramsManager } from "@/components/admin/LeadershipProgramsManager";
 import { ProgramMembersManager } from "@/components/admin/ProgramMembersManager";
 import { StudentAmbassadorManager } from "@/components/admin/StudentAmbassadorManager";
-import { ActiveStudentsManager } from "@/components/admin/ActiveStudentsManager";
 import { ClubsSocietiesManager } from "@/components/admin/ClubsSocietiesManager";
 import { BeyondClassroomManager } from "@/components/admin/BeyondClassroomManager";
 import { PreviousLeadersManager } from "@/components/admin/PreviousLeadersManager";
@@ -304,15 +303,6 @@ const SuperAdminDashboard = () => {
                   </CardContent>
                 </Card>
 
-                <Card className="shadow-soft">
-                  <CardHeader>
-                    <CardTitle>Active Students Stats</CardTitle>
-                    <CardDescription>Manage student statistics and achievements</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <ActiveStudentsManager />
-                  </CardContent>
-                </Card>
 
                 <Card className="shadow-soft">
                   <CardHeader>

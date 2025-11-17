@@ -132,6 +132,7 @@ export const ClubsSocietiesManager = () => {
               <Label>Image</Label>
               <ImageUploader
                 bucket="clubs"
+                folder="societies"
                 onUpload={(url) => setFormData({ ...formData, image_url: url })}
                 defaultValue={formData.image_url}
               />

@@ -1,15 +1,21 @@
-import { Link, useLocation } from "react-router-dom";
-import { Home, Info, BookOpen, Users, Image, Phone, Award, GraduationCap, Menu, LogIn } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Home, Info, BookOpen, Users, Image, Phone, Award, GraduationCap, Menu, LogIn, LogOut, User, LayoutDashboard } from "lucide-react";
 import { cn } from "@/lib/utils";
 import schoolLogo from "@/assets/school-logo.png";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 const Navigation = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [userName, setUserName] = useState<string>("");
 
   useEffect(() => {
     const handleScroll = () => {
@@ -19,6 +25,42 @@ const Navigation = () => {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUser(user);
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", user.id)
+          .single();
+        if (profile) {
+          setUserName(profile.full_name);
+        }
+      }
+    };
+    getUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+      } else {
+        setUser(null);
+        setUserName("");
+      }
+    });
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate("/");
+  };
   
   const navItems = [
     { path: "/", label: "Home", icon: Home },
@@ -132,16 +174,49 @@ const Navigation = () => {
                 </Link>
               );
             })}
-            <Link to="/auth">
-              <Button 
-                size="sm" 
-                variant={isScrolled ? "secondary" : "default"}
-                className="ml-2"
-              >
-                <LogIn className="h-4 w-4 mr-2" />
-                Portal Login
-              </Button>
-            </Link>
+            
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant={isScrolled ? "secondary" : "outline"}
+                    size="sm"
+                    className={cn(
+                      "ml-2 flex items-center gap-2",
+                      isScrolled && "bg-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/30"
+                    )}
+                  >
+                    <Avatar className="h-5 w-5">
+                      <AvatarFallback className="text-xs">
+                        {userName?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className="hidden lg:inline text-sm">{userName || user.email}</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => navigate("/super-admin")}>
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    Dashboard
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleLogout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link to="/auth">
+                <Button 
+                  size="sm" 
+                  variant={isScrolled ? "secondary" : "default"}
+                  className="ml-2"
+                >
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Portal Login
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>

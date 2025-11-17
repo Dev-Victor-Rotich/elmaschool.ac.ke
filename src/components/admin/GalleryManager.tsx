@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Image as ImageIcon, Video as VideoIcon } from "lucide-react";
 import { toast } from "sonner";
 import { ImageUploader } from "./ImageUploader";
+import { VideoUploader } from "./VideoUploader";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export const GalleryManager = () => {
   const [open, setOpen] = useState(false);
@@ -15,6 +17,7 @@ export const GalleryManager = () => {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [fileUrl, setFileUrl] = useState("");
+  const [mediaType, setMediaType] = useState<"image" | "video">("image");
 
   const queryClient = useQueryClient();
 
@@ -37,14 +40,19 @@ export const GalleryManager = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["gallery-media"] });
-      toast.success("Image added to gallery");
-      setOpen(false);
-      setTitle("");
-      setDescription("");
-      setFileUrl("");
-      setEditingId(null);
+      toast.success(`${mediaType === "image" ? "Image" : "Video"} added to gallery`);
+      resetForm();
     },
   });
+
+  const resetForm = () => {
+    setOpen(false);
+    setTitle("");
+    setDescription("");
+    setFileUrl("");
+    setEditingId(null);
+    setMediaType("image");
+  };
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: any }) => {
@@ -56,12 +64,8 @@ export const GalleryManager = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["gallery-media"] });
-      toast.success("Image updated");
-      setOpen(false);
-      setTitle("");
-      setDescription("");
-      setFileUrl("");
-      setEditingId(null);
+      toast.success(`${mediaType === "image" ? "Image" : "Video"} updated`);
+      resetForm();
     },
   });
 
@@ -72,19 +76,19 @@ export const GalleryManager = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["gallery-media"] });
-      toast.success("Image deleted");
+      toast.success(`${mediaType === "image" ? "Image" : "Video"} deleted`);
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!fileUrl) {
-      toast.error("Please upload an image");
+      toast.error(`Please upload ${mediaType === "image" ? "an image" : "a video"}`);
       return;
     }
     
     const data = {
-      media_type: "image",
+      media_type: mediaType,
       file_url: fileUrl,
       title,
       description,
@@ -103,30 +107,53 @@ export const GalleryManager = () => {
     setTitle(item.title || "");
     setDescription(item.description || "");
     setFileUrl(item.file_url);
+    setMediaType(item.media_type);
     setOpen(true);
   };
 
   return (
     <div className="space-y-4">
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(isOpen) => { setOpen(isOpen); if (!isOpen) resetForm(); }}>
         <DialogTrigger asChild>
           <Button>
             <Plus className="h-4 w-4 mr-2" />
-            Add Image
+            Add Media
           </Button>
         </DialogTrigger>
-        <DialogContent>
+        <DialogContent className="max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>{editingId ? "Edit" : "Add"} Image to Gallery</DialogTitle>
+            <DialogTitle>{editingId ? "Edit" : "Add"} Gallery Media</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {!editingId && (
+              <Tabs value={mediaType} onValueChange={(v) => setMediaType(v as "image" | "video")}>
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="image">
+                    <ImageIcon className="h-4 w-4 mr-2" />
+                    Image
+                  </TabsTrigger>
+                  <TabsTrigger value="video">
+                    <VideoIcon className="h-4 w-4 mr-2" />
+                    Video
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            )}
             <div>
-              <Label>Image</Label>
-              <ImageUploader
-                bucket="gallery"
-                onUpload={setFileUrl}
-                defaultValue={fileUrl}
-              />
+              <Label>{mediaType === "image" ? "Image" : "Video"}</Label>
+              {mediaType === "image" ? (
+                <ImageUploader
+                  bucket="gallery"
+                  onUpload={setFileUrl}
+                  defaultValue={fileUrl}
+                />
+              ) : (
+                <VideoUploader
+                  bucket="gallery"
+                  onUpload={setFileUrl}
+                  defaultValue={fileUrl}
+                />
+              )}
             </div>
             <div>
               <Label>Title (Optional)</Label>
@@ -145,27 +172,40 @@ export const GalleryManager = () => {
               />
             </div>
             <Button type="submit" className="w-full">
-              {editingId ? "Update Image" : "Add to Gallery"}
+              {editingId ? "Update" : "Add"} {mediaType === "image" ? "Image" : "Video"}
             </Button>
           </form>
         </DialogContent>
       </Dialog>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {gallery?.map((item) => (
           <div key={item.id} className="relative group">
-            <img
-              src={item.file_url}
-              alt={item.title || "Gallery image"}
-              className="w-full h-48 object-cover rounded-lg"
-            />
-            <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            {item.media_type === "image" ? (
+              <img
+                src={item.file_url}
+                alt={item.title || "Gallery item"}
+                className="w-full h-48 object-cover rounded-lg"
+              />
+            ) : (
+              <div className="relative">
+                <video
+                  src={item.file_url}
+                  className="w-full h-48 object-cover rounded-lg"
+                  preload="metadata"
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                  <VideoIcon className="h-12 w-12 text-white opacity-80" />
+                </div>
+              </div>
+            )}
+            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
               <Button
                 size="icon"
                 variant="secondary"
                 onClick={() => handleEdit(item)}
               >
-                Edit
+                <Plus className="h-4 w-4" />
               </Button>
               <Button
                 size="icon"
@@ -176,7 +216,7 @@ export const GalleryManager = () => {
               </Button>
             </div>
             {item.title && (
-              <p className="mt-2 text-sm font-medium">{item.title}</p>
+              <p className="mt-2 text-sm font-medium truncate">{item.title}</p>
             )}
           </div>
         ))}
