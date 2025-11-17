@@ -232,8 +232,11 @@ const Programs = () => {
               
               {leadershipPrograms?.map((program) => {
                 const members = programMembers?.filter((m: any) => m.program_id === program.id);
-                const president = members?.find((m: any) => m.display_order === 0);
-                const otherMembers = members?.filter((m: any) => m.id !== president?.id);
+                const president = members?.find((m: any) => 
+                  m.name.toLowerCase().includes('president') || 
+                  m.display_order === 0
+                );
+                const council = members?.filter((m: any) => m.id !== president?.id);
 
                 return (
                   <div key={program.id} className="mb-12">
@@ -254,7 +257,7 @@ const Programs = () => {
                             )}
                             <div className="flex-1 text-center md:text-left">
                               <div className="inline-block px-4 py-1 rounded-full bg-gradient-to-r from-primary to-accent text-white text-sm font-semibold mb-2">
-                                {program.title.toUpperCase()}
+                                SCHOOL PRESIDENT
                               </div>
                               <h4 className="text-2xl font-bold mb-2">{president.name}</h4>
                               {president.message && (
@@ -266,11 +269,11 @@ const Programs = () => {
                       </Card>
                     )}
 
-                    {otherMembers && otherMembers.length > 0 && (
+                    {council && council.length > 0 && (
                       <>
-                        <h4 className="text-xl font-bold mb-6 text-center">Council Members</h4>
+                        <h4 className="text-xl font-bold mb-6 text-center">Student Council</h4>
                         <div className="grid md:grid-cols-4 gap-6 mb-8">
-                          {otherMembers.map((member: any) => (
+                          {council.map((member: any) => (
                             <Card key={member.id} className="shadow-soft hover:shadow-hover transition-smooth border-0 text-center group">
                               <CardContent className="pt-6">
                                 {member.image_url && (
@@ -534,19 +537,19 @@ const Programs = () => {
                     </CardHeader>
                     <CardContent>
                       {hod && (
-                        <div className="mb-6 p-4 bg-gradient-to-br from-primary/5 to-accent/5 rounded-lg">
-                          <div className="flex items-start gap-4">
+                        <div className="mb-6 p-6 bg-gradient-to-br from-primary/5 to-accent/5 rounded-lg">
+                          <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
                             {hod.image_url && (
                               <img 
                                 src={hod.image_url} 
                                 alt={hod.name}
-                                className="w-20 h-20 rounded-full object-cover ring-2 ring-primary/20"
+                                className="w-28 h-28 rounded-full object-cover ring-4 ring-primary/20"
                               />
                             )}
-                            <div className="flex-1">
+                            <div className="flex-1 text-center md:text-left">
                               <div className="text-xs font-semibold text-primary uppercase mb-1">{hod.position}</div>
-                              <div className="font-bold text-lg mb-1">{hod.name}</div>
-                              {hod.bio && <p className="text-sm text-muted-foreground">{hod.bio}</p>}
+                              <div className="font-bold text-xl mb-2">{hod.name}</div>
+                              {hod.bio && <p className="text-sm text-muted-foreground leading-relaxed">{hod.bio}</p>}
                             </div>
                           </div>
                         </div>
@@ -554,21 +557,19 @@ const Programs = () => {
                       
                       {otherStaff && otherStaff.length > 0 && (
                         <div>
-                          <h4 className="text-sm font-semibold text-muted-foreground uppercase mb-3">Department Staff</h4>
-                          <div className="grid grid-cols-2 gap-3">
+                          <h4 className="text-sm font-semibold text-muted-foreground uppercase mb-4">Department Staff</h4>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             {otherStaff.map((staff: any) => (
-                              <div key={staff.id} className="flex items-center gap-2">
+                              <div key={staff.id} className="flex flex-col items-center text-center p-3 rounded-lg hover:bg-muted/50 transition-colors">
                                 {staff.image_url && (
                                   <img 
                                     src={staff.image_url} 
                                     alt={staff.name}
-                                    className="w-10 h-10 rounded-full object-cover"
+                                    className="w-16 h-16 rounded-full object-cover mb-2 ring-2 ring-primary/10"
                                   />
                                 )}
-                                <div className="flex-1 min-w-0">
-                                  <div className="text-sm font-medium truncate">{staff.name}</div>
-                                  <div className="text-xs text-muted-foreground truncate">{staff.position}</div>
-                                </div>
+                                <div className="text-sm font-medium">{staff.name}</div>
+                                <div className="text-xs text-muted-foreground">{staff.position}</div>
                               </div>
                             ))}
                           </div>
