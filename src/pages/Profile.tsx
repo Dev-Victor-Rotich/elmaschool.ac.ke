@@ -31,11 +31,16 @@ const Profile = () => {
 
         setUser(user);
 
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await supabase
           .from("profiles")
           .select("full_name, phone_number, avatar_url")
           .eq("id", user.id)
           .single();
+
+        if (profileError) {
+          console.error("Error loading profile:", profileError);
+          toast.error("Failed to load profile data");
+        }
 
         if (profile) {
           setFullName(profile.full_name || "");
