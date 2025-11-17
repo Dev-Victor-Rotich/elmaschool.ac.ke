@@ -17,9 +17,6 @@ export const StaffRegistryManager = () => {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [formData, setFormData] = useState({
-    full_name: '',
-    id_number: '',
-    phone: '',
     email: '',
     role: ''
   });
@@ -53,9 +50,9 @@ export const StaffRegistryManager = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['staff-registry'] });
-      toast.success("Staff member added to registry");
+      toast.success("Staff member added to registry. They can now login with their email.");
       setIsDialogOpen(false);
-      setFormData({ full_name: '', id_number: '', phone: '', email: '', role: '' });
+      setFormData({ email: '', role: '' });
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to add staff member");
@@ -83,7 +80,7 @@ export const StaffRegistryManager = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.full_name || !formData.id_number || !formData.phone || !formData.email || !formData.role) {
+    if (!formData.email || !formData.role) {
       toast.error("Please fill all fields");
       return;
     }
@@ -112,39 +109,13 @@ export const StaffRegistryManager = () => {
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="full_name">Full Name</Label>
-                <Input
-                  id="full_name"
-                  value={formData.full_name}
-                  onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="id_number">ID Number</Label>
-                <Input
-                  id="id_number"
-                  value={formData.id_number}
-                  onChange={(e) => setFormData({ ...formData, id_number: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="phone">Phone Number</Label>
-                <Input
-                  id="phone"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">Staff Email</Label>
                 <Input
                   id="email"
                   type="email"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="staff@example.com"
                   required
                 />
               </div>
@@ -182,9 +153,6 @@ export const StaffRegistryManager = () => {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>ID Number</TableHead>
-              <TableHead>Phone</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
@@ -194,10 +162,7 @@ export const StaffRegistryManager = () => {
           <TableBody>
             {staffRegistry.map((staff) => (
               <TableRow key={staff.id}>
-                <TableCell className="font-medium">{staff.full_name}</TableCell>
-                <TableCell>{staff.id_number}</TableCell>
-                <TableCell>{staff.phone}</TableCell>
-                <TableCell>{staff.email}</TableCell>
+                <TableCell className="font-medium">{staff.email}</TableCell>
                 <TableCell>
                   <Badge variant="outline">{staff.role}</Badge>
                 </TableCell>

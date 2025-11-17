@@ -50,9 +50,33 @@ const AuthCallback = () => {
             console.log("Redirecting to bursar dashboard");
             navigate("/dashboard/bursar", { replace: true });
             break;
+          case "teacher":
+            console.log("Redirecting to teacher portal");
+            navigate("/staff/teacher", { replace: true });
+            break;
+          case "hod":
+            console.log("Redirecting to HOD portal");
+            navigate("/staff/hod", { replace: true });
+            break;
+          case "chaplain":
+            console.log("Redirecting to chaplain portal");
+            navigate("/staff/chaplain", { replace: true });
+            break;
+          case "librarian":
+            console.log("Redirecting to librarian portal");
+            navigate("/staff/librarian", { replace: true });
+            break;
+          case "classteacher":
+            console.log("Redirecting to class teacher portal");
+            navigate("/staff/classteacher", { replace: true });
+            break;
           case "student":
             console.log("Redirecting to student dashboard");
             navigate("/dashboard/student", { replace: true });
+            break;
+          case "class_rep":
+            console.log("Redirecting to class rep portal");
+            navigate("/students/classrep", { replace: true });
             break;
           default:
             console.error("Unknown role:", roleData.role);

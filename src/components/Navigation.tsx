@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 const Navigation = () => {
   const location = useLocation();
@@ -239,13 +239,10 @@ const Navigation = () => {
                     className="ml-2 h-10 w-10 rounded-full p-0"
                   >
                     <Avatar className="h-10 w-10">
-                      {userAvatar ? (
-                        <img src={userAvatar} alt="User avatar" className="object-cover w-full h-full" />
-                      ) : (
-                        <AvatarFallback className="bg-primary text-primary-foreground">
-                          {user.email?.[0]?.toUpperCase()}
-                        </AvatarFallback>
-                      )}
+                      <AvatarImage src={userAvatar} alt={userName || user.email} />
+                      <AvatarFallback className="bg-primary text-primary-foreground">
+                        {user.email?.[0]?.toUpperCase()}
+                      </AvatarFallback>
                     </Avatar>
                   </Button>
                 </DropdownMenuTrigger>

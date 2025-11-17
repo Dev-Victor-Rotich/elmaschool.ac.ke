@@ -31,7 +31,10 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log("Checking if email is registered:", email);
 
-    // Check if user exists in auth.users using admin API
+    // Check super admin first
+    const allowedEmail = Deno.env.get("SUPERADMIN_EMAIL") || "chelelgorotichvictor2604@gmail.com";
+    
+    // Check if user exists in auth.users
     const { data: { users }, error: listError } = await supabase.auth.admin.listUsers();
     
     if (listError) {
@@ -42,44 +45,80 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const allowedEmail = Deno.env.get("SUPERADMIN_EMAIL") || "chelelgorotichvictor2604@gmail.com";
     let targetUser = users.find(user => user.email === email);
+    let userRole = null;
 
+    // If user doesn't exist, check registries
     if (!targetUser) {
-      if (email === allowedEmail) {
-        console.log("Super admin email not found. Auto-provisioning:", email);
-        const { data: created, error: createErr } = await supabase.auth.admin.createUser({
-          email,
-          email_confirm: true,
-        });
+      // Check staff registry
+      const { data: staffData } = await supabase
+        .from("staff_registry")
+        .select("role, status")
+        .eq("email", email)
+        .eq("status", "active")
+        .maybeSingle();
 
-        if (createErr || !created?.user) {
-          console.error("Error creating super admin user:", createErr);
+      if (staffData) {
+        console.log("Found in staff registry:", staffData.role);
+        userRole = staffData.role;
+      } else {
+        // Check student registry
+        const { data: studentData } = await supabase
+          .from("students_data")
+          .select("id, approval_status")
+          .eq("email", email)
+          .eq("approval_status", "approved")
+          .maybeSingle();
+
+        if (studentData) {
+          console.log("Found in student registry");
+          userRole = "student";
+        } else if (email === allowedEmail) {
+          console.log("Super admin email");
+          userRole = "super_admin";
+        } else {
+          console.log("Email not found in any registry or not approved");
           return new Response(
-            JSON.stringify({ error: "Failed to create super admin user" }),
-            { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+            JSON.stringify({ 
+              error: "Email not registered or pending approval. Contact your administrator." 
+            }),
+            { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
         }
+      }
 
-        targetUser = created.user;
+      // Create user
+      console.log("Creating user for:", email, "with role:", userRole);
+      const { data: created, error: createErr } = await supabase.auth.admin.createUser({
+        email,
+        email_confirm: true,
+      });
 
-        // Ensure the super_admin role exists for this user
-        const { error: roleErr } = await supabase
-          .from("user_roles")
-          .insert({ user_id: targetUser.id, role: "super_admin" });
-
-        if (roleErr) {
-          // Ignore duplicate errors; log others
-          console.warn("Role assignment issue (may be duplicate):", roleErr);
-        }
-      } else {
-        console.log("Email not registered:", email);
+      if (createErr || !created?.user) {
+        console.error("Error creating user:", createErr);
         return new Response(
-          JSON.stringify({ 
-            error: "This email is not registered. Contact your administrator." 
-          }),
-          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          JSON.stringify({ error: "Failed to create user account" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
+      }
+
+      targetUser = created.user;
+
+      // Assign role
+      const { error: roleErr } = await supabase
+        .from("user_roles")
+        .insert({ user_id: targetUser.id, role: userRole });
+
+      if (roleErr) {
+        console.warn("Role assignment issue:", roleErr);
+      }
+
+      // Update registry with user_id if student
+      if (userRole === "student") {
+        await supabase
+          .from("students_data")
+          .update({ user_id: targetUser.id, is_registered: true })
+          .eq("email", email);
       }
     }
 
