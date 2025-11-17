@@ -104,10 +104,11 @@ const handler = async (req: Request): Promise<Response> => {
 
       targetUser = created.user;
 
-      // Assign role
+      // Assign role - default to 'teacher' for staff if no specific role
+      const assignedRole = userRole === "student" ? "student" : "teacher";
       const { error: roleErr } = await supabase
         .from("user_roles")
-        .insert({ user_id: targetUser.id, role: userRole });
+        .insert({ user_id: targetUser.id, role: assignedRole });
 
       if (roleErr) {
         console.warn("Role assignment issue:", roleErr);

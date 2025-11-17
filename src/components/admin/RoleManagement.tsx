@@ -10,28 +10,50 @@ import { toast } from "sonner";
 
 const AVAILABLE_ROLES = ['super_admin', 'admin', 'bursar', 'chaplain', 'hod', 'teacher', 'student', 'parent'];
 
+interface UserWithRoles {
+  id: string;
+  full_name: string;
+  id_number: string | null;
+  phone_number: string | null;
+  email: string;
+  user_roles: Array<{id: string, role: string}>;
+}
+
 export const RoleManagement = () => {
   const queryClient = useQueryClient();
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [selectedRole, setSelectedRole] = useState<string>('');
 
-  const { data: users, isLoading: usersLoading } = useQuery({
+  const { data: users, isLoading: usersLoading } = useQuery<UserWithRoles[]>({
     queryKey: ['all-users'],
     queryFn: async () => {
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
+      // Fetch staff from staff_registry
+      const { data: staffRegistry, error: staffError } = await supabase
+        .from('staff_registry')
         .select('*')
-        .eq('status', 'approved')
-        .order('full_name');
+        .eq('status', 'active')
+        .order('email');
       
-      if (profilesError) throw profilesError;
-      if (!profiles) return [];
+      if (staffError) throw staffError;
+      if (!staffRegistry) return [];
       
-      // Fetch roles separately
+      // Get all auth users to map emails to user_ids  
+      const emailToUserIdMap = new Map<string, string>();
+      
+      // Fetch user_id for each staff email
+      for (const staff of staffRegistry) {
+        const { data: { user } } = await supabase.auth.admin.getUserById(staff.id);
+        if (user?.email) {
+          emailToUserIdMap.set(user.email, user.id);
+        }
+      }
+      
+      // Fetch all user roles
+      const userIds = Array.from(emailToUserIdMap.values());
       const { data: roles, error: rolesError } = await supabase
         .from('user_roles')
         .select('id, user_id, role')
-        .in('user_id', profiles.map(p => p.id));
+        .in('user_id', userIds);
       
       if (rolesError) throw rolesError;
       
@@ -42,10 +64,23 @@ export const RoleManagement = () => {
         rolesMap.set(role.user_id, existing);
       });
       
-      const data = profiles.map(profile => ({
-        ...profile,
-        user_roles: rolesMap.get(profile.id) || []
-      }));
+      // Map staff registry to user format
+      const data: UserWithRoles[] = staffRegistry
+        .map(staff => {
+          const userId = emailToUserIdMap.get(staff.email);
+          if (!userId) return null;
+          
+          return {
+            id: userId,
+            full_name: staff.full_name || staff.email.split('@')[0],
+            id_number: staff.id_number,
+            phone_number: staff.phone,
+            email: staff.email,
+            user_roles: rolesMap.get(userId) || []
+          };
+        })
+        .filter((u): u is UserWithRoles => u !== null);
+      
       return data;
     }
   });
