@@ -83,18 +83,30 @@ const Gallery = () => {
                           />
                         ) : (
                           <video 
+                            id={`video-${video.id}`}
                             src={video.file_url}
                             className="w-full h-64 object-cover"
                             preload="metadata"
                           />
                         )}
-                        <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors flex items-center justify-center">
-                          <a href={video.file_url} target="_blank" rel="noopener noreferrer">
-                            <div className="h-16 w-16 rounded-full bg-white/90 flex items-center justify-center group-hover:scale-110 transition-transform cursor-pointer">
-                              <Play className="h-8 w-8 text-primary ml-1" fill="currentColor" />
-                            </div>
-                          </a>
-                        </div>
+                        <button
+                          onClick={() => {
+                            const videoEl = document.getElementById(`video-${video.id}`) as HTMLVideoElement;
+                            if (videoEl) {
+                              if (videoEl.paused) {
+                                videoEl.play();
+                                videoEl.controls = true;
+                              } else {
+                                videoEl.pause();
+                              }
+                            }
+                          }}
+                          className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors flex items-center justify-center"
+                        >
+                          <div className="h-16 w-16 rounded-full bg-white/90 flex items-center justify-center group-hover:scale-110 transition-transform cursor-pointer">
+                            <Play className="h-8 w-8 text-primary ml-1" fill="currentColor" />
+                          </div>
+                        </button>
                       </div>
                       <div className="p-6">
                         <h3 className="text-xl font-semibold mb-2">{video.title || "Video"}</h3>

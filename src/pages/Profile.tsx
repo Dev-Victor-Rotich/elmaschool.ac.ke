@@ -90,10 +90,15 @@ const Profile = () => {
 
       setAvatarUrl(publicUrl);
       
-      await supabase
+      const { error: updateError } = await supabase
         .from("profiles")
         .update({ avatar_url: publicUrl })
         .eq("id", user.id);
+
+      if (updateError) throw updateError;
+
+      // Refresh the page to update navigation avatar
+      window.location.reload();
 
       toast.success("Avatar updated successfully");
     } catch (error: any) {
@@ -119,6 +124,9 @@ const Profile = () => {
         .eq("id", user.id);
 
       if (error) throw error;
+
+      // Refresh to update profile display
+      window.location.reload();
 
       toast.success("Profile updated successfully");
     } catch (error: any) {
