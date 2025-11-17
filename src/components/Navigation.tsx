@@ -56,9 +56,30 @@ const Navigation = () => {
     };
     getUser();
 
+    // Listen for profile updates
+    const profileChannel = supabase
+      .channel('profile-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'profiles'
+        },
+        (payload) => {
+          if (payload.new.id === user?.id) {
+            setUserName(payload.new.full_name);
+            setUserAvatar(payload.new.avatar_url || "");
+          }
+        }
+      )
+      .subscribe();
+
     const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
       if (session?.user) {
         setUser(session.user);
+        // Refresh profile data on auth change
+        getUser();
       } else {
         setUser(null);
         setUserName("");
@@ -69,6 +90,7 @@ const Navigation = () => {
 
     return () => {
       authListener.subscription.unsubscribe();
+      profileChannel.unsubscribe();
     };
   }, []);
 
