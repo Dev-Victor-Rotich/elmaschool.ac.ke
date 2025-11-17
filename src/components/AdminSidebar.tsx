@@ -50,8 +50,8 @@ export function AdminSidebar() {
   const isCollapsed = state === "collapsed";
 
   return (
-    <Sidebar className="border-r border-border">
-      <SidebarContent>
+    <Sidebar className="border-r border-border bg-background">
+      <SidebarContent className="bg-background">
         {menuItems.map((section) => (
           <SidebarGroup key={section.title}>
             {!isCollapsed && (

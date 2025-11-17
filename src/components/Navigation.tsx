@@ -212,25 +212,22 @@ const Navigation = () => {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button 
-                    variant="ghost"
-                    className={cn(
-                      "gap-2 relative ml-2",
-                      isScrolled ? "text-primary-foreground hover:bg-primary-foreground/10" : "text-foreground"
-                    )}
+                    variant="ghost" 
+                    size="sm"
+                    className="ml-2 h-10 w-10 rounded-full p-0"
                   >
-                    <Avatar className="h-8 w-8 cursor-pointer">
+                    <Avatar className="h-10 w-10">
                       {userAvatar ? (
-                        <img src={userAvatar} alt={userName} className="h-full w-full object-cover" />
+                        <img src={userAvatar} alt="User avatar" className="object-cover w-full h-full" />
                       ) : (
                         <AvatarFallback className="bg-primary text-primary-foreground">
-                          {userName ? userName.charAt(0).toUpperCase() : user.email?.charAt(0).toUpperCase()}
+                          {user.email?.[0]?.toUpperCase()}
                         </AvatarFallback>
                       )}
                     </Avatar>
-                    <span className="hidden lg:inline">{userName || user.email}</span>
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
+                <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem onClick={() => navigate("/profile")}>
                     <User className="h-4 w-4 mr-2" />
                     Profile
