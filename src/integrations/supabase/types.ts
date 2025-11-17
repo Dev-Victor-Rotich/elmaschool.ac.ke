@@ -1266,10 +1266,10 @@ export type Database = {
           created_at: string | null
           created_by: string | null
           email: string
-          full_name: string
+          full_name: string | null
           id: string
-          id_number: string
-          phone: string
+          id_number: string | null
+          phone: string | null
           role: string
           status: string | null
           updated_at: string | null
@@ -1278,10 +1278,10 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           email: string
-          full_name: string
+          full_name?: string | null
           id?: string
-          id_number: string
-          phone: string
+          id_number?: string | null
+          phone?: string | null
           role: string
           status?: string | null
           updated_at?: string | null
@@ -1290,10 +1290,10 @@ export type Database = {
           created_at?: string | null
           created_by?: string | null
           email?: string
-          full_name?: string
+          full_name?: string | null
           id?: string
-          id_number?: string
-          phone?: string
+          id_number?: string | null
+          phone?: string | null
           role?: string
           status?: string | null
           updated_at?: string | null
@@ -1363,6 +1363,7 @@ export type Database = {
       students_data: {
         Row: {
           admission_number: string
+          approval_status: string | null
           class: string
           created_at: string
           email: string | null
@@ -1376,6 +1377,7 @@ export type Database = {
         }
         Insert: {
           admission_number: string
+          approval_status?: string | null
           class: string
           created_at?: string
           email?: string | null
@@ -1389,6 +1391,7 @@ export type Database = {
         }
         Update: {
           admission_number?: string
+          approval_status?: string | null
           class?: string
           created_at?: string
           email?: string | null

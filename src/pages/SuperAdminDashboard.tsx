@@ -34,6 +34,7 @@ import { EventsManager } from "@/components/admin/EventsManager";
 import { UserApprovalTable } from "@/components/admin/UserApprovalTable";
 import { RoleManagement } from "@/components/admin/RoleManagement";
 import { StaffRegistryManager } from "@/components/admin/StaffRegistryManager";
+import { StudentRegistryManager } from "@/components/admin/StudentRegistryManager";
 import { AuditLogs } from "@/components/admin/AuditLogs";
 import { OwnershipTransfer } from "@/components/admin/OwnershipTransfer";
 
@@ -421,10 +422,20 @@ const SuperAdminDashboard = () => {
                 <Card className="shadow-soft">
                   <CardHeader>
                     <CardTitle>Staff Registry</CardTitle>
-                    <CardDescription>Manage staff member records</CardDescription>
+                    <CardDescription>Add staff emails to allow login access</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <StaffRegistryManager />
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-soft">
+                  <CardHeader>
+                    <CardTitle>Student Registry</CardTitle>
+                    <CardDescription>Add student details to allow login access</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <StudentRegistryManager />
                   </CardContent>
                 </Card>
               </div>
