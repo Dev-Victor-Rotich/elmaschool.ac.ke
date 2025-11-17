@@ -113,6 +113,19 @@ const handler = async (req: Request): Promise<Response> => {
         console.warn("Role assignment issue:", roleErr);
       }
 
+      // Create profile entry
+      const { error: profileErr } = await supabase
+        .from("profiles")
+        .insert({
+          id: targetUser.id,
+          full_name: email.split('@')[0], // Default name from email
+          status: 'approved' // Auto-approve for staff/super_admin
+        });
+
+      if (profileErr) {
+        console.warn("Profile creation issue:", profileErr);
+      }
+
       // Update registry with user_id if student
       if (userRole === "student") {
         await supabase
