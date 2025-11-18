@@ -87,8 +87,8 @@ const Contact = () => {
         {
           icon: MapPin,
           title: "Location",
-          details: contactInfo.address.split(",").map((s: string) => s.trim()),
-          action: "https://www.google.com/maps?q= -0.126, 35.845",
+          details: ["Elma Barnett Children's Centre Kamonong", "-0.06812053598078203, 35.869805566652"],
+          action: "https://www.google.com/maps?q=-0.06812053598078203,35.869805566652",
         },
 
         {
