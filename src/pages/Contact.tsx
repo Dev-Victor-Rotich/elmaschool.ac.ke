@@ -88,7 +88,7 @@ const Contact = () => {
           icon: MapPin,
           title: "Location",
           details: contactInfo.address.split(",").map((s: string) => s.trim()),
-          action: "https://www.google.com/maps?q=-0.06118,35.86409",
+          action: "https://www.google.com/maps?q= -0.126, 35.845",
         },
 
         {
