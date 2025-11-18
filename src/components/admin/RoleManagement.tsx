@@ -90,45 +90,25 @@ export const RoleManagement = () => {
 
   const addUserMutation = useMutation({
     mutationFn: async (userData: typeof newUserData) => {
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: userData.email,
-        email_confirm: true,
-        user_metadata: {
-          full_name: userData.full_name,
-          phone_number: userData.phone_number,
-          id_number: userData.id_number
-        }
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error('No active session');
+
+      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-user`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData)
       });
-      
-      if (authError) throw authError;
-      if (!authData.user) throw new Error('Failed to create user');
 
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          full_name: userData.full_name,
-          phone_number: userData.phone_number,
-          id_number: userData.id_number,
-          status: 'pending'
-        });
+      const result = await response.json();
       
-      if (profileError) throw profileError;
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create user');
+      }
 
-      const { error: roleError } = await supabase
-        .from('user_roles')
-        .insert({
-          user_id: authData.user.id,
-          role: userData.role as any
-        });
-      
-      if (roleError) throw roleError;
-
-      await supabase.rpc('log_admin_action', {
-        p_action_type: 'create_user',
-        p_target_user: authData.user.id,
-        p_details: `Created user with email ${userData.email} and role ${userData.role}`
-      });
+      return result;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['all-users-with-roles'] });
