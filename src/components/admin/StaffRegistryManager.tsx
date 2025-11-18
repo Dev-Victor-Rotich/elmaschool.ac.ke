@@ -43,7 +43,7 @@ export const StaffRegistryManager = () => {
         .insert({
           ...staff,
           created_by: user?.id,
-          status: 'active'
+          status: 'pending'
         });
       
       if (error) throw error;
