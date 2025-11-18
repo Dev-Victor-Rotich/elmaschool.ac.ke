@@ -87,12 +87,8 @@ const Contact = () => {
         {
           icon: MapPin,
           title: "Location",
-          details: [
-            ...contactInfo.address.split(",").map((s: string) => s.trim()),
-            "-0.06812053598078203, 35.869805566652",
-          ],
-          action:
-            "https://www.openstreetmap.org/?mlat=-0.06812053598078203&mlon=35.869805566652#map=18/-0.06812053598078203/35.869805566652",
+          details: [...contactInfo.address.split(",").map((s: string) => s.trim())],
+          action: "https://www.google.com/maps/search/?api=1&query=-0.06812053598078203,35.869805566652",
         },
 
         {
