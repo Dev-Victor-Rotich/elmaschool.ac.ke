@@ -25,10 +25,7 @@ const Contact = () => {
   const { data: contactInfo } = useQuery({
     queryKey: ["contact-info"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("contact_info")
-        .select("*")
-        .single();
+      const { data, error } = await supabase.from("contact_info").select("*").single();
       if (error) throw error;
       return data;
     },
@@ -73,38 +70,43 @@ const Contact = () => {
     },
   ];
 
-  const contactInfoItems = contactInfo ? [
-    {
-      icon: Phone,
-      title: "Phone",
-      details: [contactInfo.phone],
-      action: `tel:${contactInfo.phone}`,
-    },
-    {
-      icon: Mail,
-      title: "Email",
-      details: [contactInfo.email],
-      action: `mailto:${contactInfo.email}`,
-    },
-    {
-      icon: MapPin,
-      title: "Location",
-      details: contactInfo.address.split(',').map((s: string) => s.trim()),
-      action: "https://maps.google.com",
-    },
-    {
-      icon: Clock,
-      title: "Office Hours",
-      details: contactInfo.office_hours ? contactInfo.office_hours.split(',').map((s: string) => s.trim()) : [],
-      action: null,
-    },
-  ] : [];
+  const contactInfoItems = contactInfo
+    ? [
+        {
+          icon: Phone,
+          title: "Phone",
+          details: [contactInfo.phone],
+          action: `tel:${contactInfo.phone}`,
+        },
+        {
+          icon: Mail,
+          title: "Email",
+          details: [contactInfo.email],
+          action: `mailto:${contactInfo.email}`,
+        },
+        {
+          icon: MapPin,
+          title: "Location",
+          details: contactInfo.address.split(",").map((s: string) => s.trim()),
+          action: "https://www.google.com/maps?q=-0.06118,35.86409",
+        },
 
-  const socialMedia = contactInfo?.social_media ? [
-    { icon: Facebook, label: "Facebook", url: (contactInfo.social_media as any).facebook || "#" },
-    { icon: Twitter, label: "Twitter", url: (contactInfo.social_media as any).twitter || "#" },
-    { icon: Instagram, label: "Instagram", url: (contactInfo.social_media as any).instagram || "#" },
-  ] : [];
+        {
+          icon: Clock,
+          title: "Office Hours",
+          details: contactInfo.office_hours ? contactInfo.office_hours.split(",").map((s: string) => s.trim()) : [],
+          action: null,
+        },
+      ]
+    : [];
+
+  const socialMedia = contactInfo?.social_media
+    ? [
+        { icon: Facebook, label: "Facebook", url: (contactInfo.social_media as any).facebook || "#" },
+        { icon: Twitter, label: "Twitter", url: (contactInfo.social_media as any).twitter || "#" },
+        { icon: Instagram, label: "Instagram", url: (contactInfo.social_media as any).instagram || "#" },
+      ]
+    : [];
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/5">
