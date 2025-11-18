@@ -47,18 +47,36 @@ const SuperAdminDashboard = () => {
   const { data: stats } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
-      const [totalUsers, pendingApprovals, totalStaff, activeStudents] = await Promise.all([
-        supabase.from('profiles').select('id', { count: 'exact', head: true }),
-        supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('status', 'pending'),
-        supabase.from('staff_registry').select('id', { count: 'exact', head: true }).eq('status', 'active'),
-        supabase.from('students_data').select('id', { count: 'exact', head: true })
-      ]);
+      // Get total users count (all profiles)
+      const { count: totalUsers } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true });
+
+      // Get pending approvals count
+      const { count: pendingApprovals } = await supabase
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('approval_status', 'pending');
+
+      // Get staff members count (users with roles assigned, excluding students)
+      const { data: staffRoles } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .neq('role', 'student');
+      
+      const uniqueStaffCount = new Set(staffRoles?.map(r => r.user_id)).size;
+
+      // Get approved students count
+      const { count: studentsCount } = await supabase
+        .from('students_data')
+        .select('*', { count: 'exact', head: true })
+        .eq('approval_status', 'approved');
 
       return {
-        totalUsers: totalUsers.count || 0,
-        pendingApprovals: pendingApprovals.count || 0,
-        totalStaff: totalStaff.count || 0,
-        activeStudents: activeStudents.count || 0
+        totalUsers: totalUsers || 0,
+        pendingApprovals: pendingApprovals || 0,
+        totalStaff: uniqueStaffCount || 0,
+        activeStudents: studentsCount || 0
       };
     }
   });
