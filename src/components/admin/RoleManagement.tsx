@@ -3,19 +3,25 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Shield, Trash2, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Shield, Trash2, Loader2, Plus, UserPlus } from "lucide-react";
 import { toast } from "sonner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
-const AVAILABLE_ROLES = ['super_admin', 'admin', 'bursar', 'chaplain', 'hod', 'teacher', 'student', 'parent'];
+const AVAILABLE_ROLES = ['super_admin', 'admin', 'bursar', 'chaplain', 'hod', 'teacher', 'librarian', 'classteacher', 'student_leader', 'class_rep', 'student', 'parent'];
 
 interface UserWithRoles {
   id: string;
   full_name: string;
-  id_number: string | null;
-  phone_number: string | null;
   email: string;
+  phone_number: string | null;
+  id_number: string | null;
+  status: string;
   user_roles: Array<{id: string, role: string}>;
 }
 
@@ -23,37 +29,40 @@ export const RoleManagement = () => {
   const queryClient = useQueryClient();
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [selectedRole, setSelectedRole] = useState<string>('');
+  const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
+  const [newUserData, setNewUserData] = useState({
+    email: '',
+    full_name: '',
+    phone_number: '',
+    id_number: '',
+    role: 'teacher'
+  });
 
-  const { data: users, isLoading: usersLoading } = useQuery<UserWithRoles[]>({
-    queryKey: ['all-users'],
+  const { data: allUsers, isLoading } = useQuery<UserWithRoles[]>({
+    queryKey: ['all-users-with-roles'],
     queryFn: async () => {
-      // Fetch staff from staff_registry
-      const { data: staffRegistry, error: staffError } = await supabase
-        .from('staff_registry')
+      const { data: profiles, error: profilesError } = await supabase
+        .from('profiles')
         .select('*')
-        .eq('status', 'active')
-        .order('email');
+        .order('created_at', { ascending: false });
       
-      if (staffError) throw staffError;
-      if (!staffRegistry) return [];
-      
-      // Get all auth users to map emails to user_ids  
-      const emailToUserIdMap = new Map<string, string>();
-      
-      // Fetch user_id for each staff email
-      for (const staff of staffRegistry) {
-        const { data: { user } } = await supabase.auth.admin.getUserById(staff.id);
-        if (user?.email) {
-          emailToUserIdMap.set(user.email, user.id);
-        }
+      if (profilesError) throw profilesError;
+      if (!profiles) return [];
+
+      const { data: { users: authUsers } } = await supabase.auth.admin.listUsers();
+      const emailMap = new Map<string, string>();
+      if (authUsers) {
+        authUsers.forEach((u: any) => {
+          if (u.id && u.email) {
+            emailMap.set(u.id, u.email);
+          }
+        });
       }
       
-      // Fetch all user roles
-      const userIds = Array.from(emailToUserIdMap.values());
       const { data: roles, error: rolesError } = await supabase
         .from('user_roles')
         .select('id, user_id, role')
-        .in('user_id', userIds);
+        .in('user_id', profiles.map(p => p.id));
       
       if (rolesError) throw rolesError;
       
@@ -64,24 +73,123 @@ export const RoleManagement = () => {
         rolesMap.set(role.user_id, existing);
       });
       
-      // Map staff registry to user format
-      const data: UserWithRoles[] = staffRegistry
-        .map(staff => {
-          const userId = emailToUserIdMap.get(staff.email);
-          if (!userId) return null;
-          
-          return {
-            id: userId,
-            full_name: staff.full_name || staff.email.split('@')[0],
-            id_number: staff.id_number,
-            phone_number: staff.phone,
-            email: staff.email,
-            user_roles: rolesMap.get(userId) || []
-          };
-        })
-        .filter((u): u is UserWithRoles => u !== null);
+      return profiles.map(profile => ({
+        id: profile.id,
+        full_name: profile.full_name,
+        email: emailMap.get(profile.id) || '',
+        phone_number: profile.phone_number,
+        id_number: profile.id_number,
+        status: profile.status || 'pending',
+        user_roles: rolesMap.get(profile.id) || []
+      }));
+    }
+  });
+
+  const pendingUsers = allUsers?.filter(u => u.status === 'pending') || [];
+  const approvedUsers = allUsers?.filter(u => u.status === 'approved') || [];
+
+  const addUserMutation = useMutation({
+    mutationFn: async (userData: typeof newUserData) => {
+      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+        email: userData.email,
+        email_confirm: true,
+        user_metadata: {
+          full_name: userData.full_name,
+          phone_number: userData.phone_number,
+          id_number: userData.id_number
+        }
+      });
       
-      return data;
+      if (authError) throw authError;
+      if (!authData.user) throw new Error('Failed to create user');
+
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: authData.user.id,
+          full_name: userData.full_name,
+          phone_number: userData.phone_number,
+          id_number: userData.id_number,
+          status: 'pending'
+        });
+      
+      if (profileError) throw profileError;
+
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert({
+          user_id: authData.user.id,
+          role: userData.role as any
+        });
+      
+      if (roleError) throw roleError;
+
+      await supabase.rpc('log_admin_action', {
+        p_action_type: 'create_user',
+        p_target_user: authData.user.id,
+        p_details: `Created user with email ${userData.email} and role ${userData.role}`
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['all-users-with-roles'] });
+      toast.success("User added successfully");
+      setIsAddUserDialogOpen(false);
+      setNewUserData({ email: '', full_name: '', phone_number: '', id_number: '', role: 'teacher' });
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to add user");
+    }
+  });
+
+  const approveMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ 
+          status: 'approved',
+          approved_by: (await supabase.auth.getUser()).data.user?.id,
+          approved_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+      
+      if (error) throw error;
+
+      await supabase.rpc('log_admin_action', {
+        p_action_type: 'approve_user',
+        p_target_user: userId,
+        p_details: 'User approved'
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['all-users-with-roles'] });
+      toast.success("User approved successfully");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to approve user");
+    }
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      const { error } = await supabase
+        .from('profiles')
+        .update({ status: 'rejected' })
+        .eq('id', userId);
+      
+      if (error) throw error;
+
+      await supabase.rpc('log_admin_action', {
+        p_action_type: 'reject_user',
+        p_target_user: userId,
+        p_details: 'User rejected'
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['all-users-with-roles'] });
+      toast.success("User rejected");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to reject user");
     }
   });
 
@@ -100,7 +208,7 @@ export const RoleManagement = () => {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['all-users'] });
+      queryClient.invalidateQueries({ queryKey: ['all-users-with-roles'] });
       toast.success("Role assigned successfully");
       setSelectedUserId('');
       setSelectedRole('');
@@ -111,16 +219,21 @@ export const RoleManagement = () => {
   });
 
   const removeRoleMutation = useMutation({
-    mutationFn: async ({ roleId, userId, role }: { roleId: string; userId: string; role: string }) => {
-      // Check if trying to remove super_admin
-      if (role === 'super_admin') {
+    mutationFn: async (roleId: string) => {
+      const { data: role } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .eq('id', roleId)
+        .single();
+
+      if (role?.role === 'super_admin') {
         const { count } = await supabase
           .from('user_roles')
           .select('*', { count: 'exact', head: true })
           .eq('role', 'super_admin');
         
-        if (count && count <= 1) {
-          throw new Error('Cannot remove the last Super Admin');
+        if (count === 1) {
+          throw new Error("Cannot remove the last super admin");
         }
       }
 
@@ -131,14 +244,16 @@ export const RoleManagement = () => {
       
       if (error) throw error;
 
-      await supabase.rpc('log_admin_action', {
-        p_action_type: 'remove_role',
-        p_target_user: userId,
-        p_details: `Removed role: ${role}`
-      });
+      if (role) {
+        await supabase.rpc('log_admin_action', {
+          p_action_type: 'remove_role',
+          p_target_user: role.user_id,
+          p_details: `Removed role: ${role.role}`
+        });
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['all-users'] });
+      queryClient.invalidateQueries({ queryKey: ['all-users-with-roles'] });
       toast.success("Role removed successfully");
     },
     onError: (error: any) => {
@@ -146,115 +261,284 @@ export const RoleManagement = () => {
     }
   });
 
-  if (usersLoading) {
+  if (isLoading) {
     return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
 
   return (
     <div className="space-y-6">
-      <div className="bg-card p-6 rounded-lg border">
-        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Shield className="h-5 w-5" />
-          Assign New Role
-        </h3>
-        <div className="flex gap-4">
-          <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-            <SelectTrigger className="flex-1">
-              <SelectValue placeholder="Select user" />
-            </SelectTrigger>
-            <SelectContent>
-              {users?.map((user) => (
-                <SelectItem key={user.id} value={user.id}>
-                  {user.full_name} ({user.id_number || 'N/A'})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={selectedRole} onValueChange={setSelectedRole}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Select role" />
-            </SelectTrigger>
-            <SelectContent>
-              {AVAILABLE_ROLES.map((role) => (
-                <SelectItem key={role} value={role}>
-                  {role.replace('_', ' ').toUpperCase()}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            onClick={() => {
-              if (selectedUserId && selectedRole) {
-                addRoleMutation.mutate({ userId: selectedUserId, role: selectedRole });
-              }
-            }}
-            disabled={!selectedUserId || !selectedRole || addRoleMutation.isPending}
-          >
-            {addRoleMutation.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              'Assign Role'
-            )}
-          </Button>
-        </div>
-      </div>
+      <Tabs defaultValue="assign-roles" className="w-full">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="assign-roles">
+            <Shield className="h-4 w-4 mr-2" />
+            Assign & Manage Roles
+          </TabsTrigger>
+          <TabsTrigger value="approvals">
+            <UserPlus className="h-4 w-4 mr-2" />
+            User Approvals ({pendingUsers.length})
+          </TabsTrigger>
+        </TabsList>
 
-      <div>
-        <h3 className="text-lg font-semibold mb-4">Current Role Assignments</h3>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>ID Number</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Roles</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {users?.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.full_name}</TableCell>
-                <TableCell>{user.id_number || 'N/A'}</TableCell>
-                <TableCell>{user.id}</TableCell>
-                <TableCell>
-                  <div className="flex gap-2 flex-wrap">
-                    {user.user_roles && user.user_roles.length > 0 ? (
-                      user.user_roles.map((ur) => (
-                        <Badge key={ur.id} variant="secondary">
-                          {ur.role}
+        <TabsContent value="assign-roles" className="space-y-6">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="text-lg font-semibold">Role Management</h3>
+              <p className="text-sm text-muted-foreground">Assign and manage user roles</p>
+            </div>
+            <Dialog open={isAddUserDialogOpen} onOpenChange={setIsAddUserDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add New User
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New User</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={newUserData.email}
+                      onChange={(e) => setNewUserData({ ...newUserData, email: e.target.value })}
+                      placeholder="user@example.com"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="full_name">Full Name</Label>
+                    <Input
+                      id="full_name"
+                      value={newUserData.full_name}
+                      onChange={(e) => setNewUserData({ ...newUserData, full_name: e.target.value })}
+                      placeholder="John Doe"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="phone">Phone Number</Label>
+                    <Input
+                      id="phone"
+                      value={newUserData.phone_number}
+                      onChange={(e) => setNewUserData({ ...newUserData, phone_number: e.target.value })}
+                      placeholder="+254..."
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="id_number">ID Number</Label>
+                    <Input
+                      id="id_number"
+                      value={newUserData.id_number}
+                      onChange={(e) => setNewUserData({ ...newUserData, id_number: e.target.value })}
+                      placeholder="12345678"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="role">Initial Role</Label>
+                    <Select value={newUserData.role} onValueChange={(value) => setNewUserData({ ...newUserData, role: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {AVAILABLE_ROLES.map((role) => (
+                          <SelectItem key={role} value={role}>
+                            {role.replace('_', ' ').toUpperCase()}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button 
+                    className="w-full" 
+                    onClick={() => addUserMutation.mutate(newUserData)}
+                    disabled={addUserMutation.isPending || !newUserData.email || !newUserData.full_name}
+                  >
+                    {addUserMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                    Add User
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          <Card>
+            <CardHeader>
+              <h4 className="font-semibold">Assign Role to User</h4>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Select User</Label>
+                  <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose user" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {approvedUsers?.map((user) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.full_name} ({user.email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Select Role</Label>
+                  <Select value={selectedRole} onValueChange={setSelectedRole}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {AVAILABLE_ROLES.map((role) => (
+                        <SelectItem key={role} value={role}>
+                          {role.replace('_', ' ').toUpperCase()}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <Button 
+                onClick={() => addRoleMutation.mutate({ userId: selectedUserId, role: selectedRole })}
+                disabled={!selectedUserId || !selectedRole || addRoleMutation.isPending}
+                className="w-full"
+              >
+                <Shield className="h-4 w-4 mr-2" />
+                Assign Role
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <h4 className="font-semibold">All Users & Their Roles</h4>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>ID Number</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Roles</TableHead>
+                    <TableHead>Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {approvedUsers?.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.full_name}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>{user.phone_number || 'N/A'}</TableCell>
+                      <TableCell>{user.id_number || 'N/A'}</TableCell>
+                      <TableCell>
+                        <Badge variant={user.status === 'approved' ? 'default' : 'secondary'}>
+                          {user.status}
                         </Badge>
-                      ))
-                    ) : (
-                      <span className="text-muted-foreground">No roles</span>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2 flex-wrap">
-                    {user.user_roles?.map((ur) => (
-                      <Button
-                        key={ur.id}
-                        size="sm"
-                        variant="destructive"
-                        onClick={() => removeRoleMutation.mutate({
-                          roleId: ur.id, 
-                          userId: user.id,
-                          role: ur.role 
-                        })}
-                        disabled={removeRoleMutation.isPending}
-                      >
-                        <Trash2 className="h-3 w-3 mr-1" />
-                        Remove {ur.role}
-                      </Button>
-                    ))}
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {user.user_roles.map((role) => (
+                            <Badge key={role.id} variant="outline" className="gap-1">
+                              {role.role.replace('_', ' ').toUpperCase()}
+                              <button
+                                onClick={() => removeRoleMutation.mutate(role.id)}
+                                disabled={removeRoleMutation.isPending}
+                                className="ml-1 hover:text-destructive"
+                              >
+                                ×
+                              </button>
+                            </Badge>
+                          ))}
+                          {user.user_roles.length === 0 && (
+                            <span className="text-muted-foreground text-sm">No roles</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setSelectedUserId(user.id)}
+                        >
+                          Add Role
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="approvals" className="space-y-4">
+          <div>
+            <h3 className="text-lg font-semibold">Pending User Approvals</h3>
+            <p className="text-sm text-muted-foreground">Review and approve new users</p>
+          </div>
+
+          {pendingUsers.length === 0 ? (
+            <div className="text-center p-8 text-muted-foreground">
+              No pending approvals
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Phone</TableHead>
+                  <TableHead>ID Number</TableHead>
+                  <TableHead>Assigned Roles</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pendingUsers.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.full_name}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>{user.phone_number || 'N/A'}</TableCell>
+                    <TableCell>{user.id_number || 'N/A'}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {user.user_roles.map((role) => (
+                          <Badge key={role.id} variant="outline">
+                            {role.role.replace('_', ' ').toUpperCase()}
+                          </Badge>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => approveMutation.mutate(user.id)}
+                          disabled={approveMutation.isPending || rejectMutation.isPending}
+                        >
+                          Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => rejectMutation.mutate(user.id)}
+                          disabled={approveMutation.isPending || rejectMutation.isPending}
+                        >
+                          Reject
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

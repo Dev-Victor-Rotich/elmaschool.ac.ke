@@ -31,11 +31,8 @@ import SchoolOccasionsManager from "@/components/admin/SchoolOccasionsManager";
 import { EventsManager } from "@/components/admin/EventsManager";
 
 // User Management
-import { UserApprovalTable } from "@/components/admin/UserApprovalTable";
 import { RoleManagement } from "@/components/admin/RoleManagement";
-import { StaffRegistryManager } from "@/components/admin/StaffRegistryManager";
 import { StudentRegistryManager } from "@/components/admin/StudentRegistryManager";
-import { StaffApprovalManager } from "@/components/admin/StaffApprovalManager";
 import { AuditLogs } from "@/components/admin/AuditLogs";
 import { OwnershipTransfer } from "@/components/admin/OwnershipTransfer";
 
@@ -402,41 +399,11 @@ const SuperAdminDashboard = () => {
 
                 <Card className="shadow-soft">
                   <CardHeader>
-                    <CardTitle>User Approvals</CardTitle>
-                    <CardDescription>Review and approve new user registrations</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <UserApprovalTable />
-                  </CardContent>
-                </Card>
-
-                <Card className="shadow-soft">
-                  <CardHeader>
-                    <CardTitle>Staff Approvals</CardTitle>
-                    <CardDescription>Review and approve pending staff members</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <StaffApprovalManager />
-                  </CardContent>
-                </Card>
-
-                <Card className="shadow-soft">
-                  <CardHeader>
-                    <CardTitle>Role Management</CardTitle>
-                    <CardDescription>Assign and manage user roles</CardDescription>
+                    <CardTitle>Role Management & User Approvals</CardTitle>
+                    <CardDescription>Add users, assign roles, and approve registrations</CardDescription>
                   </CardHeader>
                   <CardContent>
                     <RoleManagement />
-                  </CardContent>
-                </Card>
-
-                <Card className="shadow-soft">
-                  <CardHeader>
-                    <CardTitle>Staff Registry</CardTitle>
-                    <CardDescription>Add staff emails to registry</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <StaffRegistryManager />
                   </CardContent>
                 </Card>
 
