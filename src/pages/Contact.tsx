@@ -87,7 +87,7 @@ const Contact = () => {
         {
           icon: MapPin,
           title: "Location",
-          details: ["Elma Barnett Children's Centre Kamonong", "-0.06812053598078203, 35.869805566652"],
+          details: ["Elma School,Kamonong"],
           action: "https://www.google.com/maps?q=-0.06812053598078203,35.869805566652",
         },
 
