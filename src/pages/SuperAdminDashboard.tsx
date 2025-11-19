@@ -45,39 +45,43 @@ const SuperAdminDashboard = () => {
   const currentHash = location.hash || "#dashboard";
 
   const { data: stats } = useQuery({
-    queryKey: ["admin-stats"],
+    queryKey: ['admin-stats'],
     queryFn: async () => {
       // Get total registered users count (approved profiles only)
       const { count: totalUsers } = await supabase
-        .from("profiles")
-        .select("*", { count: "exact", head: true })
-        .eq("approval_status", "approved");
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('approval_status', 'approved');
 
       // Get pending approvals count
       const { count: pendingApprovals } = await supabase
-        .from("staff_registry")
-        .select("*", { count: "exact", head: true })
-        .eq("approval_status", "pending");
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('approval_status', 'pending');
 
       // Get staff members count (approved profiles with staff roles)
       const { data: staffRoles } = await supabase
-        .from("profiles")
-        .select("user_id, profiles!inner(approval_status)")
-        .neq("role", "student");
-
-      const approvedStaff = staffRoles?.filter((r: any) => r.profiles?.approval_status === "approved") || [];
-      const uniqueStaffCount = new Set(approvedStaff.map((r) => r.user_id)).size;
+        .from('user_roles')
+        .select('user_id, profiles!inner(approval_status)')
+        .neq('role', 'student');
+      
+      const approvedStaff = staffRoles?.filter(
+        (r: any) => r.profiles?.approval_status === 'approved'
+      ) || [];
+      const uniqueStaffCount = new Set(approvedStaff.map(r => r.user_id)).size;
 
       // Get students count (all students from students_data)
-      const { count: studentsCount } = await supabase.from("students_data").select("*", { count: "exact", head: true });
+      const { count: studentsCount } = await supabase
+        .from('students_data')
+        .select('*', { count: 'exact', head: true });
 
       return {
         totalUsers: totalUsers || 0,
         pendingApprovals: pendingApprovals || 0,
         totalStaff: uniqueStaffCount || 0,
-        activeStudents: studentsCount || 0,
+        activeStudents: studentsCount || 0
       };
-    },
+    }
   });
 
   useEffect(() => {
@@ -85,18 +89,19 @@ const SuperAdminDashboard = () => {
   }, []);
 
   const checkSuperAdmin = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
+    const { data: { user } } = await supabase.auth.getUser();
+    
     if (!user) {
       navigate("/auth");
       return;
     }
 
-    const { data: roles } = await supabase.from("user_roles").select("role").eq("user_id", user.id);
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id);
 
-    if (!roles || !roles.some((r) => r.role === "super_admin")) {
+    if (!roles || !roles.some(r => r.role === "super_admin")) {
       toast.error("Access denied. Super Admin privileges required.");
       navigate("/");
       return;
@@ -126,7 +131,7 @@ const SuperAdminDashboard = () => {
     <SidebarProvider>
       <div className="min-h-screen flex w-full bg-gradient-to-br from-background via-background to-primary/5">
         <AdminSidebar />
-
+        
         <div className="flex-1 flex flex-col">
           {/* Header */}
           <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -134,7 +139,7 @@ const SuperAdminDashboard = () => {
               <SidebarTrigger className="-ml-2">
                 <Menu className="h-5 w-5" />
               </SidebarTrigger>
-
+              
               <div className="flex-1">
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
                   SuperAdmin Dashboard
@@ -238,7 +243,7 @@ const SuperAdminDashboard = () => {
                   <h2 className="text-3xl font-bold mb-2">Programs Management</h2>
                   <p className="text-muted-foreground">Manage subjects, departments, and leadership programs</p>
                 </div>
-
+                
                 <Card className="shadow-soft">
                   <CardHeader>
                     <CardTitle>Subjects</CardTitle>
@@ -319,6 +324,7 @@ const SuperAdminDashboard = () => {
                   </CardContent>
                 </Card>
 
+
                 <Card className="shadow-soft">
                   <CardHeader>
                     <CardTitle>Clubs & Societies</CardTitle>
@@ -348,7 +354,7 @@ const SuperAdminDashboard = () => {
                   <h2 className="text-3xl font-bold mb-2">Admissions Management</h2>
                   <p className="text-muted-foreground">Manage admission requirements and documents</p>
                 </div>
-
+                
                 <Card className="shadow-soft">
                   <CardHeader>
                     <CardTitle>Admission Letters</CardTitle>
