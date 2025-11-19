@@ -59,13 +59,16 @@ const SuperAdminDashboard = () => {
         .select('*', { count: 'exact', head: true })
         .eq('approval_status', 'pending');
 
-      // Get staff members count (users with roles assigned, excluding students)
+      // Get staff members count (approved profiles with staff roles)
       const { data: staffRoles } = await supabase
         .from('user_roles')
-        .select('user_id')
+        .select('user_id, profiles!inner(approval_status)')
         .neq('role', 'student');
       
-      const uniqueStaffCount = new Set(staffRoles?.map(r => r.user_id)).size;
+      const approvedStaff = staffRoles?.filter(
+        (r: any) => r.profiles?.approval_status === 'approved'
+      ) || [];
+      const uniqueStaffCount = new Set(approvedStaff.map(r => r.user_id)).size;
 
       // Get students count (all students from students_data)
       const { count: studentsCount } = await supabase
