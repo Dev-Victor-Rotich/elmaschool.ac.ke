@@ -47,10 +47,11 @@ const SuperAdminDashboard = () => {
   const { data: stats } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
-      // Get total users count (all profiles)
+      // Get total registered users count (approved profiles only)
       const { count: totalUsers } = await supabase
         .from('profiles')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .eq('approval_status', 'approved');
 
       // Get pending approvals count
       const { count: pendingApprovals } = await supabase
@@ -66,11 +67,10 @@ const SuperAdminDashboard = () => {
       
       const uniqueStaffCount = new Set(staffRoles?.map(r => r.user_id)).size;
 
-      // Get approved students count
+      // Get students count (all students from students_data)
       const { count: studentsCount } = await supabase
         .from('students_data')
-        .select('*', { count: 'exact', head: true })
-        .eq('approval_status', 'approved');
+        .select('*', { count: 'exact', head: true });
 
       return {
         totalUsers: totalUsers || 0,

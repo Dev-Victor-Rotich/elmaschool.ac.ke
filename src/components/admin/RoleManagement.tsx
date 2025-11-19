@@ -241,6 +241,63 @@ export const RoleManagement = () => {
     }
   });
 
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      // Check if this is a super admin
+      const { data: userRoles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+
+      const isSuperAdmin = userRoles?.some(r => r.role === 'super_admin');
+      if (isSuperAdmin) {
+        const { count } = await supabase
+          .from('user_roles')
+          .select('*', { count: 'exact', head: true })
+          .eq('role', 'super_admin');
+
+        if (count === 1) {
+          throw new Error("Cannot delete the last super admin");
+        }
+      }
+
+      // Delete user roles first
+      const { error: rolesError } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId);
+
+      if (rolesError) throw rolesError;
+
+      // Delete from students_data if exists
+      await supabase
+        .from('students_data')
+        .delete()
+        .eq('user_id', userId);
+
+      // Delete profile (cascade will handle auth.users)
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', userId);
+
+      if (profileError) throw profileError;
+
+      await supabase.rpc('log_admin_action', {
+        p_action_type: 'delete_user',
+        p_target_user: userId,
+        p_details: 'User deleted'
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['all-users-with-roles'] });
+      toast.success("User deleted successfully");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to delete user");
+    }
+  });
+
   if (isLoading) {
     return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
   }
@@ -404,7 +461,7 @@ export const RoleManagement = () => {
                     <TableHead>ID Number</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Roles</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
