@@ -13,17 +13,18 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
-const AVAILABLE_ROLES = ['super_admin', 'admin', 'bursar', 'chaplain', 'hod', 'teacher', 'librarian', 'classteacher', 'student_leader', 'class_rep', 'student', 'parent'];
-
-interface UserWithRoles {
-  id: string;
-  full_name: string;
-  email: string;
-  phone_number: string | null;
-  id_number: string | null;
-  status: string;
-  user_roles: Array<{id: string, role: string}>;
-}
+const AVAILABLE_ROLES = ['super_admin', 'admin', 'bursar', 'chaplain', 'hod', 'teacher', 'librarian', 'classteacher', 'student_leader', 'class_rep'];
+ 
+ interface UserWithRoles {
+   id: string;
+   full_name: string;
+   email: string;
+   phone_number: string | null;
+   id_number: string | null;
+   status: string;
+   approval_status?: string | null;
+   user_roles: Array<{id: string, role: string}>;
+ }
 
 export const RoleManagement = () => {
   const queryClient = useQueryClient();
@@ -79,14 +80,15 @@ export const RoleManagement = () => {
         email: emailMap.get(profile.id) || '',
         phone_number: profile.phone_number,
         id_number: profile.id_number,
-        status: profile.status || 'pending',
+        approval_status: profile.approval_status,
+        status: profile.approval_status || profile.status || 'pending',
         user_roles: rolesMap.get(profile.id) || []
       }));
     }
   });
 
-  const pendingUsers = allUsers?.filter(u => u.status === 'pending') || [];
-  const approvedUsers = allUsers?.filter(u => u.status === 'approved') || [];
+  const pendingUsers = allUsers?.filter(u => u.approval_status === 'pending') || [];
+  const approvedUsers = allUsers?.filter(u => u.approval_status === 'approved') || [];
 
   const addUserMutation = useMutation({
     mutationFn: async (userData: typeof newUserData) => {
@@ -275,19 +277,19 @@ export const RoleManagement = () => {
         .delete()
         .eq('user_id', userId);
 
-      // Delete profile (cascade will handle auth.users)
+      // Soft-delete profile: mark as deleted so it no longer appears in lists
       const { error: profileError } = await supabase
         .from('profiles')
-        .delete()
+        .update({ approval_status: 'deleted', status: 'deleted' })
         .eq('id', userId);
-
-      if (profileError) throw profileError;
-
-      await supabase.rpc('log_admin_action', {
-        p_action_type: 'delete_user',
-        p_target_user: userId,
-        p_details: 'User deleted'
-      });
+ 
+       if (profileError) throw profileError;
+ 
+       await supabase.rpc('log_admin_action', {
+         p_action_type: 'delete_user',
+         p_target_user: userId,
+         p_details: 'User deleted'
+       });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['all-users-with-roles'] });
@@ -472,8 +474,8 @@ export const RoleManagement = () => {
                       <TableCell>{user.phone_number || 'N/A'}</TableCell>
                       <TableCell>{user.id_number || 'N/A'}</TableCell>
                       <TableCell>
-                        <Badge variant={user.status === 'approved' ? 'default' : 'secondary'}>
-                          {user.status}
+                        <Badge variant={user.approval_status === 'approved' ? 'default' : 'secondary'}>
+                          {user.approval_status}
                         </Badge>
                       </TableCell>
                       <TableCell>

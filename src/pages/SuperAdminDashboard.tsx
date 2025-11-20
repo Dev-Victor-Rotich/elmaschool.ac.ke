@@ -59,16 +59,11 @@ const SuperAdminDashboard = () => {
         .select('*', { count: 'exact', head: true })
         .eq('approval_status', 'pending');
 
-      // Get staff members count (approved profiles with staff roles)
-      const { data: staffRoles } = await supabase
-        .from('user_roles')
-        .select('user_id, profiles!inner(approval_status)')
-        .neq('role', 'student');
-      
-      const approvedStaff = staffRoles?.filter(
-        (r: any) => r.profiles?.approval_status === 'approved'
-      ) || [];
-      const uniqueStaffCount = new Set(approvedStaff.map(r => r.user_id)).size;
+      // Get staff members count from staff_registry (active staff)
+      const { count: staffCount } = await supabase
+        .from('staff_registry')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active');
 
       // Get students count (all students from students_data)
       const { count: studentsCount } = await supabase
@@ -78,7 +73,7 @@ const SuperAdminDashboard = () => {
       return {
         totalUsers: totalUsers || 0,
         pendingApprovals: pendingApprovals || 0,
-        totalStaff: uniqueStaffCount || 0,
+        totalStaff: staffCount || 0,
         activeStudents: studentsCount || 0
       };
     }
@@ -165,7 +160,10 @@ const SuperAdminDashboard = () => {
                 </div>
 
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-                  <Card className="shadow-soft hover:shadow-hover transition-smooth">
+                  <Card
+                    className="shadow-soft hover:shadow-hover transition-smooth cursor-pointer"
+                    onClick={() => navigate(`${location.pathname}#users`)}
+                  >
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                       <CardTitle className="text-sm font-medium">Total Users</CardTitle>
                       <Users className="h-4 w-4 text-primary" />
@@ -176,7 +174,10 @@ const SuperAdminDashboard = () => {
                     </CardContent>
                   </Card>
 
-                  <Card className="shadow-soft hover:shadow-hover transition-smooth">
+                  <Card
+                    className="shadow-soft hover:shadow-hover transition-smooth cursor-pointer"
+                    onClick={() => navigate(`${location.pathname}#users`)}
+                  >
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                       <CardTitle className="text-sm font-medium">Pending Approvals</CardTitle>
                       <UserCheck className="h-4 w-4 text-secondary" />
@@ -187,7 +188,10 @@ const SuperAdminDashboard = () => {
                     </CardContent>
                   </Card>
 
-                  <Card className="shadow-soft hover:shadow-hover transition-smooth">
+                  <Card
+                    className="shadow-soft hover:shadow-hover transition-smooth cursor-pointer"
+                    onClick={() => navigate(`${location.pathname}#users`)}
+                  >
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                       <CardTitle className="text-sm font-medium">Staff Members</CardTitle>
                       <Shield className="h-4 w-4 text-accent" />
@@ -198,7 +202,10 @@ const SuperAdminDashboard = () => {
                     </CardContent>
                   </Card>
 
-                  <Card className="shadow-soft hover:shadow-hover transition-smooth">
+                  <Card
+                    className="shadow-soft hover:shadow-hover transition-smooth cursor-pointer"
+                    onClick={() => navigate(`${location.pathname}#users`)}
+                  >
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                       <CardTitle className="text-sm font-medium">Students</CardTitle>
                       <Activity className="h-4 w-4 text-primary" />
