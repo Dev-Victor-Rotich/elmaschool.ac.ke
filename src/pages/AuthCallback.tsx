@@ -28,20 +28,62 @@ const AuthCallback = () => {
 
         // Get user role
         const { data: roleData, error: roleError } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", session.user.id)
-          .single();
-
-        if (roleError) {
-          console.error("Role fetch error:", roleError);
-          throw new Error("Failed to fetch user role");
-        }
-
-        console.log("User role:", roleData.role);
-
-        // Redirect based on role
-        switch (roleData.role) {
+           .from("user_roles")
+           .select("role")
+           .eq("user_id", session.user.id)
+           .maybeSingle();
+ 
+         if (roleError) {
+           console.error("Role fetch error:", roleError);
+           throw new Error("Failed to fetch user role");
+         }
+ 
+         let role = roleData?.role as string | undefined;
+ 
+         // Fallback: infer role for approved students without an assigned role
+         if (!role && session.user.email) {
+           const { data: studentRecord, error: studentError } = await supabase
+             .from("students_data")
+             .select("id, approval_status")
+             .eq("email", session.user.email)
+             .eq("approval_status", "approved")
+             .maybeSingle();
+ 
+           if (studentError) {
+             console.error("Student lookup error:", studentError);
+           }
+ 
+           if (studentRecord) {
+             // Link user to student record and assign student role
+             const { error: linkError } = await supabase
+               .from("students_data")
+               .update({ user_id: session.user.id, is_registered: true })
+               .eq("id", studentRecord.id);
+ 
+             if (linkError) {
+               console.error("Student link error:", linkError);
+             } else {
+               const { error: insertRoleError } = await supabase
+                 .from("user_roles")
+                 .insert({ user_id: session.user.id, role: "student" as any });
+ 
+               if (insertRoleError) {
+                 console.error("Student role insert error:", insertRoleError);
+               } else {
+                 role = "student";
+               }
+             }
+           }
+         }
+ 
+         if (!role) {
+           throw new Error("No role assigned to this account. Please contact your administrator.");
+         }
+ 
+         console.log("User role:", role);
+ 
+         // Redirect based on role
+         switch (role) {
           case "super_admin":
             console.log("Redirecting to super admin dashboard");
             navigate("/dashboard/superadmin", { replace: true });
