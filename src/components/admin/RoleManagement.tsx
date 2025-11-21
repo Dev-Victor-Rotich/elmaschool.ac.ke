@@ -30,6 +30,7 @@ export const RoleManagement = () => {
   const queryClient = useQueryClient();
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [selectedRole, setSelectedRole] = useState<string>('');
+  const [selectedClass, setSelectedClass] = useState<string>('');
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
   const [newUserData, setNewUserData] = useState({
     email: '',
@@ -38,6 +39,8 @@ export const RoleManagement = () => {
     id_number: '',
     role: 'teacher'
   });
+
+  const AVAILABLE_CLASSES = ['Grade 10', 'Form 1', 'Form 2', 'Form 3', 'Form 4'];
 
   const { data: allUsers, isLoading } = useQuery<UserWithRoles[]>({
     queryKey: ['all-users-with-roles'],
@@ -128,6 +131,7 @@ export const RoleManagement = () => {
       const { error } = await supabase
         .from('profiles')
         .update({ 
+          approval_status: 'approved',
           status: 'approved',
           approved_by: (await supabase.auth.getUser()).data.user?.id,
           approved_at: new Date().toISOString()
@@ -155,7 +159,10 @@ export const RoleManagement = () => {
     mutationFn: async (userId: string) => {
       const { error } = await supabase
         .from('profiles')
-        .update({ status: 'rejected' })
+        .update({ 
+          approval_status: 'rejected',
+          status: 'rejected' 
+        })
         .eq('id', userId);
       
       if (error) throw error;
@@ -176,17 +183,31 @@ export const RoleManagement = () => {
   });
 
   const addRoleMutation = useMutation({
-    mutationFn: async ({ userId, role }: { userId: string; role: string }) => {
+    mutationFn: async ({ userId, role, assignedClass }: { userId: string; role: string; assignedClass?: string }) => {
       const { error } = await supabase
         .from('user_roles')
         .insert([{ user_id: userId, role: role as any }]);
       
       if (error) throw error;
 
+      // If classteacher role, save class assignment
+      if (role === 'classteacher' && assignedClass) {
+        const { data: { user } } = await supabase.auth.getUser();
+        const { error: classError } = await supabase
+          .from('classteacher_assignments')
+          .upsert([{ 
+            user_id: userId, 
+            assigned_class: assignedClass,
+            created_by: user?.id 
+          }]);
+        
+        if (classError) throw classError;
+      }
+
       await supabase.rpc('log_admin_action', {
         p_action_type: 'assign_role',
         p_target_user: userId,
-        p_details: `Assigned role: ${role}`
+        p_details: `Assigned role: ${role}${assignedClass ? ` with class: ${assignedClass}` : ''}`
       });
     },
     onSuccess: () => {
@@ -194,6 +215,7 @@ export const RoleManagement = () => {
       toast.success("Role assigned successfully");
       setSelectedUserId('');
       setSelectedRole('');
+      setSelectedClass('');
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to assign role");
@@ -438,9 +460,37 @@ export const RoleManagement = () => {
                   </Select>
                 </div>
               </div>
+              
+              {selectedRole === 'classteacher' && (
+                <div>
+                  <Label>Select Class</Label>
+                  <Select value={selectedClass} onValueChange={setSelectedClass}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose class" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {AVAILABLE_CLASSES.map((cls) => (
+                        <SelectItem key={cls} value={cls}>
+                          {cls}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+
               <Button 
-                onClick={() => addRoleMutation.mutate({ userId: selectedUserId, role: selectedRole })}
-                disabled={!selectedUserId || !selectedRole || addRoleMutation.isPending}
+                onClick={() => addRoleMutation.mutate({ 
+                  userId: selectedUserId, 
+                  role: selectedRole,
+                  assignedClass: selectedRole === 'classteacher' ? selectedClass : undefined
+                })}
+                disabled={
+                  !selectedUserId || 
+                  !selectedRole || 
+                  (selectedRole === 'classteacher' && !selectedClass) ||
+                  addRoleMutation.isPending
+                }
                 className="w-full"
               >
                 <Shield className="h-4 w-4 mr-2" />

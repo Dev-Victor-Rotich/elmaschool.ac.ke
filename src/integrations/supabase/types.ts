@@ -337,6 +337,33 @@ export type Database = {
         }
         Relationships: []
       }
+      classteacher_assignments: {
+        Row: {
+          assigned_class: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          assigned_class: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          assigned_class?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       clubs_societies: {
         Row: {
           created_at: string | null
