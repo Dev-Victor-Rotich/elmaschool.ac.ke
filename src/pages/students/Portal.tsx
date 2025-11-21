@@ -102,9 +102,14 @@ const StudentPortal = () => {
                 {studentData.class} • Admission: {studentData.admission_number}
               </p>
             </div>
-            <Button onClick={handleLogout} variant="secondary">
-              Logout
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => navigate("/profile")} variant="outline">
+                Edit Profile
+              </Button>
+              <Button onClick={handleLogout} variant="secondary">
+                Logout
+              </Button>
+            </div>
           </div>
         </div>
       </header>
