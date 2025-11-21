@@ -92,6 +92,9 @@ export const RoleManagement = () => {
 
   const pendingUsers = allUsers?.filter(u => u.approval_status === 'pending') || [];
   const approvedUsers = allUsers?.filter(u => u.approval_status === 'approved') || [];
+  
+  // Filter out deleted users from all lists
+  const activeUsers = approvedUsers.filter(u => u.approval_status !== 'deleted');
 
   const addUserMutation = useMutation({
     mutationFn: async (userData: typeof newUserData) => {
@@ -517,7 +520,7 @@ export const RoleManagement = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {approvedUsers?.map((user) => (
+                  {activeUsers?.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell className="font-medium">{user.full_name}</TableCell>
                       <TableCell>{user.email}</TableCell>

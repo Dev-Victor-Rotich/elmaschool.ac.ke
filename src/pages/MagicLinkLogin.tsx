@@ -42,7 +42,21 @@ const MagicLinkLogin = () => {
       }
     } catch (error: any) {
       console.error("Error sending magic link:", error);
-      toast.error(error.message || "Failed to send magic link. Please try again.");
+      
+      // Provide user-friendly error messages
+      let errorMessage = "Failed to send magic link. Please try again.";
+      
+      if (error.message?.includes("non-2xx") || error.message?.includes("FunctionsHttpError")) {
+        errorMessage = "This email is not registered in our system. Please contact the school administrator to register your account.";
+      } else if (error.message?.includes("not found") || error.message?.includes("does not exist")) {
+        errorMessage = "This email is not registered in our system. Please verify your email address or contact the school office.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage, {
+        duration: 5000,
+      });
     } finally {
       setLoading(false);
     }
