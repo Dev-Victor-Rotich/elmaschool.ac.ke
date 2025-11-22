@@ -15,6 +15,23 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        // Check if super admin is impersonating a user
+        const impersonationData = localStorage.getItem('impersonation');
+        
+        if (impersonationData) {
+          const { userRole } = JSON.parse(impersonationData);
+          
+          // If impersonating, check if impersonated role matches required role
+          if (requiredRole) {
+            setAuthorized(userRole === requiredRole);
+          } else {
+            setAuthorized(true);
+          }
+          setLoading(false);
+          return;
+        }
+
+        // Normal authentication flow
         const { data: { session } } = await supabase.auth.getSession();
 
         if (!session) {

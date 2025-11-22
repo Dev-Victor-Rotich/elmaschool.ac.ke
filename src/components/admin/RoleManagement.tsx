@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -8,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Shield, Trash2, Loader2, Plus, UserPlus } from "lucide-react";
+import { Shield, Trash2, Loader2, Plus, UserPlus, Eye } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -28,6 +29,7 @@ const AVAILABLE_ROLES = ['super_admin', 'admin', 'bursar', 'chaplain', 'hod', 't
 
 export const RoleManagement = () => {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [selectedUserId, setSelectedUserId] = useState<string>('');
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [selectedClass, setSelectedClass] = useState<string>('');
@@ -39,6 +41,35 @@ export const RoleManagement = () => {
     id_number: '',
     role: 'teacher'
   });
+
+  const handleImpersonateUser = (user: UserWithRoles) => {
+    const primaryRole = user.user_roles[0]?.role || 'user';
+    
+    localStorage.setItem('impersonation', JSON.stringify({
+      userId: user.id,
+      userName: user.full_name,
+      userRole: primaryRole,
+      userEmail: user.email
+    }));
+
+    const roleRouteMap: Record<string, string> = {
+      'super_admin': '/dashboard/superadmin',
+      'admin': '/dashboard/admin',
+      'bursar': '/dashboard/bursar',
+      'teacher': '/staff/teacher',
+      'hod': '/staff/hod',
+      'chaplain': '/staff/chaplain',
+      'librarian': '/staff/librarian',
+      'classteacher': '/staff/classteacher',
+      'student': '/dashboard/student',
+      'class_rep': '/students/classrep',
+      'student_leader': '/students/portal'
+    };
+
+    const route = roleRouteMap[primaryRole] || '/dashboard';
+    toast.success(`Now viewing as ${user.full_name}`);
+    navigate(route);
+  };
 
   const AVAILABLE_CLASSES = ['Grade 10', 'Form 1', 'Form 2', 'Form 3', 'Form 4'];
 
@@ -555,9 +586,11 @@ export const RoleManagement = () => {
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setSelectedUserId(user.id)}
+                            onClick={() => handleImpersonateUser(user)}
+                            title="View as this user"
                           >
-                            Add Role
+                            <Eye className="h-4 w-4 mr-1" />
+                            View As
                           </Button>
                           <Button
                             variant="ghost"
