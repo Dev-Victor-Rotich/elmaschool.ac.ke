@@ -1,5 +1,21 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpen, Globe, Beaker, Calculator, Palette, Music, Trophy, Users2, GraduationCap, Target, Award, Heart, ArrowRight, Users, Lightbulb } from "lucide-react";
+import {
+  BookOpen,
+  Globe,
+  Beaker,
+  Calculator,
+  Palette,
+  Music,
+  Trophy,
+  Users2,
+  GraduationCap,
+  Target,
+  Award,
+  Heart,
+  ArrowRight,
+  Users,
+  Lightbulb,
+} from "lucide-react";
 import EnhancedFooter from "@/components/EnhancedFooter";
 import heroImage from "@/assets/hero-school.jpg";
 import { Button } from "@/components/ui/button";
@@ -12,10 +28,7 @@ const Programs = () => {
   const { data: subjects } = useQuery({
     queryKey: ["subjects"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("subjects")
-        .select("*")
-        .order("display_order", { ascending: true });
+      const { data, error } = await supabase.from("subjects").select("*").order("display_order", { ascending: true });
       if (error) throw error;
       return data;
     },
@@ -88,45 +101,67 @@ const Programs = () => {
 
   const activities = [
     { icon: Trophy, title: "Sports & Athletics", items: ["Football", "Volleyball", "Track & Field", "Basketball"] },
-    { icon: Users2, title: "Clubs & Societies", items: ["Science Club", "Debate Club", "Environmental Club", "Drama Society"] },
-    { icon: BookOpen, title: "Academic Programs", items: ["Mentorship", "Study Groups", "Library Access", "Computer Lab"] },
-    { icon: Users2, title: "Leadership", items: ["Student Council", "Prefects", "Class Representatives", "Peer Support"] }
+    {
+      icon: Users2,
+      title: "Clubs & Societies",
+      items: ["Science Club", "Debate Club", "Environmental Club", "Drama Society"],
+    },
+    {
+      icon: BookOpen,
+      title: "Academic Programs",
+      items: ["Mentorship", "Study Groups", "Library Access", "Computer Lab"],
+    },
+    {
+      icon: Users2,
+      title: "Leadership",
+      items: ["Student Council", "Prefects", "Class Representatives", "Peer Support"],
+    },
   ];
 
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
       <section className="relative min-h-[600px] flex items-center justify-center overflow-hidden">
-        <div 
+        <div
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{ backgroundImage: `url(${heroImage})` }}
         >
           <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/90 to-background/80"></div>
         </div>
-        
+
         <div className="container mx-auto px-4 relative z-10">
           <div className="max-w-4xl mx-auto text-center animate-fade-in">
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 text-primary mb-6 backdrop-blur-sm">
               <GraduationCap className="h-5 w-5" />
               <span className="font-semibold">Excellence in Education</span>
             </div>
-            
+
             <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-primary via-accent to-primary bg-clip-text text-transparent">
               Empowering Minds Through Quality Programs
             </h1>
-            
+
             <p className="text-xl md:text-2xl text-muted-foreground mb-8 leading-relaxed max-w-3xl mx-auto">
-              At Elma School, Kamonong, we offer comprehensive programs across both 8-4-4 and CBC curricula, nurturing well-rounded students ready for the future.
+              At Elma School, Kamonong, we offer comprehensive programs across both 8-4-4 and CBC curricula, nurturing
+              well-rounded students ready for the future.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button asChild size="lg" className="text-lg shadow-elegant hover:shadow-glow transition-all duration-500 hover:scale-105 group">
+              <Button
+                asChild
+                size="lg"
+                className="text-lg shadow-elegant hover:shadow-glow transition-all duration-500 hover:scale-105 group"
+              >
                 <Link to="/admissions">
                   Apply Now (Forms 3 & 4 Open)
                   <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform duration-300" />
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="outline" className="text-lg shadow-soft hover:shadow-hover transition-all duration-500 hover:scale-105 border-2">
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="text-lg shadow-soft hover:shadow-hover transition-all duration-500 hover:scale-105 border-2"
+              >
                 <Link to="/cbc">Explore CBC Pathways</Link>
               </Button>
             </div>
@@ -136,7 +171,6 @@ const Programs = () => {
 
       <div className="container mx-auto px-4 py-16">
         <div className="max-w-6xl mx-auto">
-          
           {/* Curriculum Systems */}
           <section className="mb-20">
             <div className="text-center mb-12">
@@ -144,7 +178,8 @@ const Programs = () => {
                 Dual Curriculum Excellence
               </h2>
               <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-                We support both the traditional 8-4-4 system and the modern CBC framework, ensuring quality education for all learners.
+                We support both the traditional 8-4-4 system and the modern CBC framework, ensuring quality education
+                for all learners.
               </p>
             </div>
 
@@ -159,7 +194,8 @@ const Programs = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground mb-4">
-                    Currently admitting Form 3 and Form 4 students. Our experienced teachers provide comprehensive exam preparation with a proven track record of excellent KCSE results.
+                    Currently admitting Form 3 and Form 4 students. Our experienced teachers provide comprehensive exam
+                    preparation with a proven track record of excellent KCSE results.
                   </p>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
@@ -188,7 +224,8 @@ const Programs = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground mb-4">
-                    Offering Grades 10-12 with three specialized pathways: STEM, Arts & Sports, and Social Sciences. Hands-on learning that builds real-world competencies.
+                    Offering Grades 10-12 with three specialized pathways: STEM, Arts & Sports, and Social Sciences.
+                    Hands-on learning that builds real-world competencies.
                   </p>
                   <div className="space-y-2">
                     <div className="flex items-center gap-2">
@@ -222,34 +259,34 @@ const Programs = () => {
                 Student Leadership & Mentorship
               </h2>
               <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-                Building confident leaders and responsible citizens through structured mentorship and leadership opportunities.
+                Building confident leaders and responsible citizens through structured mentorship and leadership
+                opportunities.
               </p>
             </div>
 
             {/* School President & Student Council */}
             <div className="mb-12">
               <h3 className="text-2xl font-bold text-center mb-8">Our Student Leaders</h3>
-              
+
               {leadershipPrograms?.map((program) => {
                 const members = programMembers?.filter((m: any) => m.program_id === program.id);
-                const president = members?.find((m: any) => 
-                  m.name.toLowerCase().includes('president') || 
-                  m.display_order === 0
+                const president = members?.find(
+                  (m: any) => m.name.toLowerCase().includes("president") || m.display_order === 0,
                 );
                 const council = members?.filter((m: any) => m.id !== president?.id);
 
                 return (
                   <div key={program.id} className="mb-12">
                     <h4 className="text-xl font-bold text-center mb-6">{program.title}</h4>
-                    
+
                     {president && (
                       <Card className="shadow-elegant border-0 bg-gradient-to-br from-primary/10 via-background to-accent/5 mb-8 overflow-hidden">
                         <CardContent className="pt-6">
                           <div className="flex flex-col md:flex-row items-center gap-6">
                             {president.image_url && (
                               <div className="relative w-40 h-40 rounded-full overflow-hidden flex-shrink-0 ring-4 ring-primary/30">
-                                <img 
-                                  src={president.image_url} 
+                                <img
+                                  src={president.image_url}
                                   alt={president.name}
                                   className="w-full h-full object-cover"
                                 />
@@ -271,15 +308,17 @@ const Programs = () => {
 
                     {council && council.length > 0 && (
                       <>
-                        <h4 className="text-xl font-bold mb-6 text-center">Student Council</h4>
                         <div className="grid md:grid-cols-4 gap-6 mb-8">
                           {council.map((member: any) => (
-                            <Card key={member.id} className="shadow-soft hover:shadow-hover transition-smooth border-0 text-center group">
+                            <Card
+                              key={member.id}
+                              className="shadow-soft hover:shadow-hover transition-smooth border-0 text-center group"
+                            >
                               <CardContent className="pt-6">
                                 {member.image_url && (
                                   <div className="relative w-28 h-28 mx-auto mb-4 rounded-full overflow-hidden ring-2 ring-primary/20 group-hover:ring-4 group-hover:ring-primary/40 transition-all">
-                                    <img 
-                                      src={member.image_url} 
+                                    <img
+                                      src={member.image_url}
                                       alt={member.name}
                                       className="w-full h-full object-cover"
                                     />
@@ -308,7 +347,8 @@ const Programs = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    Older students guide younger ones in academics, character development, and school life, creating a supportive community.
+                    Older students guide younger ones in academics, character development, and school life, creating a
+                    supportive community.
                   </p>
                 </CardContent>
               </Card>
@@ -322,7 +362,8 @@ const Programs = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    Student council, class representatives, and prefects develop leadership skills while serving their peers.
+                    Student council, class representatives, and prefects develop leadership skills while serving their
+                    peers.
                   </p>
                 </CardContent>
               </Card>
@@ -336,7 +377,8 @@ const Programs = () => {
                 </CardHeader>
                 <CardContent>
                   <p className="text-muted-foreground">
-                    Regular mentorship sessions help students explore career paths and make informed decisions about their future.
+                    Regular mentorship sessions help students explore career paths and make informed decisions about
+                    their future.
                   </p>
                 </CardContent>
               </Card>
@@ -349,7 +391,9 @@ const Programs = () => {
                   <div>
                     <h3 className="text-xl font-bold mb-2">Character-Centered Mentorship</h3>
                     <p className="text-muted-foreground leading-relaxed">
-                      Our mentorship program emphasizes integrity, respect, responsibility, and service. Students participate in community service projects, develop emotional intelligence, and learn the importance of giving back to society.
+                      Our mentorship program emphasizes integrity, respect, responsibility, and service. Students
+                      participate in community service projects, develop emotional intelligence, and learn the
+                      importance of giving back to society.
                     </p>
                   </div>
                 </div>
@@ -364,7 +408,8 @@ const Programs = () => {
                 Career & College Preparation
               </h2>
               <p className="text-lg text-muted-foreground max-w-3xl mx-auto">
-                Preparing students for success beyond secondary school through comprehensive guidance and skill development.
+                Preparing students for success beyond secondary school through comprehensive guidance and skill
+                development.
               </p>
             </div>
 
@@ -461,8 +506,8 @@ const Programs = () => {
                     </div>
                   </div>
                   <div className="relative h-64 rounded-xl overflow-hidden shadow-soft">
-                    <img 
-                      src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600&h=400&fit=crop" 
+                    <img
+                      src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=600&h=400&fit=crop"
                       alt="Students in career preparation session"
                       className="w-full h-full object-cover"
                     />
@@ -479,7 +524,10 @@ const Programs = () => {
               {subjects?.map((subject) => {
                 const Icon = getIcon(subject.icon_name);
                 return (
-                  <Card key={subject.id} className="shadow-soft hover:shadow-hover transition-all duration-300 border-0">
+                  <Card
+                    key={subject.id}
+                    className="shadow-soft hover:shadow-hover transition-all duration-300 border-0"
+                  >
                     <CardHeader>
                       <div className="h-14 w-14 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white mb-3">
                         <Icon className="h-7 w-7" />
@@ -503,11 +551,7 @@ const Programs = () => {
                 <Card key={item.id} className="shadow-soft hover:shadow-hover transition-all duration-300 border-0">
                   <CardContent className="p-6">
                     {item.image_url && (
-                      <img 
-                        src={item.image_url}
-                        alt={item.title}
-                        className="w-full h-40 object-cover rounded-lg mb-4"
-                      />
+                      <img src={item.image_url} alt={item.title} className="w-full h-40 object-cover rounded-lg mb-4" />
                     )}
                     <h3 className="text-xl font-bold mb-2">{item.title}</h3>
                     <p className="text-muted-foreground">{item.description}</p>
@@ -522,15 +566,20 @@ const Programs = () => {
             <h2 className="text-3xl font-bold mb-8 text-center bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               Our Departments
             </h2>
-            
+
             <div className="grid md:grid-cols-2 gap-8">
               {departments?.map((dept) => {
                 const deptStaff = departmentStaff?.filter((s: any) => s.department_id === dept.id);
-                const hod = deptStaff?.find((s: any) => s.position.toLowerCase().includes("head") || s.display_order === 0);
+                const hod = deptStaff?.find(
+                  (s: any) => s.position.toLowerCase().includes("head") || s.display_order === 0,
+                );
                 const otherStaff = deptStaff?.filter((s: any) => s.id !== hod?.id);
 
                 return (
-                  <Card key={dept.id} className="shadow-soft hover:shadow-hover transition-all duration-300 border-0 bg-gradient-to-br from-background to-muted/30">
+                  <Card
+                    key={dept.id}
+                    className="shadow-soft hover:shadow-hover transition-all duration-300 border-0 bg-gradient-to-br from-background to-muted/30"
+                  >
                     <CardHeader>
                       <CardTitle className="text-2xl">{dept.name}</CardTitle>
                       <CardDescription className="text-base">{dept.description}</CardDescription>
@@ -540,8 +589,8 @@ const Programs = () => {
                         <div className="mb-6 p-6 bg-gradient-to-br from-primary/5 to-accent/5 rounded-lg">
                           <div className="flex flex-col md:flex-row items-center md:items-start gap-4">
                             {hod.image_url && (
-                              <img 
-                                src={hod.image_url} 
+                              <img
+                                src={hod.image_url}
                                 alt={hod.name}
                                 className="w-28 h-28 rounded-full object-cover ring-4 ring-primary/20"
                               />
@@ -554,16 +603,21 @@ const Programs = () => {
                           </div>
                         </div>
                       )}
-                      
+
                       {otherStaff && otherStaff.length > 0 && (
                         <div>
-                          <h4 className="text-sm font-semibold text-muted-foreground uppercase mb-4">Department Staff</h4>
+                          <h4 className="text-sm font-semibold text-muted-foreground uppercase mb-4">
+                            Department Staff
+                          </h4>
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             {otherStaff.map((staff: any) => (
-                              <div key={staff.id} className="flex flex-col items-center text-center p-3 rounded-lg hover:bg-muted/50 transition-colors">
+                              <div
+                                key={staff.id}
+                                className="flex flex-col items-center text-center p-3 rounded-lg hover:bg-muted/50 transition-colors"
+                              >
                                 {staff.image_url && (
-                                  <img 
-                                    src={staff.image_url} 
+                                  <img
+                                    src={staff.image_url}
                                     alt={staff.name}
                                     className="w-16 h-16 rounded-full object-cover mb-2 ring-2 ring-primary/10"
                                   />
