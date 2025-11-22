@@ -83,7 +83,42 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Not found in any registry
+    // Last check: see if user exists in profiles table (for super_admins and other users created directly)
+    const { data: profileData, error: profileError } = await supabase
+      .from("profiles")
+      .select("id")
+      .ilike("id", `%${email.split('@')[0]}%`)
+      .maybeSingle();
+
+    // Actually, let's check user_roles by getting all users and finding the one with this email
+    const { data: { users }, error: usersError } = await supabase.auth.admin.listUsers();
+    
+    if (!usersError && users) {
+      const matchingUser = users.find(u => u.email?.toLowerCase() === email.toLowerCase());
+      
+      if (matchingUser) {
+        // Check if this user has a role
+        const { data: roleData, error: roleError } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", matchingUser.id)
+          .maybeSingle();
+
+        if (!roleError && roleData) {
+          console.log("Found existing user with role:", roleData.role);
+          return new Response(
+            JSON.stringify({
+              valid: true,
+              type: "existing_user",
+              role: roleData.role
+            }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+    }
+
+    // Not found in any registry or existing users
     console.log("Email not found in any registry or not approved");
     return new Response(
       JSON.stringify({
