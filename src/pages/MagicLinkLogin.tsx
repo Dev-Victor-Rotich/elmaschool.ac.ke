@@ -12,7 +12,6 @@ const MagicLinkLogin = () => {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
-  const [magicLink, setMagicLink] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const handleMagicLink = async (e: React.FormEvent) => {
@@ -20,36 +19,43 @@ const MagicLinkLogin = () => {
     setLoading(true);
 
     try {
-      // Call the send-magic-link edge function
-      const { data, error } = await supabase.functions.invoke("send-magic-link", {
-        body: { email },
+      // First, validate the email exists in the registry
+      const { data: registryData, error: registryError } = await supabase.functions.invoke(
+        "validate-registry",
+        { body: { email } }
+      );
+
+      if (registryError) {
+        throw new Error("Failed to validate email. Please try again.");
+      }
+
+      if (!registryData?.valid) {
+        throw new Error("This email is not registered in our system. Please contact the school administrator.");
+      }
+
+      // Send magic link using Supabase's built-in OTP
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email: email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
 
-      if (error) {
-        throw error;
+      if (otpError) {
+        throw otpError;
       }
 
-      if (data?.error) {
-        toast.error(data.error);
-      } else {
-        console.log("Magic link data received:", data);
-        console.log("Magic link URL:", data?.magicLink);
-        setEmailSent(true);
-        setMagicLink(data?.magicLink ?? null);
-        toast.success(
-          data?.magicLink ? "Magic link generated. You can open it below." : "Magic link sent! Check your email.",
-        );
-      }
+      setEmailSent(true);
+      toast.success("Magic link sent to your email!");
     } catch (error: any) {
       console.error("Error sending magic link:", error);
       
-      // Provide user-friendly error messages
       let errorMessage = "Failed to send magic link. Please try again.";
       
-      if (error.message?.includes("non-2xx") || error.message?.includes("FunctionsHttpError")) {
-        errorMessage = "This email is not registered in our system. Please contact the school administrator to register your account.";
-      } else if (error.message?.includes("not found") || error.message?.includes("does not exist")) {
-        errorMessage = "This email is not registered in our system. Please verify your email address or contact the school office.";
+      if (error.message?.includes("not registered")) {
+        errorMessage = error.message;
+      } else if (error.message?.includes("rate limit")) {
+        errorMessage = "Too many requests. Please wait a few minutes before trying again.";
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -72,45 +78,34 @@ const MagicLinkLogin = () => {
             </div>
             <CardTitle className="text-2xl">Check Your Email</CardTitle>
             <CardDescription className="text-base">
-              We've sent a secure login link to <strong>{email}</strong>
+              A secure login link has been sent to <strong>{email}</strong>
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {magicLink ? (
-              <>
-                <Alert>
-                  <Info className="h-4 w-4" />
-                  <AlertDescription>
-                    Click the button below to access your dashboard, or use the link sent to your email.
-                  </AlertDescription>
-                </Alert>
-                <div className="space-y-2">
-                  <Button
-                    className="w-full h-12 text-base font-semibold"
-                    onClick={() => (window.location.href = magicLink)}
-                  >
-                    Open Login Link
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    className="w-full h-12 text-base"
-                    onClick={() => {
-                      navigator.clipboard.writeText(magicLink);
-                      toast.success("Magic link copied to clipboard");
-                    }}
-                  >
-                    Copy Magic Link
-                  </Button>
-                </div>
-              </>
-            ) : (
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription>
-                  Click the link in your email to access your dashboard. The link will expire in 15 minutes.
-                </AlertDescription>
-              </Alert>
-            )}
+            <Alert className="border-primary/20 bg-primary/5">
+              <Info className="h-4 w-4 text-primary" />
+              <AlertDescription>
+                <strong>Check your email inbox</strong> for a secure login link. The link expires in <strong>1 hour</strong>.
+              </AlertDescription>
+            </Alert>
+
+            <div className="space-y-2 text-sm text-muted-foreground">
+              <p className="font-medium text-foreground">What to do next:</p>
+              <ol className="list-decimal list-inside space-y-1 ml-2">
+                <li>Open your email inbox</li>
+                <li>Look for an email from Elma School</li>
+                <li>Click the "Log in" button in the email</li>
+                <li>You'll be redirected to your dashboard</li>
+              </ol>
+            </div>
+
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription className="text-xs">
+                Didn't receive the email? Check your spam folder or try again with a different email address.
+              </AlertDescription>
+            </Alert>
+
             <div className="flex gap-2">
               <Button
                 variant="outline"
@@ -118,10 +113,9 @@ const MagicLinkLogin = () => {
                 onClick={() => {
                   setEmailSent(false);
                   setEmail("");
-                  setMagicLink(null);
                 }}
               >
-                Try a Different Email
+                Try Different Email
               </Button>
               <Button variant="ghost" className="flex-1" onClick={() => navigate("/")}>
                 Return to Home
