@@ -33,48 +33,11 @@ const MagicLinkLogin = () => {
         throw new Error("This email is not registered in our system. Please contact the school administrator.");
       }
 
-      // Determine redirect URL based on role
-      const role = registryData.role;
-      let redirectPath = "/dashboard";
-      
-      switch (role) {
-        case "super_admin":
-          redirectPath = "/dashboard/superadmin";
-          break;
-        case "admin":
-          redirectPath = "/dashboard/admin";
-          break;
-        case "teacher":
-          redirectPath = "/staff/teacher";
-          break;
-        case "hod":
-          redirectPath = "/staff/hod";
-          break;
-        case "bursar":
-          redirectPath = "/dashboard/bursar";
-          break;
-        case "chaplain":
-          redirectPath = "/staff/chaplain";
-          break;
-        case "librarian":
-          redirectPath = "/staff/librarian";
-          break;
-        case "classteacher":
-          redirectPath = "/staff/classteacher";
-          break;
-        case "student":
-          redirectPath = "/dashboard/student";
-          break;
-        case "class_rep":
-          redirectPath = "/students/classrep";
-          break;
-      }
-
-      // Send magic link using Supabase's built-in OTP with role-specific redirect
+      // Send magic link using Supabase's built-in OTP - redirect to callback for processing
       const { error: otpError } = await supabase.auth.signInWithOtp({
         email: email,
         options: {
-          emailRedirectTo: `${window.location.origin}${redirectPath}`,
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
         },
       });
 
