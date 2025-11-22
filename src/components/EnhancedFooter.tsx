@@ -15,13 +15,28 @@ const EnhancedFooter = () => {
               Growing confident, skilled, and inspired learners through modern, hands-on education.
             </p>
             <div className="flex gap-3">
-              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary hover:text-white transition-smooth">
+              <a
+                href="https://facebook.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary hover:text-white transition-smooth"
+              >
                 <Facebook className="h-4 w-4" />
               </a>
-              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary hover:text-white transition-smooth">
+              <a
+                href="https://twitter.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary hover:text-white transition-smooth"
+              >
                 <Twitter className="h-4 w-4" />
               </a>
-              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary hover:text-white transition-smooth">
+              <a
+                href="https://instagram.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center hover:bg-primary hover:text-white transition-smooth"
+              >
                 <Instagram className="h-4 w-4" />
               </a>
             </div>
@@ -32,19 +47,29 @@ const EnhancedFooter = () => {
             <h3 className="text-lg font-bold text-foreground">Quick Links</h3>
             <ul className="space-y-2 text-sm">
               <li>
-                <Link to="/about" className="text-muted-foreground hover:text-primary transition-smooth">About Us</Link>
+                <Link to="/about" className="text-muted-foreground hover:text-primary transition-smooth">
+                  About Us
+                </Link>
               </li>
               <li>
-                <Link to="/cbc" className="text-muted-foreground hover:text-primary transition-smooth">CBC Curriculum</Link>
+                <Link to="/cbc" className="text-muted-foreground hover:text-primary transition-smooth">
+                  CBC Curriculum
+                </Link>
               </li>
               <li>
-                <Link to="/programs" className="text-muted-foreground hover:text-primary transition-smooth">Programs</Link>
+                <Link to="/programs" className="text-muted-foreground hover:text-primary transition-smooth">
+                  Programs
+                </Link>
               </li>
               <li>
-                <Link to="/admissions" className="text-muted-foreground hover:text-primary transition-smooth">Admissions</Link>
+                <Link to="/admissions" className="text-muted-foreground hover:text-primary transition-smooth">
+                  Admissions
+                </Link>
               </li>
               <li>
-                <Link to="/gallery" className="text-muted-foreground hover:text-primary transition-smooth">Gallery</Link>
+                <Link to="/gallery" className="text-muted-foreground hover:text-primary transition-smooth">
+                  Gallery
+                </Link>
               </li>
             </ul>
           </div>
@@ -59,7 +84,7 @@ const EnhancedFooter = () => {
               </li>
               <li className="flex items-start gap-2 text-muted-foreground">
                 <Mail className="h-4 w-4 mt-0.5 text-primary" />
-                <span>info@elmakamonong.ac.ke</span>
+                <span>ekhs024@gmail.com</span>
               </li>
               <li className="flex items-start gap-2 text-muted-foreground">
                 <MapPin className="h-4 w-4 mt-0.5 text-primary" />
@@ -73,11 +98,7 @@ const EnhancedFooter = () => {
             <h3 className="text-lg font-bold text-foreground">Stay Updated</h3>
             <p className="text-sm text-muted-foreground">Subscribe to receive news and updates.</p>
             <div className="flex gap-2">
-              <Input 
-                type="email" 
-                placeholder="Your email" 
-                className="text-sm"
-              />
+              <Input type="email" placeholder="Your email" className="text-sm" />
               <Button size="sm" className="shrink-0">
                 Subscribe
               </Button>
@@ -88,11 +109,15 @@ const EnhancedFooter = () => {
         {/* Bottom Bar */}
         <div className="pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-muted-foreground">
           <p>
-            Powered by <span className="font-semibold text-foreground">KLWDCT</span>. All rights reserved ©2025
+            Created by <span className="font-semibold text-foreground">KLWDCT</span>. All rights reserved ©2025
           </p>
           <div className="flex gap-4">
-            <Link to="/contact" className="hover:text-primary transition-smooth">Privacy Policy</Link>
-            <Link to="/contact" className="hover:text-primary transition-smooth">Terms of Service</Link>
+            <Link to="/contact" className="hover:text-primary transition-smooth">
+              Privacy Policy
+            </Link>
+            <Link to="/contact" className="hover:text-primary transition-smooth">
+              Terms of Service
+            </Link>
           </div>
         </div>
       </div>
