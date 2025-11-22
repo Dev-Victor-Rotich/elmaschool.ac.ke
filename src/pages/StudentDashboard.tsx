@@ -3,13 +3,21 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { LogOut, GraduationCap } from "lucide-react";
+import { useImpersonation } from "@/hooks/useImpersonation";
+import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 
 const StudentDashboard = () => {
   const navigate = useNavigate();
+  const { isImpersonating, impersonationData, exitImpersonation } = useImpersonation();
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/login");
+    if (isImpersonating) {
+      exitImpersonation();
+      navigate("/dashboard/superadmin");
+    } else {
+      await supabase.auth.signOut();
+      navigate("/login");
+    }
   };
 
   return (
@@ -22,12 +30,19 @@ const StudentDashboard = () => {
           </div>
           <Button variant="outline" onClick={handleLogout}>
             <LogOut className="w-4 h-4 mr-2" />
-            Logout
+            {isImpersonating ? 'Exit View' : 'Logout'}
           </Button>
         </div>
       </nav>
 
       <div className="container mx-auto px-4 py-8">
+        {isImpersonating && impersonationData && (
+          <ImpersonationBanner 
+            userName={impersonationData.userName}
+            userRole={impersonationData.userRole}
+            onExitImpersonation={exitImpersonation}
+          />
+        )}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           <Card>
             <CardHeader>
