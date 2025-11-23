@@ -40,7 +40,7 @@ export const EventsManager = () => {
 
   const createMutation = useMutation({
     mutationFn: async (data: any) => {
-      const { error } = await supabase.from("events").insert(data);
+      const { error } = await supabase.from("events").insert({ ...data, approved: true });
       if (error) throw error;
     },
     onSuccess: () => {

@@ -33,13 +33,20 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
 
         const isSuperAdmin = userRoleData?.role === 'super_admin';
 
+        // Super admin can access everything (including when impersonating)
+        if (isSuperAdmin) {
+          setAuthorized(true);
+          setLoading(false);
+          return;
+        }
+
         // Check if super admin is impersonating a user
         const impersonationData = localStorage.getItem('impersonation');
         
-        if (impersonationData && isSuperAdmin) {
+        if (impersonationData) {
           const { userRole } = JSON.parse(impersonationData);
           
-          // If super admin is impersonating, check if impersonated role matches required role
+          // If impersonating, check if impersonated role matches required role
           if (requiredRole) {
             setAuthorized(userRole === requiredRole);
           } else {

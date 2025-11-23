@@ -218,11 +218,22 @@ export const RoleManagement = () => {
 
   const addRoleMutation = useMutation({
     mutationFn: async ({ userId, role, assignedClass }: { userId: string; role: string; assignedClass?: string }) => {
-      const { error } = await supabase
+      // Check if user already has this role
+      const { data: existingRole } = await supabase
         .from('user_roles')
-        .insert([{ user_id: userId, role: role as any }]);
+        .select('id')
+        .eq('user_id', userId)
+        .eq('role', role as any)
+        .maybeSingle();
       
-      if (error) throw error;
+      // Only insert if role doesn't exist
+      if (!existingRole) {
+        const { error } = await supabase
+          .from('user_roles')
+          .insert([{ user_id: userId, role: role as any }]);
+        
+        if (error) throw error;
+      }
 
       // If classteacher role, save class assignment
       if (role === 'classteacher' && assignedClass) {
