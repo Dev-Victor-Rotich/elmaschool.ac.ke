@@ -33,7 +33,6 @@ const Home = () => {
       const { data, error } = await supabase
         .from("events")
         .select("*")
-        .eq("approved", true)
         .gte("event_date", today)
         .order("event_date", { ascending: true })
         .limit(4);

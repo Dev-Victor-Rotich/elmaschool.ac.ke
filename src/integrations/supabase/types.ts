@@ -626,11 +626,9 @@ export type Database = {
       }
       events: {
         Row: {
-          approved: boolean | null
           created_at: string
           created_by: string | null
           description: string | null
-          display_order: number | null
           event_date: string
           event_type: string
           id: string
@@ -640,11 +638,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          approved?: boolean | null
           created_at?: string
           created_by?: string | null
           description?: string | null
-          display_order?: number | null
           event_date: string
           event_type: string
           id?: string
@@ -654,11 +650,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          approved?: boolean | null
           created_at?: string
           created_by?: string | null
           description?: string | null
-          display_order?: number | null
           event_date?: string
           event_type?: string
           id?: string
