@@ -15,7 +15,17 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Normal authentication flow first
+        // Check for impersonation first
+        const impersonationData = localStorage.getItem('impersonation');
+        
+        if (impersonationData) {
+          // Super admin is impersonating - allow all access
+          setAuthorized(true);
+          setLoading(false);
+          return;
+        }
+
+        // Normal authentication flow
         const { data: { session } } = await supabase.auth.getSession();
 
         if (!session) {
@@ -33,30 +43,14 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
 
         const isSuperAdmin = userRoleData?.role === 'super_admin';
 
-        // Super admin can access everything (including when impersonating)
+        // Super admin can access everything
         if (isSuperAdmin) {
           setAuthorized(true);
           setLoading(false);
           return;
         }
 
-        // Check if super admin is impersonating a user
-        const impersonationData = localStorage.getItem('impersonation');
-        
-        if (impersonationData) {
-          const { userRole } = JSON.parse(impersonationData);
-          
-          // If impersonating, check if impersonated role matches required role
-          if (requiredRole) {
-            setAuthorized(userRole === requiredRole);
-          } else {
-            setAuthorized(true);
-          }
-          setLoading(false);
-          return;
-        }
-
-        // Normal role check for non-impersonating users
+        // Normal role check for non-super-admin users
         if (requiredRole) {
           if (userRoleData?.role === requiredRole) {
             setAuthorized(true);

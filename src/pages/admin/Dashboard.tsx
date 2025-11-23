@@ -61,15 +61,15 @@ const AdminDashboard = () => {
       .from("events")
       .select("id", { count: "exact" });
 
-    const { data: pending } = await supabase
-      .from("events")
+    const { data: profiles } = await supabase
+      .from("profiles")
       .select("id", { count: "exact" })
-      .eq("approved", false);
+      .eq("approval_status", "pending");
 
     setStats({
       totalStudents: students?.length || 0,
       totalEvents: events?.length || 0,
-      pendingApprovals: pending?.length || 0,
+      pendingApprovals: profiles?.length || 0,
     });
   };
 
