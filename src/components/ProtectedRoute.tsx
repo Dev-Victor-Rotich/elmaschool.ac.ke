@@ -15,13 +15,31 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        // Normal authentication flow first
+        const { data: { session } } = await supabase.auth.getSession();
+
+        if (!session) {
+          setAuthorized(false);
+          setLoading(false);
+          return;
+        }
+
+        // Check if authenticated user is super admin
+        const { data: userRoleData } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", session.user.id)
+          .single();
+
+        const isSuperAdmin = userRoleData?.role === 'super_admin';
+
         // Check if super admin is impersonating a user
         const impersonationData = localStorage.getItem('impersonation');
         
-        if (impersonationData) {
+        if (impersonationData && isSuperAdmin) {
           const { userRole } = JSON.parse(impersonationData);
           
-          // If impersonating, check if impersonated role matches required role
+          // If super admin is impersonating, check if impersonated role matches required role
           if (requiredRole) {
             setAuthorized(userRole === requiredRole);
           } else {
@@ -31,23 +49,9 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
           return;
         }
 
-        // Normal authentication flow
-        const { data: { session } } = await supabase.auth.getSession();
-
-        if (!session) {
-          setAuthorized(false);
-          setLoading(false);
-          return;
-        }
-
+        // Normal role check for non-impersonating users
         if (requiredRole) {
-          const { data: roleData } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", session.user.id)
-            .single();
-
-          if (roleData?.role === requiredRole) {
+          if (userRoleData?.role === requiredRole) {
             setAuthorized(true);
           } else {
             setAuthorized(false);

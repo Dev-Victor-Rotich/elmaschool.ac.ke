@@ -71,7 +71,7 @@ export const RoleManagement = () => {
     navigate(route);
   };
 
-  const AVAILABLE_CLASSES = ['Grade 10', 'Form 1', 'Form 2', 'Form 3', 'Form 4'];
+  
 
   const { data: allUsers, isLoading } = useQuery<UserWithRoles[]>({
     queryKey: ['all-users-with-roles'],
@@ -497,19 +497,15 @@ export const RoleManagement = () => {
               
               {selectedRole === 'classteacher' && (
                 <div>
-                  <Label>Select Class</Label>
-                  <Select value={selectedClass} onValueChange={setSelectedClass}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose class" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {AVAILABLE_CLASSES.map((cls) => (
-                        <SelectItem key={cls} value={cls}>
-                          {cls}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label>Class Assignment</Label>
+                  <Input
+                    placeholder="e.g., Form 1A, Form 2B, Grade 10"
+                    value={selectedClass}
+                    onChange={(e) => setSelectedClass(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Enter the class name (supports multiple streams)
+                  </p>
                 </div>
               )}
 
