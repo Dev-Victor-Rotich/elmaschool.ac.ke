@@ -71,15 +71,15 @@ const StudentPortal = () => {
       setResults(academicResults || []);
     }
 
-    // Load approved events
-    const { data: approvedEvents } = await supabase
+    // Load upcoming events
+    const { data: upcomingEvents } = await supabase
       .from("events")
       .select("*")
-      .eq("approved", true)
+      .gte("event_date", new Date().toISOString().split('T')[0])
       .order("event_date", { ascending: true })
       .limit(5);
 
-    setEvents(approvedEvents || []);
+    setEvents(upcomingEvents || []);
   };
 
   const handleLogout = async () => {
