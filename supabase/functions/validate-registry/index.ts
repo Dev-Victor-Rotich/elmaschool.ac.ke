@@ -29,6 +29,8 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
+    console.log("Validating registry for email:", email);
+
     // Check staff registry first
     const { data: staffData, error: staffError } = await supabase
       .from("staff_registry")
@@ -37,9 +39,13 @@ const handler = async (req: Request): Promise<Response> => {
       .eq("status", "active")
       .maybeSingle();
 
-    if (staffError && staffError.code !== 'PGRST116') throw staffError;
+    if (staffError && staffError.code !== 'PGRST116') {
+      console.error("Staff registry check error:", staffError);
+      throw staffError;
+    }
 
     if (staffData) {
+      console.log("Found in staff registry:", staffData.role);
       return new Response(
         JSON.stringify({
           valid: true,
@@ -59,9 +65,13 @@ const handler = async (req: Request): Promise<Response> => {
       .eq("approval_status", "approved")
       .maybeSingle();
 
-    if (studentError && studentError.code !== 'PGRST116') throw studentError;
+    if (studentError && studentError.code !== 'PGRST116') {
+      console.error("Student registry check error:", studentError);
+      throw studentError;
+    }
 
     if (studentData) {
+      console.log("Found in student registry");
       return new Response(
         JSON.stringify({
           valid: true,
@@ -95,6 +105,7 @@ const handler = async (req: Request): Promise<Response> => {
           .maybeSingle();
 
         if (!roleError && roleData) {
+          console.log("Found existing user with role:", roleData.role);
           return new Response(
             JSON.stringify({
               valid: true,
@@ -108,6 +119,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     // Not found in any registry or existing users
+    console.log("Email not found in any registry or not approved");
     return new Response(
       JSON.stringify({
         valid: false,
@@ -117,6 +129,7 @@ const handler = async (req: Request): Promise<Response> => {
     );
 
   } catch (error: any) {
+    console.error("Registry validation error:", error);
     return new Response(
       JSON.stringify({ error: error.message || "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
