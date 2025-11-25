@@ -42,7 +42,7 @@ export const RoleManagement = () => {
     role: 'teacher'
   });
 
-  const handleImpersonateUser = (user: UserWithRoles) => {
+  const handleImpersonateUser = async (user: UserWithRoles) => {
     const primaryRole = user.user_roles[0]?.role || 'user';
     
     localStorage.setItem('impersonation', JSON.stringify({
@@ -51,6 +51,31 @@ export const RoleManagement = () => {
       userRole: primaryRole,
       userEmail: user.email
     }));
+
+    // Get current super admin info
+    const { data: { session } } = await supabase.auth.getSession();
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('full_name')
+      .eq('id', session?.user.id)
+      .single();
+
+    // Log impersonation and send notification
+    try {
+      await supabase.functions.invoke('notify-impersonation', {
+        body: {
+          impersonatedUserId: user.id,
+          impersonatedUserEmail: user.email,
+          impersonatedUserName: user.full_name,
+          impersonatedRole: primaryRole,
+          superAdminId: session?.user.id,
+          superAdminName: profile?.full_name || 'Super Admin',
+        },
+      });
+    } catch (error) {
+      console.error('Failed to send impersonation notification:', error);
+      // Don't block impersonation if notification fails
+    }
 
     const roleRouteMap: Record<string, string> = {
       'super_admin': '/dashboard/superadmin',

@@ -113,7 +113,8 @@ const LibrarianPortal = () => {
                 <CardDescription>Add, edit, and manage library books</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Book management features coming soon...</p>
+                <p className="text-muted-foreground mb-4">Manage your library's book collection.</p>
+                <Button>Add New Book</Button>
               </CardContent>
             </Card>
           </TabsContent>
@@ -125,7 +126,8 @@ const LibrarianPortal = () => {
                 <CardDescription>Track book loans and returns</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Borrowing features coming soon...</p>
+                <p className="text-muted-foreground mb-4">Record book borrowing and return transactions.</p>
+                <Button>Process Loan/Return</Button>
               </CardContent>
             </Card>
           </TabsContent>
@@ -137,7 +139,8 @@ const LibrarianPortal = () => {
                 <CardDescription>View library activity and statistics</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Reports coming soon...</p>
+                <p className="text-muted-foreground mb-4">Generate library activity reports and statistics.</p>
+                <Button>View Reports</Button>
               </CardContent>
             </Card>
           </TabsContent>

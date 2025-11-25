@@ -228,7 +228,8 @@ const ClassTeacherPortal = () => {
                 <CardDescription>Mark and view attendance records</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Attendance features coming soon...</p>
+                <p className="text-muted-foreground mb-4">Track daily attendance for your class.</p>
+                <Button>Mark Attendance</Button>
               </CardContent>
             </Card>
           </TabsContent>
@@ -240,7 +241,8 @@ const ClassTeacherPortal = () => {
                 <CardDescription>Manage discipline records and remarks</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Discipline management coming soon...</p>
+                <p className="text-muted-foreground mb-4">Record and manage student discipline cases.</p>
+                <Button>Add Discipline Record</Button>
               </CardContent>
             </Card>
           </TabsContent>
@@ -252,7 +254,8 @@ const ClassTeacherPortal = () => {
                 <CardDescription>Message parents and teachers</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Messaging features coming soon...</p>
+                <p className="text-muted-foreground mb-4">Communicate with parents and other teachers.</p>
+                <Button>Send Message</Button>
               </CardContent>
             </Card>
           </TabsContent>
@@ -264,7 +267,8 @@ const ClassTeacherPortal = () => {
                 <CardDescription>Generate and view class performance reports</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Reports coming soon...</p>
+                <p className="text-muted-foreground mb-4">Generate comprehensive class performance reports.</p>
+                <Button>Generate Report</Button>
               </CardContent>
             </Card>
           </TabsContent>

@@ -890,6 +890,36 @@ export type Database = {
         }
         Relationships: []
       }
+      impersonation_logs: {
+        Row: {
+          created_at: string | null
+          id: string
+          impersonated_role: string
+          impersonated_user_email: string
+          impersonated_user_id: string
+          impersonated_user_name: string
+          super_admin_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          impersonated_role: string
+          impersonated_user_email: string
+          impersonated_user_id: string
+          impersonated_user_name: string
+          super_admin_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          impersonated_role?: string
+          impersonated_user_email?: string
+          impersonated_user_id?: string
+          impersonated_user_name?: string
+          super_admin_id?: string | null
+        }
+        Relationships: []
+      }
       leadership_programs: {
         Row: {
           created_at: string | null
