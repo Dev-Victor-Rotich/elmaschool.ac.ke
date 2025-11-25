@@ -29,31 +29,41 @@ const BursarPortal = () => {
   }, []);
 
   const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
     if (!session) {
       navigate("/auth");
       return;
     }
 
+    // If super admin is impersonating a bursar, bypass role checks but load that bursar's profile
+    const impersonationRaw = localStorage.getItem("impersonation");
+    const impersonation = impersonationRaw ? JSON.parse(impersonationRaw) : null;
+
+    const effectiveUserId = impersonation?.userId || session.user.id;
+
     const { data: profile } = await supabase
       .from("profiles")
       .select("full_name")
-      .eq("id", session.user.id)
+      .eq("id", effectiveUserId)
       .single();
 
     if (profile) {
       setUserName(profile.full_name);
     }
 
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", session.user.id);
+    if (!impersonation) {
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id);
 
-    if (!roles || roles.length === 0 || roles[0].role !== "bursar") {
-      toast.error("Access denied");
-      navigate("/auth");
+      if (!roles || roles.length === 0 || roles[0].role !== "bursar") {
+        toast.error("Access denied");
+        navigate("/auth");
+      }
     }
   };
 
@@ -73,22 +83,22 @@ const BursarPortal = () => {
     e.preventDefault();
     setLoading(true);
 
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     const balance = parseFloat(amountDue) - parseFloat(amountPaid);
 
-    const { error } = await supabase
-      .from("fee_payments")
-      .insert({
-        student_id: selectedStudent,
-        term,
-        year: parseInt(year),
-        amount_due: parseFloat(amountDue),
-        amount_paid: parseFloat(amountPaid),
-        balance,
-        receipt_number: receiptNumber,
-        payment_date: new Date().toISOString(),
-        recorded_by: session?.user.id
-      });
+    const { error } = await supabase.from("fee_payments").insert({
+      student_id: selectedStudent,
+      term,
+      year: parseInt(year),
+      amount_due: parseFloat(amountDue),
+      amount_paid: parseFloat(amountPaid),
+      balance,
+      receipt_number: receiptNumber,
+      payment_date: new Date().toISOString(),
+      recorded_by: session?.user.id,
+    });
 
     if (error) {
       toast.error("Failed to record payment");
@@ -169,12 +179,7 @@ const BursarPortal = () => {
 
                   <div className="space-y-2">
                     <Label>Year</Label>
-                    <Input
-                      type="number"
-                      value={year}
-                      onChange={(e) => setYear(e.target.value)}
-                      required
-                    />
+                    <Input type="number" value={year} onChange={(e) => setYear(e.target.value)} required />
                   </div>
                 </div>
 
@@ -236,9 +241,7 @@ const BursarPortal = () => {
               <CardDescription>Latest fee transactions</CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground text-center py-8">
-                Payment history will appear here
-              </p>
+              <p className="text-sm text-muted-foreground text-center py-8">Payment history will appear here</p>
             </CardContent>
           </Card>
         </div>

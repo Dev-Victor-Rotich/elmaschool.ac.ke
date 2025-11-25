@@ -22,29 +22,39 @@ const ClassTeacherPortal = () => {
   }, []);
 
   const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
     if (!session) {
       navigate("/auth");
       return;
     }
 
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", session.user.id);
+    // If super admin is impersonating a class teacher, bypass role checks
+    const impersonationRaw = localStorage.getItem("impersonation");
+    const impersonation = impersonationRaw ? JSON.parse(impersonationRaw) : null;
 
-    if (!roles || !roles.some(r => r.role === "classteacher")) {
-      toast.error("Access denied. Class Teacher role required.");
-      navigate("/auth");
-      return;
+    const effectiveUserId = impersonation?.userId || session.user.id;
+
+    if (!impersonation) {
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id);
+
+      if (!roles || !roles.some((r) => r.role === "classteacher")) {
+        toast.error("Access denied. Class Teacher role required.");
+        navigate("/auth");
+        return;
+      }
     }
 
-    // Fetch assigned class
+    // Fetch assigned class for the effective user (real or impersonated)
     const { data: assignment } = await supabase
       .from("classteacher_assignments")
       .select("assigned_class")
-      .eq("user_id", session.user.id)
+      .eq("user_id", effectiveUserId)
       .single();
 
     if (assignment) {
@@ -77,21 +87,24 @@ const ClassTeacherPortal = () => {
       return;
     }
 
-    localStorage.setItem('impersonation', JSON.stringify({
-      userId: student.user_id,
-      userName: student.full_name,
-      userRole: 'student',
-      userEmail: student.email || ''
-    }));
+    localStorage.setItem(
+      "impersonation",
+      JSON.stringify({
+        userId: student.user_id,
+        userName: student.full_name,
+        userRole: "student",
+        userEmail: student.email || "",
+      }),
+    );
 
     toast.success(`Now viewing as ${student.full_name}`);
-    navigate('/dashboard/student');
+    navigate("/dashboard/student");
   };
 
   const handleLogout = async () => {
     if (isImpersonating) {
       exitImpersonation();
-      navigate('/staff/classteacher');
+      navigate("/staff/classteacher");
     } else {
       await supabase.auth.signOut();
       navigate("/auth");
@@ -110,17 +123,15 @@ const ClassTeacherPortal = () => {
             onExitImpersonation={handleLogout}
           />
         )}
-        
+
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-4xl font-bold">Class Teacher Portal</h1>
-            <p className="text-muted-foreground mt-2">
-              Manage your class {assignedClass && `(${assignedClass})`}
-            </p>
+            <p className="text-muted-foreground mt-2">Manage your class {assignedClass && `(${assignedClass})`}</p>
           </div>
           <Button onClick={handleLogout} variant="outline">
             <LogOut className="w-4 h-4 mr-2" />
-            {isImpersonating ? 'Exit Viewing' : 'Logout'}
+            {isImpersonating ? "Exit Viewing" : "Logout"}
           </Button>
         </div>
 
@@ -263,11 +274,11 @@ const ClassTeacherPortal = () => {
           <TabsContent value="reports">
             <Card>
               <CardHeader>
-                <CardTitle>Class Reports</CardTitle>
-                <CardDescription>Generate and view class performance reports</CardDescription>
+                <CardTitle>Reports</CardTitle>
+                <CardDescription>View class performance and summaries</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground mb-4">Generate comprehensive class performance reports.</p>
+                <p className="text-muted-foreground mb-4">Generate and download class reports.</p>
                 <Button>Generate Report</Button>
               </CardContent>
             </Card>
