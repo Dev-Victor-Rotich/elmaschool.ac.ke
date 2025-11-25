@@ -16,22 +16,30 @@ const ClassRepPortal = () => {
   }, []);
 
   const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
     if (!session) {
       navigate("/auth");
       return;
     }
 
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", session.user.id);
+    // If super admin is impersonating a class rep, bypass role checks
+    const impersonationRaw = localStorage.getItem("impersonation");
+    const impersonation = impersonationRaw ? JSON.parse(impersonationRaw) : null;
 
-    if (!roles || !roles.some(r => r.role === "class_rep")) {
-      toast.error("Access denied. Class Rep role required.");
-      navigate("/auth");
-      return;
+    if (!impersonation) {
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id);
+
+      if (!roles || !roles.some((r) => r.role === "class_rep")) {
+        toast.error("Access denied. Class Rep role required.");
+        navigate("/auth");
+        return;
+      }
     }
 
     setLoading(false);
@@ -50,7 +58,7 @@ const ClassRepPortal = () => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-4xl font-bold">Class Rep Portal</h1>
-            <p className="text-muted-foreground mt-2">Student Leadership & Representation</p>
+            <p className="text-muted-foreground mt-2">Student Leadership &amp; Representation</p>
           </div>
           <Button onClick={handleLogout} variant="outline">
             <LogOut className="w-4 h-4 mr-2" />
@@ -107,7 +115,9 @@ const ClassRepPortal = () => {
                 <CardDescription>Message class teacher and admin</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground mb-4">Send messages to your class teacher and school administration.</p>
+                <p className="text-muted-foreground mb-4">
+                  Send messages to your class teacher and school administration.
+                </p>
                 <Button>Compose Message</Button>
               </CardContent>
             </Card>
