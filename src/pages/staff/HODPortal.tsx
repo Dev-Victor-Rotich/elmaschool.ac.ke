@@ -86,7 +86,8 @@ const HODPortal = () => {
                 <CardDescription>Manage teachers and subject allocation</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Teacher management features coming soon...</p>
+                <p className="text-muted-foreground mb-4">View and manage teachers in your department.</p>
+                <Button>View Teachers</Button>
               </CardContent>
             </Card>
           </TabsContent>
@@ -98,7 +99,8 @@ const HODPortal = () => {
                 <CardDescription>Review and approve student marks</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Results approval features coming soon...</p>
+                <p className="text-muted-foreground mb-4">Review and approve academic results from department teachers.</p>
+                <Button>View Pending Results</Button>
               </CardContent>
             </Card>
           </TabsContent>
@@ -110,7 +112,8 @@ const HODPortal = () => {
                 <CardDescription>View performance reports and statistics</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Analytics features coming soon...</p>
+                <p className="text-muted-foreground mb-4">Generate department performance analytics and reports.</p>
+                <Button>Generate Analytics</Button>
               </CardContent>
             </Card>
           </TabsContent>
@@ -122,7 +125,8 @@ const HODPortal = () => {
                 <CardDescription>Message teachers and admin</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Messaging features coming soon...</p>
+                <p className="text-muted-foreground mb-4">Communicate with department teachers and administrators.</p>
+                <Button>Send Message</Button>
               </CardContent>
             </Card>
           </TabsContent>

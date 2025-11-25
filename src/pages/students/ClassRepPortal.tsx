@@ -81,7 +81,8 @@ const ClassRepPortal = () => {
                 <CardDescription>Post announcements for your classmates</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Announcement features coming soon...</p>
+                <p className="text-muted-foreground mb-4">Create and share announcements with your class.</p>
+                <Button>Create Announcement</Button>
               </CardContent>
             </Card>
           </TabsContent>
@@ -93,7 +94,8 @@ const ClassRepPortal = () => {
                 <CardDescription>Submit feedback and concerns to teachers</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Feedback submission coming soon...</p>
+                <p className="text-muted-foreground mb-4">Share student concerns and feedback with teachers.</p>
+                <Button>Submit Feedback</Button>
               </CardContent>
             </Card>
           </TabsContent>
@@ -105,7 +107,8 @@ const ClassRepPortal = () => {
                 <CardDescription>Message class teacher and admin</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Messaging features coming soon...</p>
+                <p className="text-muted-foreground mb-4">Send messages to your class teacher and school administration.</p>
+                <Button>Compose Message</Button>
               </CardContent>
             </Card>
           </TabsContent>

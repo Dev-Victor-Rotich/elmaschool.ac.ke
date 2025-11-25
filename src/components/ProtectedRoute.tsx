@@ -19,7 +19,7 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
         const impersonationData = localStorage.getItem('impersonation');
         
         if (impersonationData) {
-          // Super admin is impersonating - allow all access
+          // Super admin is impersonating - allow ALL access with NO restrictions
           setAuthorized(true);
           setLoading(false);
           return;
@@ -43,14 +43,14 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
 
         const isSuperAdmin = userRoleData?.role === 'super_admin';
 
-        // Super admin can access everything
+        // Super admin has UNLIMITED access to ALL dashboards - NEVER deny
         if (isSuperAdmin) {
           setAuthorized(true);
           setLoading(false);
           return;
         }
 
-        // Normal role check for non-super-admin users
+        // Normal role check for non-super-admin users only
         if (requiredRole) {
           if (userRoleData?.role === requiredRole) {
             setAuthorized(true);

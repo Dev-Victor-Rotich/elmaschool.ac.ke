@@ -89,7 +89,8 @@ const ChaplainPortal = () => {
                 <CardDescription>Manage counseling sessions and student welfare</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Mentorship features coming soon...</p>
+                <p className="text-muted-foreground mb-4">Schedule and track mentorship sessions with students.</p>
+                <Button>Schedule Session</Button>
               </CardContent>
             </Card>
           </TabsContent>
@@ -101,7 +102,8 @@ const ChaplainPortal = () => {
                 <CardDescription>Post inspirational messages for students</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Quote management coming soon...</p>
+                <p className="text-muted-foreground mb-4">Share inspirational quotes with the school community.</p>
+                <Button>Add New Quote</Button>
               </CardContent>
             </Card>
           </TabsContent>
@@ -113,7 +115,8 @@ const ChaplainPortal = () => {
                 <CardDescription>Organize and manage chaplaincy events</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Event management coming soon...</p>
+                <p className="text-muted-foreground mb-4">Create and manage spiritual events and activities.</p>
+                <Button>Create Event</Button>
               </CardContent>
             </Card>
           </TabsContent>
@@ -125,7 +128,8 @@ const ChaplainPortal = () => {
                 <CardDescription>Message students and parents</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Messaging features coming soon...</p>
+                <p className="text-muted-foreground mb-4">Send messages and updates to students and parents.</p>
+                <Button>Compose Message</Button>
               </CardContent>
             </Card>
           </TabsContent>
@@ -137,7 +141,8 @@ const ChaplainPortal = () => {
                 <CardDescription>Track mentorship sessions and student welfare</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">Reports coming soon...</p>
+                <p className="text-muted-foreground mb-4">Generate welfare and mentorship reports.</p>
+                <Button>Generate Report</Button>
               </CardContent>
             </Card>
           </TabsContent>

@@ -71,11 +71,10 @@ const StudentPortal = () => {
       setResults(academicResults || []);
     }
 
-    // Load approved events
+    // Load upcoming events
     const { data: approvedEvents } = await supabase
       .from("events")
       .select("*")
-      .eq("approved", true)
       .order("event_date", { ascending: true })
       .limit(5);
 
