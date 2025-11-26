@@ -115,12 +115,16 @@ const AuthCallback = () => {
             navigate("/staff/classteacher", { replace: true });
             break;
           case "student":
-            console.log("Redirecting to student dashboard");
-            navigate("/dashboard/student", { replace: true });
+            console.log("Redirecting to student portal");
+            navigate("/students/portal", { replace: true });
+            break;
+          case "student_leader":
+            console.log("Redirecting to student leader portal");
+            navigate("/students/portal", { replace: true });
             break;
           case "class_rep":
             console.log("Redirecting to class rep portal");
-            navigate("/students/classrep", { replace: true });
+            navigate("/students/class-rep", { replace: true });
             break;
           default:
             console.error("Unknown role:", roleData?.role);
