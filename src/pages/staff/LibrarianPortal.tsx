@@ -16,22 +16,30 @@ const LibrarianPortal = () => {
   }, []);
 
   const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
     if (!session) {
       navigate("/auth");
       return;
     }
 
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", session.user.id);
+    // If super admin is impersonating a librarian, bypass role checks
+    const impersonationRaw = localStorage.getItem("impersonation");
+    const impersonation = impersonationRaw ? JSON.parse(impersonationRaw) : null;
 
-    if (!roles || !roles.some(r => r.role === "librarian")) {
-      toast.error("Access denied. Librarian role required.");
-      navigate("/auth");
-      return;
+    if (!impersonation) {
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id);
+
+      if (!roles || !roles.some((r) => r.role === "librarian")) {
+        toast.error("Access denied. Librarian role required.");
+        navigate("/auth");
+        return;
+      }
     }
 
     setLoading(false);

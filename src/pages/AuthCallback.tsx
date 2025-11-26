@@ -56,24 +56,16 @@ const AuthCallback = () => {
           }
 
           if (studentRecord) {
-            // Link user to student record and assign student role
-            const { error: linkError } = await supabase
-              .from("students_data")
-              .update({ user_id: session.user.id, is_registered: true })
-              .eq("id", studentRecord.id);
+            // Treat any email found in students_data as a valid student.
+            // We only assign a role; we do NOT update students_data.user_id to avoid RLS issues.
+            const { error: insertRoleError } = await supabase
+              .from("user_roles")
+              .insert({ user_id: session.user.id, role: "student" as any });
 
-            if (linkError) {
-              console.error("Student link error:", linkError);
+            if (insertRoleError) {
+              console.error("Student role insert error:", insertRoleError);
             } else {
-              const { error: insertRoleError } = await supabase
-                .from("user_roles")
-                .insert({ user_id: session.user.id, role: "student" as any });
-
-              if (insertRoleError) {
-                console.error("Student role insert error:", insertRoleError);
-              } else {
-                role = "student";
-              }
+              role = "student";
             }
           }
         }
