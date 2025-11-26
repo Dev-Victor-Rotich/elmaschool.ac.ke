@@ -24,15 +24,21 @@ const AdminDashboard = () => {
       return;
     }
 
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", session.user.id);
+    // If super admin is impersonating an admin, bypass role checks
+    const impersonationRaw = localStorage.getItem("impersonation");
+    const impersonation = impersonationRaw ? JSON.parse(impersonationRaw) : null;
 
-    if (!roles || !roles.some(r => r.role === "admin")) {
-      toast.error("Access denied. Admin role required.");
-      navigate("/auth");
-      return;
+    if (!impersonation) {
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id);
+
+      if (!roles || !roles.some(r => r.role === "admin")) {
+        toast.error("Access denied. Admin role required.");
+        navigate("/auth");
+        return;
+      }
     }
 
     setLoading(false);

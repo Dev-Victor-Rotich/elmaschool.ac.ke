@@ -37,24 +37,32 @@ const TeacherPortal = () => {
       return;
     }
 
+    // If super admin is impersonating a teacher, bypass role checks
+    const impersonationRaw = localStorage.getItem("impersonation");
+    const impersonation = impersonationRaw ? JSON.parse(impersonationRaw) : null;
+
+    const effectiveUserId = impersonation?.userId || session.user.id;
+
     const { data: profile } = await supabase
       .from("profiles")
       .select("full_name")
-      .eq("id", session.user.id)
+      .eq("id", effectiveUserId)
       .single();
 
     if (profile) {
       setUserName(profile.full_name);
     }
 
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", session.user.id);
+    if (!impersonation) {
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id);
 
-    if (!roles || roles.length === 0 || (roles[0].role !== "teacher" && roles[0].role !== "hod")) {
-      toast.error("Access denied");
-      navigate("/auth");
+      if (!roles || roles.length === 0 || (roles[0].role !== "teacher" && roles[0].role !== "hod")) {
+        toast.error("Access denied");
+        navigate("/auth");
+      }
     }
   };
 

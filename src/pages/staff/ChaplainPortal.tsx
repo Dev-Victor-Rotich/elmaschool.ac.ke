@@ -23,15 +23,21 @@ const ChaplainPortal = () => {
       return;
     }
 
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", session.user.id);
+    // If super admin is impersonating a chaplain, bypass role checks
+    const impersonationRaw = localStorage.getItem("impersonation");
+    const impersonation = impersonationRaw ? JSON.parse(impersonationRaw) : null;
 
-    if (!roles || !roles.some(r => r.role === "chaplain")) {
-      toast.error("Access denied. Chaplain role required.");
-      navigate("/auth");
-      return;
+    if (!impersonation) {
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", session.user.id);
+
+      if (!roles || !roles.some(r => r.role === "chaplain")) {
+        toast.error("Access denied. Chaplain role required.");
+        navigate("/auth");
+        return;
+      }
     }
 
     setLoading(false);
