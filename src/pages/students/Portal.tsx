@@ -19,21 +19,28 @@ const StudentPortal = () => {
   }, []);
 
   const checkAuth = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
     if (!session) {
       navigate("/auth");
       return;
     }
 
-    // Verify student role
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", session.user.id);
+    // Verify that this user has a student record instead of relying on user_roles
+    const { data: student, error: studentError } = await supabase
+      .from("students_data")
+      .select("id")
+      .eq("user_id", session.user.id)
+      .maybeSingle();
 
-    if (!roles || roles.length === 0 || roles[0].role !== "student") {
-      toast.error("Access denied. Student credentials required.");
+    if (studentError) {
+      console.error("Student auth lookup error:", studentError);
+    }
+
+    if (!student) {
+      toast.error("Access denied. Student account required.");
       navigate("/auth");
       return;
     }
