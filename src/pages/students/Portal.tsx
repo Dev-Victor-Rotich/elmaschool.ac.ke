@@ -28,32 +28,51 @@ const StudentPortal = () => {
       return;
     }
 
-    // Verify that this user has a student record instead of relying on user_roles
-    const { data: student, error: studentError } = await supabase
+    // Find student record by linked user_id, or fall back to email
+    let studentRecord: any = null;
+
+    const { data: byUser, error: byUserError } = await supabase
       .from("students_data")
       .select("id")
       .eq("user_id", session.user.id)
       .maybeSingle();
 
-    if (studentError) {
-      console.error("Student auth lookup error:", studentError);
+    if (byUserError) {
+      console.error("Student lookup by user_id error:", byUserError);
     }
 
-    if (!student) {
+    if (byUser) {
+      studentRecord = byUser;
+    } else if (session.user.email) {
+      const { data: byEmail, error: byEmailError } = await supabase
+        .from("students_data")
+        .select("id")
+        .eq("email", session.user.email)
+        .maybeSingle();
+
+      if (byEmailError) {
+        console.error("Student lookup by email error:", byEmailError);
+      }
+
+      if (byEmail) {
+        studentRecord = byEmail;
+      }
+    }
+
+    if (!studentRecord) {
       toast.error("Access denied. Student account required.");
       navigate("/auth");
       return;
     }
 
-    loadStudentData(session.user.id);
+    await loadStudentData(studentRecord.id);
   };
-
-  const loadStudentData = async (userId: string) => {
+  const loadStudentData = async (studentId: string) => {
     // Load student data
     const { data: student } = await supabase
       .from("students_data")
       .select("*")
-      .eq("user_id", userId)
+      .eq("id", studentId)
       .single();
 
     if (student) {
@@ -87,7 +106,6 @@ const StudentPortal = () => {
 
     setEvents(approvedEvents || []);
   };
-
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
