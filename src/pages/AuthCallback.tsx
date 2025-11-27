@@ -29,7 +29,7 @@ const AuthCallback = () => {
 
         console.log("Session established for user:", session.user.email);
 
-        // Get user role
+        // Try to get user role from user_roles
         const { data: roleData, error: roleError } = await supabase
           .from("user_roles")
           .select("role")
@@ -38,12 +38,11 @@ const AuthCallback = () => {
 
         if (roleError) {
           console.error("Role fetch error:", roleError);
-          throw new Error("Failed to fetch user role");
         }
 
         let role = roleData?.role as string | undefined;
 
-        // Fallback: infer role for students whose email exists in students_data
+        // Fallback: if no role but email exists in students_data, treat as student
         if (!role && session.user.email) {
           const { data: studentRecord, error: studentError } = await supabase
             .from("students_data")
@@ -56,17 +55,9 @@ const AuthCallback = () => {
           }
 
           if (studentRecord) {
-            // Treat any email found in students_data as a valid student.
-            // We only assign a role; we do NOT update students_data.user_id to avoid RLS issues.
-            const { error: insertRoleError } = await supabase
-              .from("user_roles")
-              .insert({ user_id: session.user.id, role: "student" as any });
-
-            if (insertRoleError) {
-              console.error("Student role insert error:", insertRoleError);
-            } else {
-              role = "student";
-            }
+            console.log("Student email found in students_data, redirecting to student portal");
+            navigate("/students/portal", { replace: true });
+            return;
           }
         }
 
