@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 const MagicLinkLogin = () => {
   const [email, setEmail] = useState("");
+  const [loginType, setLoginType] = useState<"student" | "staff">("student");
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ const MagicLinkLogin = () => {
       // First, validate the email exists in the registry
       const { data: registryData, error: registryError } = await supabase.functions.invoke(
         "validate-registry",
-        { body: { email } }
+        { body: { email, type: loginType } }
       );
 
       if (registryError) {
@@ -141,19 +142,42 @@ const MagicLinkLogin = () => {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleMagicLink} className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Email Address</label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                <Input
-                  type="email"
-                  placeholder="Enter your registered email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  type="button"
+                  variant={loginType === "student" ? "default" : "outline"}
+                  className="w-full h-10 text-sm"
+                  onClick={() => setLoginType("student")}
                   disabled={loading}
-                  className="pl-10 h-12"
-                />
+                >
+                  Student
+                </Button>
+                <Button
+                  type="button"
+                  variant={loginType === "staff" ? "default" : "outline"}
+                  className="w-full h-10 text-sm"
+                  onClick={() => setLoginType("staff")}
+                  disabled={loading}
+                >
+                  Staff
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Email Address</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    type="email"
+                    placeholder={loginType === "student" ? "Enter your registered student email" : "Enter your registered staff email"}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    disabled={loading}
+                    className="pl-10 h-12"
+                  />
+                </div>
               </div>
             </div>
 

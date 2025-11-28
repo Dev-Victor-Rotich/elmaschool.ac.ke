@@ -10,7 +10,6 @@ const AuthCallback = () => {
   useEffect(() => {
     const handleCallback = async () => {
       try {
-        // Exchange the auth code from URL params for a session
         const {
           data: { session },
           error: sessionError,
@@ -27,39 +26,58 @@ const AuthCallback = () => {
           return;
         }
 
-        console.log("Session established for user:", session.user.email);
+        const user = session.user;
+        console.log("Session established for user:", user.email);
 
-        // Try to get user role from user_roles
+        // 1) Fast path: if this is a student, send them straight to the student portal
+        let studentRecord: any = null;
+
+        const { data: byUser, error: byUserError } = await supabase
+          .from("students_data")
+          .select("id")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (byUserError) {
+          console.error("Student lookup by user_id error:", byUserError);
+        }
+
+        if (byUser) {
+          studentRecord = byUser;
+        } else if (user.email) {
+          const { data: byEmail, error: byEmailError } = await supabase
+            .from("students_data")
+            .select("id")
+            .eq("email", user.email)
+            .maybeSingle();
+
+          if (byEmailError) {
+            console.error("Student lookup by email error:", byEmailError);
+          }
+
+          if (byEmail) {
+            studentRecord = byEmail;
+          }
+        }
+
+        if (studentRecord) {
+          console.log("Student account detected, redirecting to student portal");
+          navigate("/students/portal", { replace: true });
+          return;
+        }
+
+        // 2) Staff/admin path: use role-based routing
         const { data: roleData, error: roleError } = await supabase
           .from("user_roles")
           .select("role")
-          .eq("user_id", session.user.id)
+          .eq("user_id", user.id)
           .maybeSingle();
 
         if (roleError) {
           console.error("Role fetch error:", roleError);
         }
 
-        let role = roleData?.role as string | undefined;
-
-        // Fallback: if no role but email exists in students_data, treat as student
-        if (!role && session.user.email) {
-          const { data: studentRecord, error: studentError } = await supabase
-            .from("students_data")
-            .select("id")
-            .eq("email", session.user.email)
-            .maybeSingle();
-
-          if (studentError) {
-            console.error("Student lookup error:", studentError);
-          }
-
-          if (studentRecord) {
-            console.log("Student email found in students_data, redirecting to student portal");
-            navigate("/students/portal", { replace: true });
-            return;
-          }
-        }
+        const role = roleData?.role as string | undefined;
 
         if (!role) {
           throw new Error("No role assigned to this account. Please contact your administrator.");
@@ -67,7 +85,6 @@ const AuthCallback = () => {
 
         console.log("User role:", role);
 
-        // Redirect based on role
         switch (role) {
           case "super_admin":
             console.log("Redirecting to super admin dashboard");
@@ -98,11 +115,8 @@ const AuthCallback = () => {
             navigate("/staff/classteacher", { replace: true });
             break;
           case "student":
-            console.log("Redirecting to student portal");
-            navigate("/students/portal", { replace: true });
-            break;
           case "student_leader":
-            console.log("Redirecting to student leader portal");
+            console.log("Redirecting to student portal (role-based)");
             navigate("/students/portal", { replace: true });
             break;
           case "class_rep":
