@@ -19,7 +19,8 @@ export const StudentRegistryManager = () => {
     class: '',
     parent_name: '',
     parent_phone: '',
-    email: ''
+    email: '',
+    role: 'student' as 'student' | 'student_leader'
   });
 
   const { data: studentRegistry, isLoading } = useQuery({
@@ -37,21 +38,25 @@ export const StudentRegistryManager = () => {
 
   const addStudentMutation = useMutation({
     mutationFn: async (student: typeof formData) => {
+      const { role, ...studentData } = student;
       const { error } = await supabase
         .from('students_data')
         .insert({
-          ...student,
+          ...studentData,
           approval_status: 'pending',
           is_registered: false
         });
       
       if (error) throw error;
+      
+      // Store role temporarily in localStorage to assign after approval
+      localStorage.setItem(`pending_student_role_${student.email}`, role);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['student-registry'] });
       toast.success("Student added to registry. They can login with their email after approval.");
       setIsDialogOpen(false);
-      setFormData({ full_name: '', admission_number: '', class: '', parent_name: '', parent_phone: '', email: '' });
+      setFormData({ full_name: '', admission_number: '', class: '', parent_name: '', parent_phone: '', email: '', role: 'student' });
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to add student");
@@ -77,17 +82,45 @@ export const StudentRegistryManager = () => {
   });
 
   const approveStudentMutation = useMutation({
-    mutationFn: async (studentId: string) => {
-      const { error } = await supabase
+    mutationFn: async ({ studentId, email }: { studentId: string; email: string }) => {
+      // First, approve the student
+      const { error: updateError } = await supabase
         .from('students_data')
         .update({ approval_status: 'approved' })
         .eq('id', studentId);
       
-      if (error) throw error;
+      if (updateError) throw updateError;
+
+      // Get the student's user_id after approval
+      const { data: student } = await supabase
+        .from('students_data')
+        .select('user_id')
+        .eq('id', studentId)
+        .single();
+
+      if (student?.user_id) {
+        // Retrieve the stored role preference
+        const storedRole = localStorage.getItem(`pending_student_role_${email}`) || 'student';
+        
+        // Assign the role via user_roles table
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: student.user_id,
+            role: storedRole as 'student' | 'student_leader'
+          });
+
+        if (roleError && !roleError.message.includes('duplicate')) {
+          throw roleError;
+        }
+
+        // Clean up localStorage
+        localStorage.removeItem(`pending_student_role_${email}`);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['student-registry'] });
-      toast.success("Student approved");
+      toast.success("Student approved and role assigned");
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to approve student");
@@ -181,6 +214,18 @@ export const StudentRegistryManager = () => {
                   required
                 />
               </div>
+              <div>
+                <Label htmlFor="role">Role</Label>
+                <select
+                  id="role"
+                  value={formData.role}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value as 'student' | 'student_leader' })}
+                  className="w-full h-10 px-3 rounded-md border border-input bg-background"
+                >
+                  <option value="student">Student</option>
+                  <option value="student_leader">Student Leader</option>
+                </select>
+              </div>
               <Button type="submit" className="w-full" disabled={addStudentMutation.isPending}>
                 {addStudentMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -225,7 +270,7 @@ export const StudentRegistryManager = () => {
                     {student.approval_status === 'pending' && (
                       <Button
                         size="sm"
-                        onClick={() => approveStudentMutation.mutate(student.id)}
+                        onClick={() => approveStudentMutation.mutate({ studentId: student.id, email: student.email })}
                         disabled={approveStudentMutation.isPending}
                       >
                         Approve

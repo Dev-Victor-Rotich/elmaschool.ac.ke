@@ -33,51 +33,7 @@ const AuthCallback = () => {
         const user = session.user;
         console.log("Session established for user:", user.email, "type:", loginType);
 
-        // If this magic link was explicitly for a student, skip role checks entirely
-        if (loginType === "student") {
-          console.log("Login type is student, redirecting directly to student portal");
-          navigate("/students/portal", { replace: true });
-          return;
-        }
-
-        // Fallback for old links or unknown type: try to detect student record by user_id/email
-        let studentRecord: any = null;
-
-        const { data: byUser, error: byUserError } = await supabase
-          .from("students_data")
-          .select("id")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (byUserError) {
-          console.error("Student lookup by user_id error:", byUserError);
-        }
-
-        if (byUser) {
-          studentRecord = byUser;
-        } else if (user.email) {
-          const { data: byEmail, error: byEmailError } = await supabase
-            .from("students_data")
-            .select("id")
-            .eq("email", user.email)
-            .maybeSingle();
-
-          if (byEmailError) {
-            console.error("Student lookup by email error:", byEmailError);
-          }
-
-          if (byEmail) {
-            studentRecord = byEmail;
-          }
-        }
-
-        if (studentRecord) {
-          console.log("Student account detected (fallback), redirecting to student portal");
-          navigate("/students/portal", { replace: true });
-          return;
-        }
-
-        // Staff/admin path: use role-based routing
+        // Check user role from user_roles table (single source of truth)
         const { data: roleData, error: roleError } = await supabase
           .from("user_roles")
           .select("role")
@@ -90,14 +46,16 @@ const AuthCallback = () => {
 
         const role = roleData?.role as string | undefined;
 
+        // If no role found, redirect to login silently
         if (!role) {
-          console.warn("No role assigned; sending user back to login without hard error");
-          navigate("/auth", { replace: true });
+          console.warn("No role assigned for user:", user.email);
+          navigate("/login", { replace: true });
           return;
         }
 
         console.log("User role:", role);
 
+        // Route based on role
         switch (role) {
           case "super_admin":
             navigate("/dashboard/superadmin", { replace: true });
@@ -128,8 +86,8 @@ const AuthCallback = () => {
             navigate("/students/class-rep", { replace: true });
             break;
           default:
-            console.error("Unknown role:", roleData?.role);
-            navigate("/auth", { replace: true });
+            console.error("Unknown role:", role);
+            navigate("/login", { replace: true });
             break;
         }
       } catch (error: any) {
