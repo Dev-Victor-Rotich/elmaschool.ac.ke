@@ -13,6 +13,7 @@ const StudentPortal = () => {
   const [feeData, setFeeData] = useState<any[]>([]);
   const [results, setResults] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
+  const [isStudentLeader, setIsStudentLeader] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -64,6 +65,16 @@ const StudentPortal = () => {
       navigate("/auth");
       return;
     }
+
+    // Check if user has student_leader role
+    const { data: roleData } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", session.user.id)
+      .eq("role", "student_leader")
+      .maybeSingle();
+
+    setIsStudentLeader(!!roleData);
 
     await loadStudentData(studentRecord.id);
   };
@@ -124,6 +135,7 @@ const StudentPortal = () => {
               <h1 className="text-3xl font-bold">{studentData.full_name}</h1>
               <p className="text-sm opacity-90">
                 {studentData.class} • Admission: {studentData.admission_number}
+                {isStudentLeader && <Badge variant="secondary" className="ml-2">Student Leader</Badge>}
               </p>
             </div>
             <div className="flex gap-2">
