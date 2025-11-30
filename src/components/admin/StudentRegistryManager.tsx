@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { RoleSelector } from "./RoleSelector";
 
 export const StudentRegistryManager = () => {
   const queryClient = useQueryClient();
@@ -20,7 +21,7 @@ export const StudentRegistryManager = () => {
     parent_name: '',
     parent_phone: '',
     email: '',
-    role: 'student' as 'student' | 'student_leader'
+    role: 'student' as 'student' | 'student_leader' | 'class_rep'
   });
 
   const { data: studentRegistry, isLoading } = useQuery({
@@ -32,7 +33,21 @@ export const StudentRegistryManager = () => {
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return data;
+
+      // Fetch roles for all students
+      const studentIds = data?.filter(s => s.user_id).map(s => s.user_id) || [];
+      const { data: roles } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('user_id', studentIds)
+        .in('role', ['student', 'student_leader', 'class_rep']);
+      
+      const rolesMap = new Map(roles?.map(r => [r.user_id, r.role]) || []);
+
+      return data?.map(student => ({
+        ...student,
+        current_role: student.user_id ? rolesMap.get(student.user_id) : null
+      }));
     }
   });
 
@@ -56,7 +71,7 @@ export const StudentRegistryManager = () => {
       queryClient.invalidateQueries({ queryKey: ['student-registry'] });
       toast.success("Student added to registry. They can login with their email after approval.");
       setIsDialogOpen(false);
-      setFormData({ full_name: '', admission_number: '', class: '', parent_name: '', parent_phone: '', email: '', role: 'student' });
+      setFormData({ full_name: '', admission_number: '', class: '', parent_name: '', parent_phone: '', email: '', role: 'student' as any });
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to add student");
@@ -107,7 +122,7 @@ export const StudentRegistryManager = () => {
           .from('user_roles')
           .insert({
             user_id: student.user_id,
-            role: storedRole as 'student' | 'student_leader'
+            role: storedRole as any
           });
 
         if (roleError && !roleError.message.includes('duplicate')) {
@@ -219,11 +234,12 @@ export const StudentRegistryManager = () => {
                 <select
                   id="role"
                   value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value as 'student' | 'student_leader' })}
+                  onChange={(e) => setFormData({ ...formData, role: e.target.value as any })}
                   className="w-full h-10 px-3 rounded-md border border-input bg-background"
                 >
                   <option value="student">Student</option>
                   <option value="student_leader">Student Leader</option>
+                  <option value="class_rep">Class Rep</option>
                 </select>
               </div>
               <Button type="submit" className="w-full" disabled={addStudentMutation.isPending}>
@@ -249,6 +265,7 @@ export const StudentRegistryManager = () => {
               <TableHead>Admission No.</TableHead>
               <TableHead>Class</TableHead>
               <TableHead>Email</TableHead>
+              <TableHead>Role</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -260,6 +277,18 @@ export const StudentRegistryManager = () => {
                 <TableCell>{student.admission_number}</TableCell>
                 <TableCell>{student.class}</TableCell>
                 <TableCell>{student.email}</TableCell>
+                <TableCell>
+                  {student.approval_status === 'approved' && student.user_id ? (
+                    <RoleSelector 
+                      studentId={student.id}
+                      userId={student.user_id}
+                      currentRole={student.current_role as any}
+                      onRoleChange={() => queryClient.invalidateQueries({ queryKey: ['student-registry'] })}
+                    />
+                  ) : (
+                    <span className="text-muted-foreground text-sm">Not assigned</span>
+                  )}
+                </TableCell>
                 <TableCell>
                   <Badge variant={student.approval_status === 'approved' ? 'default' : 'secondary'}>
                     {student.approval_status}
