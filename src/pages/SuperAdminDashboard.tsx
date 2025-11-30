@@ -33,6 +33,7 @@ import { EventsManager } from "@/components/admin/EventsManager";
 // User Management
 import { RoleManagement } from "@/components/admin/RoleManagement";
 import { StudentRegistryManager } from "@/components/admin/StudentRegistryManager";
+import { HODDepartmentAssignment } from "@/components/admin/HODDepartmentAssignment";
 import { AuditLogs } from "@/components/admin/AuditLogs";
 import { OwnershipTransfer } from "@/components/admin/OwnershipTransfer";
 
@@ -47,33 +48,39 @@ const SuperAdminDashboard = () => {
   const { data: stats } = useQuery({
     queryKey: ['admin-stats'],
     queryFn: async () => {
-      // Get total registered users count (approved profiles only)
-      const { count: totalUsers } = await supabase
-        .from('profiles')
-        .select('*', { count: 'exact', head: true })
-        .eq('approval_status', 'approved');
+      // Get total users count from user_roles (all users with assigned roles)
+      const { data: allRoles } = await supabase
+        .from('user_roles')
+        .select('user_id');
+      
+      const uniqueUserIds = new Set(allRoles?.map(r => r.user_id) || []);
+      const totalUsers = uniqueUserIds.size;
 
-      // Get pending approvals count
+      // Get pending approvals count from profiles
       const { count: pendingApprovals } = await supabase
         .from('profiles')
         .select('*', { count: 'exact', head: true })
         .eq('approval_status', 'pending');
 
-      // Get staff members count from staff_registry (active staff)
-      const { count: staffCount } = await supabase
-        .from('staff_registry')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'active');
+      // Get staff members count from user_roles (staff roles only)
+      const { data: staffRoles } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .in('role', ['super_admin', 'admin', 'bursar', 'chaplain', 'hod', 'teacher', 'librarian', 'classteacher']);
+      
+      const uniqueStaffIds = new Set(staffRoles?.map(r => r.user_id) || []);
+      const staffCount = uniqueStaffIds.size;
 
-      // Get students count (all students from students_data)
+      // Get students count (approved students only)
       const { count: studentsCount } = await supabase
         .from('students_data')
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .eq('approval_status', 'approved');
 
       return {
-        totalUsers: totalUsers || 0,
+        totalUsers,
         pendingApprovals: pendingApprovals || 0,
-        totalStaff: staffCount || 0,
+        totalStaff: staffCount,
         activeStudents: studentsCount || 0
       };
     }
@@ -442,6 +449,16 @@ const SuperAdminDashboard = () => {
                   </CardHeader>
                   <CardContent>
                     <StudentRegistryManager />
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-soft">
+                  <CardHeader>
+                    <CardTitle>HOD Department Assignments</CardTitle>
+                    <CardDescription>Assign Heads of Department to their departments</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <HODDepartmentAssignment />
                   </CardContent>
                 </Card>
               </div>

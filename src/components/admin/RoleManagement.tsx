@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
-const AVAILABLE_ROLES = ['super_admin', 'admin', 'bursar', 'chaplain', 'hod', 'teacher', 'librarian', 'classteacher', 'student_leader', 'class_rep'];
+const AVAILABLE_ROLES = ['super_admin', 'admin', 'bursar', 'chaplain', 'hod', 'teacher', 'librarian', 'classteacher'];
  
  interface UserWithRoles {
    id: string;
