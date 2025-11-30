@@ -97,45 +97,48 @@ export const StudentRegistryManager = () => {
   });
 
   const approveStudentMutation = useMutation({
-    mutationFn: async ({ studentId, email }: { studentId: string; email: string }) => {
-      // First, approve the student
+    mutationFn: async ({ studentId, email, fullName }: { studentId: string; email: string; fullName: string }) => {
+      // Retrieve the stored role preference
+      const storedRole = localStorage.getItem(`pending_student_role_${email}`) || 'student';
+      
+      // Create auth user account via edge function
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Not authenticated");
+
+      const response = await supabase.functions.invoke('register-user', {
+        body: { 
+          email, 
+          role: storedRole,
+          fullName 
+        },
+        headers: {
+          Authorization: `Bearer ${session.access_token}`
+        }
+      });
+
+      if (response.error) throw new Error(response.error.message);
+      if (!response.data?.user?.id) throw new Error("Failed to create user account");
+
+      const newUserId = response.data.user.id;
+
+      // Update students_data with user_id and approval status
       const { error: updateError } = await supabase
         .from('students_data')
-        .update({ approval_status: 'approved' })
+        .update({ 
+          approval_status: 'approved',
+          user_id: newUserId
+        })
         .eq('id', studentId);
       
       if (updateError) throw updateError;
 
-      // Get the student's user_id after approval
-      const { data: student } = await supabase
-        .from('students_data')
-        .select('user_id')
-        .eq('id', studentId)
-        .single();
-
-      if (student?.user_id) {
-        // Retrieve the stored role preference
-        const storedRole = localStorage.getItem(`pending_student_role_${email}`) || 'student';
-        
-        // Assign the role via user_roles table
-        const { error: roleError } = await supabase
-          .from('user_roles')
-          .insert({
-            user_id: student.user_id,
-            role: storedRole as any
-          });
-
-        if (roleError && !roleError.message.includes('duplicate')) {
-          throw roleError;
-        }
-
-        // Clean up localStorage
-        localStorage.removeItem(`pending_student_role_${email}`);
-      }
+      // Clean up localStorage
+      localStorage.removeItem(`pending_student_role_${email}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['student-registry'] });
-      toast.success("Student approved and role assigned");
+      queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+      toast.success("Student approved, account created, and role assigned");
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to approve student");
@@ -299,7 +302,11 @@ export const StudentRegistryManager = () => {
                     {student.approval_status === 'pending' && (
                       <Button
                         size="sm"
-                        onClick={() => approveStudentMutation.mutate({ studentId: student.id, email: student.email })}
+                        onClick={() => approveStudentMutation.mutate({ 
+                          studentId: student.id, 
+                          email: student.email,
+                          fullName: student.full_name 
+                        })}
                         disabled={approveStudentMutation.isPending}
                       >
                         Approve
