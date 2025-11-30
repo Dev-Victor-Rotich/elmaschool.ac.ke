@@ -14,7 +14,7 @@ export const HODDepartmentAssignment = () => {
   const [selectedHOD, setSelectedHOD] = useState<string>('');
   const [selectedDepartment, setSelectedDepartment] = useState<string>('');
 
-  // Fetch all HODs
+  // Fetch only users with HOD role
   const { data: hods } = useQuery({
     queryKey: ['hods'],
     queryFn: async () => {
@@ -29,7 +29,8 @@ export const HODDepartmentAssignment = () => {
       const { data: profiles } = await supabase
         .from('profiles')
         .select('id, full_name')
-        .in('id', hodIds);
+        .in('id', hodIds)
+        .eq('approval_status', 'approved');
 
       return profiles || [];
     }

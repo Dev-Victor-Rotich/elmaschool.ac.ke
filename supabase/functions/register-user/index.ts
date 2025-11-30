@@ -8,7 +8,7 @@ const corsHeaders = {
 
 interface RegisterUserRequest {
   email: string;
-  role: "bursar" | "student" | "super_admin";
+  role: "bursar" | "student" | "student_leader" | "class_rep" | "super_admin";
   fullName?: string;
 }
 
