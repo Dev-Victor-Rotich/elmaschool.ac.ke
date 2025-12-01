@@ -4,20 +4,33 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, BarChart3, LogOut, MessageSquare } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Users, BarChart3, LogOut, MessageSquare, Edit } from "lucide-react";
 import { toast } from "sonner";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useImpersonation } from "@/hooks/useImpersonation";
 
 const HODPortal = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editDescription, setEditDescription] = useState("");
+  const { impersonationData } = useImpersonation();
+
+  // Determine which user ID to use for fetching department
+  const effectiveUserId = impersonationData?.userId || userId;
 
   // Fetch HOD's assigned department
   const { data: hodDepartment, isLoading: isDeptLoading } = useQuery({
-    queryKey: ['hod-department', userId],
+    queryKey: ['hod-department', effectiveUserId],
     queryFn: async () => {
-      if (!userId) return null;
+      if (!effectiveUserId) return null;
       
       const { data, error } = await supabase
         .from('hod_departments')
@@ -29,13 +42,13 @@ const HODPortal = () => {
             description
           )
         `)
-        .eq('user_id', userId)
+        .eq('user_id', effectiveUserId)
         .maybeSingle();
       
       if (error) throw error;
       return data;
     },
-    enabled: !!userId
+    enabled: !!effectiveUserId
   });
 
   // Fetch department staff for HOD's department
@@ -60,6 +73,53 @@ const HODPortal = () => {
     checkAuth();
   }, []);
 
+  const updateDepartmentMutation = useMutation({
+    mutationFn: async ({ departmentId, name, description }: { departmentId: string; name: string; description: string }) => {
+      const { error } = await supabase
+        .from('departments')
+        .update({ name, description })
+        .eq('id', departmentId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Department updated successfully!");
+      queryClient.invalidateQueries({ queryKey: ['hod-department'] });
+      setIsEditDialogOpen(false);
+    },
+    onError: (error) => {
+      toast.error("Failed to update department: " + error.message);
+    }
+  });
+
+  const handleEditClick = () => {
+    if (hodDepartment?.departments) {
+      setEditName(hodDepartment.departments.name);
+      setEditDescription(hodDepartment.departments.description);
+      setIsEditDialogOpen(true);
+    }
+  };
+
+  const handleSaveEdit = () => {
+    if (!hodDepartment?.departments?.id) return;
+    
+    if (!editName.trim()) {
+      toast.error("Department name is required");
+      return;
+    }
+    
+    if (!editDescription.trim()) {
+      toast.error("Department description is required");
+      return;
+    }
+
+    updateDepartmentMutation.mutate({
+      departmentId: hodDepartment.departments.id,
+      name: editName.trim(),
+      description: editDescription.trim()
+    });
+  };
+
   const checkAuth = async () => {
     const { data: { session } } = await supabase.auth.getSession();
     
@@ -71,10 +131,7 @@ const HODPortal = () => {
     setUserId(session.user.id);
 
     // If super admin is impersonating an HOD, bypass role checks
-    const impersonationRaw = localStorage.getItem("impersonation");
-    const impersonation = impersonationRaw ? JSON.parse(impersonationRaw) : null;
-
-    if (!impersonation) {
+    if (!impersonationData) {
       const { data: roles } = await supabase
         .from("user_roles")
         .select("role")
@@ -151,7 +208,8 @@ const HODPortal = () => {
                 <CardTitle className="text-2xl">{department.name}</CardTitle>
                 <CardDescription className="text-base">{department.description}</CardDescription>
               </div>
-              <Button size="sm" onClick={() => navigate(`#edit-department`)}>
+              <Button size="sm" onClick={handleEditClick}>
+                <Edit className="w-4 h-4 mr-2" />
                 Edit Details
               </Button>
             </div>
@@ -280,7 +338,10 @@ const HODPortal = () => {
                   <label className="text-sm font-medium mb-2 block">Description</label>
                   <p className="text-muted-foreground">{department.description}</p>
                 </div>
-                <Button>Edit Department Details</Button>
+                <Button onClick={handleEditClick}>
+                  <Edit className="w-4 h-4 mr-2" />
+                  Edit Department Details
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
@@ -311,6 +372,47 @@ const HODPortal = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Edit Department Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[525px]">
+            <DialogHeader>
+              <DialogTitle>Edit Department Details</DialogTitle>
+              <DialogDescription>
+                Update the name and description of your department. Changes will be reflected across the website.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="name">Department Name</Label>
+                <Input
+                  id="name"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="e.g., Mathematics Department"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder="Brief description of the department..."
+                  rows={4}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleSaveEdit} disabled={updateDepartmentMutation.isPending}>
+                {updateDepartmentMutation.isPending ? "Saving..." : "Save Changes"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
