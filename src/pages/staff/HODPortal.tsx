@@ -126,11 +126,16 @@ const HODPortal = () => {
 
   return (
     <div className="min-h-screen bg-background p-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-4xl font-bold">HOD Portal</h1>
-            <p className="text-muted-foreground mt-2">Managing: {department.name}</p>
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+              HOD Portal
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Managing: <span className="font-semibold text-foreground">{department.name}</span>
+            </p>
           </div>
           <Button onClick={handleLogout} variant="outline">
             <LogOut className="w-4 h-4 mr-2" />
@@ -138,52 +143,118 @@ const HODPortal = () => {
           </Button>
         </div>
 
-        <Card className="mb-6">
+        {/* Department Overview Card */}
+        <Card className="border-primary/20">
           <CardHeader>
-            <CardTitle>Department: {department.name}</CardTitle>
-            <CardDescription>{department.description}</CardDescription>
+            <div className="flex items-start justify-between">
+              <div className="space-y-1">
+                <CardTitle className="text-2xl">{department.name}</CardTitle>
+                <CardDescription className="text-base">{department.description}</CardDescription>
+              </div>
+              <Button size="sm" onClick={() => navigate(`#edit-department`)}>
+                Edit Details
+              </Button>
+            </div>
           </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex items-center gap-3 p-4 rounded-lg bg-primary/5">
+                <Users className="w-8 h-8 text-primary" />
+                <div>
+                  <p className="text-2xl font-bold">{departmentStaff?.length || 0}</p>
+                  <p className="text-sm text-muted-foreground">Staff Members</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-4 rounded-lg bg-secondary/50">
+                <BarChart3 className="w-8 h-8 text-secondary-foreground" />
+                <div>
+                  <p className="text-2xl font-bold">0</p>
+                  <p className="text-sm text-muted-foreground">Active Projects</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-4 rounded-lg bg-accent/50">
+                <MessageSquare className="w-8 h-8 text-accent-foreground" />
+                <div>
+                  <p className="text-2xl font-bold">0</p>
+                  <p className="text-sm text-muted-foreground">Announcements</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
         </Card>
 
+        {/* Main Content Tabs */}
         <Tabs defaultValue="staff" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="staff">
-              <Users className="w-4 h-4 mr-2" />
-              Department Staff
+          <TabsList className="grid w-full grid-cols-3">
+            <TabsTrigger value="staff" className="flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              <span className="hidden sm:inline">Staff Management</span>
+              <span className="sm:hidden">Staff</span>
             </TabsTrigger>
-            <TabsTrigger value="reports">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Reports
+            <TabsTrigger value="department" className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              <span className="hidden sm:inline">Department Info</span>
+              <span className="sm:hidden">Info</span>
             </TabsTrigger>
-            <TabsTrigger value="messages">
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Messages
+            <TabsTrigger value="messages" className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4" />
+              <span className="hidden sm:inline">Communications</span>
+              <span className="sm:hidden">Messages</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="staff">
+          <TabsContent value="staff" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Staff Members</CardTitle>
-                <CardDescription>
-                  {departmentStaff?.length || 0} staff members in {department.name}
-                </CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Department Staff</CardTitle>
+                    <CardDescription>
+                      Manage staff members in {department.name}
+                    </CardDescription>
+                  </div>
+                  <Button onClick={() => navigate(`#add-staff`)}>
+                    Add Staff Member
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 {!departmentStaff || departmentStaff.length === 0 ? (
-                  <p className="text-muted-foreground">No staff members assigned yet.</p>
+                  <div className="text-center py-12">
+                    <Users className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
+                    <p className="text-muted-foreground text-lg">No staff members assigned yet</p>
+                    <p className="text-sm text-muted-foreground mt-2">Add staff members to get started</p>
+                  </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="grid gap-4">
                     {departmentStaff.map((staff) => (
-                      <div key={staff.id} className="flex items-center gap-4 p-4 border rounded-lg">
-                        {staff.image_url && (
-                          <img src={staff.image_url} alt={staff.name} className="w-16 h-16 rounded-full object-cover" />
+                      <div 
+                        key={staff.id} 
+                        className="flex items-center gap-4 p-4 border rounded-lg hover:shadow-md transition-shadow"
+                      >
+                        {staff.image_url ? (
+                          <img 
+                            src={staff.image_url} 
+                            alt={staff.name} 
+                            className="w-16 h-16 rounded-full object-cover border-2 border-primary/20" 
+                          />
+                        ) : (
+                          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                            <span className="text-2xl font-bold text-primary">
+                              {staff.name.charAt(0)}
+                            </span>
+                          </div>
                         )}
                         <div className="flex-1">
-                          <h4 className="font-semibold">{staff.name}</h4>
+                          <h4 className="font-semibold text-lg">{staff.name}</h4>
                           <p className="text-sm text-muted-foreground">{staff.position}</p>
-                          {staff.bio && <p className="text-sm mt-1">{staff.bio}</p>}
+                          {staff.bio && (
+                            <p className="text-sm mt-1 line-clamp-2">{staff.bio}</p>
+                          )}
                         </div>
+                        <Button variant="outline" size="sm">
+                          Edit
+                        </Button>
                       </div>
                     ))}
                   </div>
@@ -192,26 +263,50 @@ const HODPortal = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="reports">
+          <TabsContent value="department" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Department Reports</CardTitle>
-                <CardDescription>View and generate reports for {department.name}</CardDescription>
+                <CardTitle>Department Information</CardTitle>
+                <CardDescription>
+                  View and update department details
+                </CardDescription>
               </CardHeader>
-              <CardContent>
-                <Button>Generate Report</Button>
+              <CardContent className="space-y-6">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Department Name</label>
+                  <p className="text-lg">{department.name}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Description</label>
+                  <p className="text-muted-foreground">{department.description}</p>
+                </div>
+                <Button>Edit Department Details</Button>
               </CardContent>
             </Card>
           </TabsContent>
 
-          <TabsContent value="messages">
+          <TabsContent value="messages" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Messages</CardTitle>
-                <CardDescription>Communication and announcements</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Department Communications</CardTitle>
+                    <CardDescription>
+                      Send announcements and messages to department staff
+                    </CardDescription>
+                  </div>
+                  <Button>
+                    <MessageSquare className="w-4 h-4 mr-2" />
+                    New Announcement
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
-                <Button>New Message</Button>
+                <div className="text-center py-12">
+                  <MessageSquare className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
+                  <p className="text-muted-foreground text-lg">No messages yet</p>
+                  <p className="text-sm text-muted-foreground mt-2">Start communicating with your department</p>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
