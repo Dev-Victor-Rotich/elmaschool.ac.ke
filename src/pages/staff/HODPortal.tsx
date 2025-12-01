@@ -85,6 +85,7 @@ const HODPortal = () => {
     onSuccess: () => {
       toast.success("Department updated successfully!");
       queryClient.invalidateQueries({ queryKey: ['hod-department'] });
+      queryClient.invalidateQueries({ queryKey: ['departments'] });
       setIsEditDialogOpen(false);
     },
     onError: (error) => {
