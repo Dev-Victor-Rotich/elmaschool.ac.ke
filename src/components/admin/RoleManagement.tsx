@@ -9,23 +9,23 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Shield, Trash2, Loader2, Plus, UserPlus, Eye } from "lucide-react";
+import { Shield, Trash2, Loader2, Plus, UserPlus, Eye, Search, Pencil } from "lucide-react";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 
 const AVAILABLE_ROLES = ['super_admin', 'admin', 'bursar', 'chaplain', 'hod', 'teacher', 'librarian', 'classteacher'];
  
- interface UserWithRoles {
-   id: string;
-   full_name: string;
-   email: string;
-   phone_number: string | null;
-   id_number: string | null;
-   status: string;
-   approval_status?: string | null;
-   user_roles: Array<{id: string, role: string}>;
- }
+interface UserWithRoles {
+  id: string;
+  full_name: string;
+  email: string;
+  phone_number: string | null;
+  id_number: string | null;
+  status: string;
+  approval_status?: string | null;
+  user_roles: Array<{id: string, role: string}>;
+}
 
 export const RoleManagement = () => {
   const queryClient = useQueryClient();
@@ -34,6 +34,14 @@ export const RoleManagement = () => {
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [selectedClass, setSelectedClass] = useState<string>('');
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [editingUser, setEditingUser] = useState<UserWithRoles | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    full_name: '',
+    phone_number: '',
+    id_number: ''
+  });
   const [newUserData, setNewUserData] = useState({
     email: '',
     full_name: '',
@@ -52,7 +60,6 @@ export const RoleManagement = () => {
       userEmail: user.email
     }));
 
-    // Get current super admin info
     const { data: { session } } = await supabase.auth.getSession();
     const { data: profile } = await supabase
       .from('profiles')
@@ -60,7 +67,6 @@ export const RoleManagement = () => {
       .eq('id', session?.user.id)
       .single();
 
-    // Log impersonation and send notification
     try {
       await supabase.functions.invoke('notify-impersonation', {
         body: {
@@ -74,7 +80,6 @@ export const RoleManagement = () => {
       });
     } catch (error) {
       console.error('Failed to send impersonation notification:', error);
-      // Don't block impersonation if notification fails
     }
 
     const roleRouteMap: Record<string, string> = {
@@ -95,8 +100,6 @@ export const RoleManagement = () => {
     toast.success(`Now viewing as ${user.full_name}`);
     navigate(route);
   };
-
-  
 
   const { data: allUsers, isLoading } = useQuery<UserWithRoles[]>({
     queryKey: ['all-users-with-roles'],
@@ -148,9 +151,29 @@ export const RoleManagement = () => {
 
   const pendingUsers = allUsers?.filter(u => u.approval_status === 'pending') || [];
   const approvedUsers = allUsers?.filter(u => u.approval_status === 'approved') || [];
-  
-  // Filter out deleted users from all lists
   const activeUsers = approvedUsers.filter(u => u.approval_status !== 'deleted');
+
+  // Filter users based on search query
+  const filteredUsers = activeUsers.filter(user => {
+    if (!searchQuery.trim()) return true;
+    const query = searchQuery.toLowerCase();
+    const matchesName = user.full_name?.toLowerCase().includes(query);
+    const matchesEmail = user.email?.toLowerCase().includes(query);
+    const matchesPhone = user.phone_number?.toLowerCase().includes(query);
+    const matchesIdNumber = user.id_number?.toLowerCase().includes(query);
+    const matchesRole = user.user_roles.some(r => r.role.toLowerCase().includes(query));
+    return matchesName || matchesEmail || matchesPhone || matchesIdNumber || matchesRole;
+  });
+
+  const handleEditUser = (user: UserWithRoles) => {
+    setEditingUser(user);
+    setEditFormData({
+      full_name: user.full_name || '',
+      phone_number: user.phone_number || '',
+      id_number: user.id_number || ''
+    });
+    setIsEditDialogOpen(true);
+  };
 
   const addUserMutation = useMutation({
     mutationFn: async (userData: typeof newUserData) => {
@@ -182,6 +205,37 @@ export const RoleManagement = () => {
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to add user");
+    }
+  });
+
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ userId, data }: { userId: string; data: typeof editFormData }) => {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          full_name: data.full_name,
+          phone_number: data.phone_number,
+          id_number: data.id_number,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', userId);
+      
+      if (error) throw error;
+
+      await supabase.rpc('log_admin_action', {
+        p_action_type: 'update_user',
+        p_target_user: userId,
+        p_details: `Updated user info: ${data.full_name}`
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['all-users-with-roles'] });
+      toast.success("User updated successfully");
+      setIsEditDialogOpen(false);
+      setEditingUser(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to update user");
     }
   });
 
@@ -243,7 +297,6 @@ export const RoleManagement = () => {
 
   const addRoleMutation = useMutation({
     mutationFn: async ({ userId, role, assignedClass }: { userId: string; role: string; assignedClass?: string }) => {
-      // Check if user already has this role
       const { data: existingRole } = await supabase
         .from('user_roles')
         .select('id')
@@ -251,7 +304,6 @@ export const RoleManagement = () => {
         .eq('role', role as any)
         .maybeSingle();
       
-      // Only insert if role doesn't exist
       if (!existingRole) {
         const { error } = await supabase
           .from('user_roles')
@@ -260,7 +312,6 @@ export const RoleManagement = () => {
         if (error) throw error;
       }
 
-      // If classteacher role, save class assignment
       if (role === 'classteacher' && assignedClass) {
         const { data: { user } } = await supabase.auth.getUser();
         const { error: classError } = await supabase
@@ -337,7 +388,6 @@ export const RoleManagement = () => {
 
   const deleteUserMutation = useMutation({
     mutationFn: async (userId: string) => {
-      // Check if this is a super admin
       const { data: userRoles } = await supabase
         .from('user_roles')
         .select('role')
@@ -355,7 +405,6 @@ export const RoleManagement = () => {
         }
       }
 
-      // Delete user roles first
       const { error: rolesError } = await supabase
         .from('user_roles')
         .delete()
@@ -363,25 +412,23 @@ export const RoleManagement = () => {
 
       if (rolesError) throw rolesError;
 
-      // Delete from students_data if exists
       await supabase
         .from('students_data')
         .delete()
         .eq('user_id', userId);
 
-      // Soft-delete profile: mark as deleted so it no longer appears in lists
       const { error: profileError } = await supabase
         .from('profiles')
         .update({ approval_status: 'deleted', status: 'deleted' })
         .eq('id', userId);
  
-       if (profileError) throw profileError;
+      if (profileError) throw profileError;
  
-       await supabase.rpc('log_admin_action', {
-         p_action_type: 'delete_user',
-         p_target_user: userId,
-         p_details: 'User deleted'
-       });
+      await supabase.rpc('log_admin_action', {
+        p_action_type: 'delete_user',
+        p_target_user: userId,
+        p_details: 'User deleted'
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['all-users-with-roles'] });
@@ -566,8 +613,17 @@ export const RoleManagement = () => {
           </Card>
 
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
               <h4 className="font-semibold">All Users & Their Roles</h4>
+              <div className="relative w-72">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search by name, email, phone, ID or role..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
             </CardHeader>
             <CardContent>
               <Table>
@@ -583,63 +639,79 @@ export const RoleManagement = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {activeUsers?.map((user) => (
-                    <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.full_name}</TableCell>
-                      <TableCell>{user.email}</TableCell>
-                      <TableCell>{user.phone_number || 'N/A'}</TableCell>
-                      <TableCell>{user.id_number || 'N/A'}</TableCell>
-                      <TableCell>
-                        <Badge variant={user.approval_status === 'approved' ? 'default' : 'secondary'}>
-                          {user.approval_status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-wrap gap-1">
-                          {user.user_roles.map((role) => (
-                            <Badge key={role.id} variant="outline" className="gap-1">
-                              {role.role.replace('_', ' ').toUpperCase()}
-                              <button
-                                onClick={() => removeRoleMutation.mutate(role.id)}
-                                disabled={removeRoleMutation.isPending}
-                                className="ml-1 hover:text-destructive"
-                              >
-                                ×
-                              </button>
-                            </Badge>
-                          ))}
-                          {user.user_roles.length === 0 && (
-                            <span className="text-muted-foreground text-sm">No roles</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex gap-2 justify-end">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleImpersonateUser(user)}
-                            title="View as this user"
-                          >
-                            <Eye className="h-4 w-4 mr-1" />
-                            View As
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => {
-                              if (confirm(`Are you sure you want to delete ${user.full_name}? This action cannot be undone.`)) {
-                                deleteUserMutation.mutate(user.id);
-                              }
-                            }}
-                            disabled={deleteUserMutation.isPending}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
+                  {filteredUsers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                        {searchQuery ? 'No users found matching your search' : 'No users available'}
                       </TableCell>
                     </TableRow>
-                  ))}
+                  ) : (
+                    filteredUsers.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell className="font-medium">{user.full_name || 'N/A'}</TableCell>
+                        <TableCell>{user.email || 'N/A'}</TableCell>
+                        <TableCell>{user.phone_number || 'N/A'}</TableCell>
+                        <TableCell>{user.id_number || 'N/A'}</TableCell>
+                        <TableCell>
+                          <Badge variant={user.approval_status === 'approved' ? 'default' : 'secondary'}>
+                            {user.approval_status || 'pending'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {user.user_roles.map((role) => (
+                              <Badge key={role.id} variant="outline" className="gap-1">
+                                {role.role.replace('_', ' ').toUpperCase()}
+                                <button
+                                  onClick={() => removeRoleMutation.mutate(role.id)}
+                                  disabled={removeRoleMutation.isPending}
+                                  className="ml-1 hover:text-destructive"
+                                >
+                                  ×
+                                </button>
+                              </Badge>
+                            ))}
+                            {user.user_roles.length === 0 && (
+                              <span className="text-muted-foreground text-sm">No roles</span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex gap-1 justify-end">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditUser(user)}
+                              title="Edit user"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleImpersonateUser(user)}
+                              title="View as this user"
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                if (confirm(`Are you sure you want to delete ${user.full_name}? This action cannot be undone.`)) {
+                                  deleteUserMutation.mutate(user.id);
+                                }
+                              }}
+                              disabled={deleteUserMutation.isPending}
+                              title="Delete user"
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -671,8 +743,8 @@ export const RoleManagement = () => {
               <TableBody>
                 {pendingUsers.map((user) => (
                   <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.full_name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
+                    <TableCell className="font-medium">{user.full_name || 'N/A'}</TableCell>
+                    <TableCell>{user.email || 'N/A'}</TableCell>
                     <TableCell>{user.phone_number || 'N/A'}</TableCell>
                     <TableCell>{user.id_number || 'N/A'}</TableCell>
                     <TableCell>
@@ -710,6 +782,61 @@ export const RoleManagement = () => {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Edit User Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="edit_full_name">Full Name</Label>
+              <Input
+                id="edit_full_name"
+                value={editFormData.full_name}
+                onChange={(e) => setEditFormData({ ...editFormData, full_name: e.target.value })}
+                placeholder="John Doe"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit_phone">Phone Number</Label>
+              <Input
+                id="edit_phone"
+                value={editFormData.phone_number}
+                onChange={(e) => setEditFormData({ ...editFormData, phone_number: e.target.value })}
+                placeholder="+254..."
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit_id_number">ID Number</Label>
+              <Input
+                id="edit_id_number"
+                value={editFormData.id_number}
+                onChange={(e) => setEditFormData({ ...editFormData, id_number: e.target.value })}
+                placeholder="12345678"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline"
+                className="flex-1" 
+                onClick={() => setIsEditDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                className="flex-1" 
+                onClick={() => editingUser && updateUserMutation.mutate({ userId: editingUser.id, data: editFormData })}
+                disabled={updateUserMutation.isPending || !editFormData.full_name}
+              >
+                {updateUserMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Save Changes
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
