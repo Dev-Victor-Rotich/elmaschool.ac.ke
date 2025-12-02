@@ -165,6 +165,19 @@ export const RoleManagement = () => {
     return matchesName || matchesEmail || matchesPhone || matchesIdNumber || matchesRole;
   });
 
+  // Fetch staff registry data
+  const { data: staffRegistry } = useQuery({
+    queryKey: ['staff-registry'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('staff_registry')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    }
+  });
+
   const handleEditUser = (user: UserWithRoles) => {
     setEditingUser(user);
     setEditFormData({
@@ -199,6 +212,7 @@ export const RoleManagement = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['all-users-with-roles'] });
+      queryClient.invalidateQueries({ queryKey: ['staff-registry'] });
       toast.success("User added successfully");
       setIsAddUserDialogOpen(false);
       setNewUserData({ email: '', full_name: '', phone_number: '', id_number: '', role: 'teacher' });
@@ -209,7 +223,7 @@ export const RoleManagement = () => {
   });
 
   const updateUserMutation = useMutation({
-    mutationFn: async ({ userId, data }: { userId: string; data: typeof editFormData }) => {
+    mutationFn: async ({ userId, data, isStudent }: { userId: string; data: typeof editFormData; isStudent?: boolean }) => {
       const { error } = await supabase
         .from('profiles')
         .update({
@@ -222,6 +236,29 @@ export const RoleManagement = () => {
       
       if (error) throw error;
 
+      // If user is a student, also update students_data
+      if (isStudent) {
+        await supabase
+          .from('students_data')
+          .update({
+            full_name: data.full_name,
+            parent_phone: data.phone_number,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', userId);
+      } else {
+        // If not a student, update staff_registry
+        await supabase
+          .from('staff_registry')
+          .update({
+            full_name: data.full_name,
+            phone: data.phone_number,
+            id_number: data.id_number,
+            updated_at: new Date().toISOString()
+          })
+          .eq('email', editingUser?.email);
+      }
+
       await supabase.rpc('log_admin_action', {
         p_action_type: 'update_user',
         p_target_user: userId,
@@ -230,6 +267,8 @@ export const RoleManagement = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['all-users-with-roles'] });
+      queryClient.invalidateQueries({ queryKey: ['student-registry'] });
+      queryClient.invalidateQueries({ queryKey: ['staff-registry'] });
       toast.success("User updated successfully");
       setIsEditDialogOpen(false);
       setEditingUser(null);
@@ -716,6 +755,56 @@ export const RoleManagement = () => {
               </Table>
             </CardContent>
           </Card>
+
+          {/* Staff Registry Card */}
+          <Card>
+            <CardHeader>
+              <h4 className="font-semibold">Staff Registry</h4>
+              <p className="text-sm text-muted-foreground">All registered staff members</p>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Phone</TableHead>
+                    <TableHead>ID Number</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {!staffRegistry || staffRegistry.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                        No staff registered yet. Add users above to populate this list.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    staffRegistry.map((staff: any) => (
+                      <TableRow key={staff.id}>
+                        <TableCell className="font-medium">{staff.full_name || 'N/A'}</TableCell>
+                        <TableCell>{staff.email || 'N/A'}</TableCell>
+                        <TableCell>{staff.phone || 'N/A'}</TableCell>
+                        <TableCell>{staff.id_number || 'N/A'}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {staff.role?.replace('_', ' ').toUpperCase() || 'N/A'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={staff.status === 'approved' ? 'default' : 'secondary'}>
+                            {staff.status || 'pending'}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="approvals" className="space-y-4">
@@ -827,7 +916,14 @@ export const RoleManagement = () => {
               </Button>
               <Button 
                 className="flex-1" 
-                onClick={() => editingUser && updateUserMutation.mutate({ userId: editingUser.id, data: editFormData })}
+                onClick={() => {
+                  if (editingUser) {
+                    const isStudent = editingUser.user_roles.some(r => 
+                      ['student', 'student_leader', 'class_rep'].includes(r.role)
+                    );
+                    updateUserMutation.mutate({ userId: editingUser.id, data: editFormData, isStudent });
+                  }
+                }}
                 disabled={updateUserMutation.isPending || !editFormData.full_name}
               >
                 {updateUserMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
