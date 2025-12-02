@@ -87,6 +87,26 @@ Deno.serve(async (req) => {
 
     if (roleError) throw roleError
 
+    // Also save to staff_registry for staff roles
+    const staffRoles = ['super_admin', 'admin', 'bursar', 'chaplain', 'hod', 'teacher', 'librarian', 'classteacher']
+    if (staffRoles.includes(role)) {
+      const { error: staffError } = await supabaseAdmin
+        .from('staff_registry')
+        .insert({
+          email,
+          full_name,
+          phone: phone_number,
+          id_number,
+          role,
+          status: 'pending',
+          created_by: requestingUser.id
+        })
+      
+      if (staffError) {
+        console.error('Failed to insert into staff_registry:', staffError)
+      }
+    }
+
     // Log the action
     await supabaseAdmin.rpc('log_admin_action', {
       p_action_type: 'create_user',
