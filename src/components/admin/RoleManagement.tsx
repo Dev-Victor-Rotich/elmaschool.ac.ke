@@ -112,15 +112,33 @@ export const RoleManagement = () => {
       if (profilesError) throw profilesError;
       if (!profiles) return [];
 
-      const { data: { users: authUsers } } = await supabase.auth.admin.listUsers();
+      // Fetch emails from staff_registry
+      const { data: staffData } = await supabase
+        .from('staff_registry')
+        .select('email, full_name');
+      
+      // Fetch emails from students_data
+      const { data: studentsData } = await supabase
+        .from('students_data')
+        .select('email, user_id, full_name');
+      
+      // Create email map from staff and students
       const emailMap = new Map<string, string>();
-      if (authUsers) {
-        authUsers.forEach((u: any) => {
-          if (u.id && u.email) {
-            emailMap.set(u.id, u.email);
-          }
-        });
-      }
+      
+      // Map staff emails by matching full_name (since staff_registry doesn't have user_id directly)
+      const staffEmailByName = new Map<string, string>();
+      staffData?.forEach(staff => {
+        if (staff.email && staff.full_name) {
+          staffEmailByName.set(staff.full_name.toLowerCase(), staff.email);
+        }
+      });
+      
+      // Map student emails by user_id
+      studentsData?.forEach(student => {
+        if (student.email && student.user_id) {
+          emailMap.set(student.user_id, student.email);
+        }
+      });
       
       const { data: roles, error: rolesError } = await supabase
         .from('user_roles')
@@ -136,16 +154,24 @@ export const RoleManagement = () => {
         rolesMap.set(role.user_id, existing);
       });
       
-      return profiles.map(profile => ({
-        id: profile.id,
-        full_name: profile.full_name,
-        email: emailMap.get(profile.id) || '',
-        phone_number: profile.phone_number,
-        id_number: profile.id_number,
-        approval_status: profile.approval_status,
-        status: profile.approval_status || profile.status || 'pending',
-        user_roles: rolesMap.get(profile.id) || []
-      }));
+      return profiles.map(profile => {
+        // Try to get email from student data first (by user_id), then from staff (by name)
+        let email = emailMap.get(profile.id) || '';
+        if (!email && profile.full_name) {
+          email = staffEmailByName.get(profile.full_name.toLowerCase()) || '';
+        }
+        
+        return {
+          id: profile.id,
+          full_name: profile.full_name,
+          email,
+          phone_number: profile.phone_number,
+          id_number: profile.id_number,
+          approval_status: profile.approval_status,
+          status: profile.approval_status || profile.status || 'pending',
+          user_roles: rolesMap.get(profile.id) || []
+        };
+      });
     }
   });
 
