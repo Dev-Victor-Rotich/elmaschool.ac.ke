@@ -102,28 +102,47 @@ const Home = () => {
       {/* Trust Badges */}
       <TrustBadges />
 
-      {/* Dynamic Section - Occasion Message or Duty Roster */}
+      {/* Dynamic Section - Occasion Message and/or Duty Roster */}
       <section className="py-16 bg-gradient-to-br from-primary/10 to-accent/10">
         <div className="container mx-auto px-4">
-          <Card className="max-w-3xl mx-auto border-0 shadow-hover gradient-card">
-            <CardContent className="pt-6 space-y-6">
-              {hasSpecialOccasion ? (
-                // Display Special Occasion Message
-                <div className="text-center space-y-4">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/10 to-accent/10 mb-2">
-                    <Calendar className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-semibold text-foreground">{currentOccasion.name}</span>
+          <div className="max-w-3xl mx-auto space-y-6">
+            {/* Case 4: Neither exists - Show fallback */}
+            {!hasSpecialOccasion && !isSchoolInSession && (
+              <Card className="border-0 shadow-hover gradient-card">
+                <CardContent className="pt-6">
+                  <div className="text-center text-muted-foreground">
+                    <Calendar className="h-12 w-12 mx-auto mb-4 text-primary/50" />
+                    <p className="text-lg">No duty roster or occasion scheduled for today.</p>
                   </div>
-                  <div className="text-lg md:text-xl font-medium text-foreground whitespace-pre-line">
-                    {currentOccasion.message}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Display Special Occasion (Case 1 & 3) */}
+            {hasSpecialOccasion && currentOccasion && (
+              <Card className="border-0 shadow-hover gradient-card">
+                <CardContent className="pt-6 space-y-4">
+                  <div className="text-center space-y-4">
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-accent/20 to-primary/20 mb-2">
+                      <Award className="h-4 w-4 text-accent" />
+                      <span className="text-sm font-semibold text-foreground">Special Occasion</span>
+                    </div>
+                    <h3 className="text-xl md:text-2xl font-bold text-foreground">{currentOccasion.name}</h3>
+                    <div className="text-lg md:text-xl font-medium text-foreground whitespace-pre-line">
+                      {currentOccasion.message}
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {new Date(currentOccasion.start_date).toLocaleDateString()} - {new Date(currentOccasion.end_date).toLocaleDateString()}
+                    </p>
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {new Date(currentOccasion.start_date).toLocaleDateString()} - {new Date(currentOccasion.end_date).toLocaleDateString()}
-                  </p>
-                </div>
-              ) : isSchoolInSession && currentDutyRoster ? (
-                // Display Duty Roster
-                <>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Display Duty Roster (Case 1 & 2) */}
+            {isSchoolInSession && currentDutyRoster && (
+              <Card className="border-0 shadow-hover gradient-card">
+                <CardContent className="pt-6 space-y-6">
                   {/* Week Info */}
                   <div className="text-center pb-4 border-b border-border">
                     <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-primary/10 to-accent/10 mb-2">
@@ -170,15 +189,10 @@ const Home = () => {
                       ))}
                     </div>
                   </div>
-                </>
-              ) : (
-                // Fallback message when no data is available
-                <div className="text-center text-muted-foreground">
-                  <p>School calendar information will be displayed here.</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </section>
 
