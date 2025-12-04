@@ -6,13 +6,56 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { BookOpen, Users, LogOut } from "lucide-react";
+import { BookOpen, Users, LogOut, Crown, Shield, GraduationCap } from "lucide-react";
+
+interface StudentWithRole {
+  id: string;
+  full_name: string;
+  admission_number: string;
+  class: string;
+  user_id: string | null;
+  role: string | null;
+}
+
+interface Subject {
+  id: string;
+  title: string;
+}
+
+const getRoleBadge = (role: string | null) => {
+  switch (role) {
+    case "student_leader":
+      return (
+        <Badge className="bg-amber-500/20 text-amber-700 border-amber-500/30 hover:bg-amber-500/30">
+          <Crown className="h-3 w-3 mr-1" />
+          Leader
+        </Badge>
+      );
+    case "class_rep":
+      return (
+        <Badge className="bg-blue-500/20 text-blue-700 border-blue-500/30 hover:bg-blue-500/30">
+          <Shield className="h-3 w-3 mr-1" />
+          Class Rep
+        </Badge>
+      );
+    case "student":
+    default:
+      return (
+        <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-700 border-emerald-500/30 hover:bg-emerald-500/30">
+          <GraduationCap className="h-3 w-3 mr-1" />
+          Student
+        </Badge>
+      );
+  }
+};
 
 const TeacherPortal = () => {
   const navigate = useNavigate();
   const [userName, setUserName] = useState("");
-  const [students, setStudents] = useState<any[]>([]);
+  const [students, setStudents] = useState<StudentWithRole[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Result form state
@@ -27,6 +70,7 @@ const TeacherPortal = () => {
   useEffect(() => {
     checkAuth();
     loadStudents();
+    loadSubjects();
   }, []);
 
   const checkAuth = async () => {
@@ -67,14 +111,56 @@ const TeacherPortal = () => {
   };
 
   const loadStudents = async () => {
-    const { data } = await supabase
+    // First get all registered students
+    const { data: studentsData } = await supabase
       .from("students_data")
-      .select("id, full_name, admission_number, class")
+      .select("id, full_name, admission_number, class, user_id")
       .eq("is_registered", true)
       .order("full_name");
 
+    if (!studentsData) {
+      setStudents([]);
+      return;
+    }
+
+    // Get user_ids that exist
+    const userIds = studentsData
+      .filter(s => s.user_id)
+      .map(s => s.user_id) as string[];
+
+    // Fetch roles for these users
+    let rolesMap: Record<string, string> = {};
+    if (userIds.length > 0) {
+      const { data: rolesData } = await supabase
+        .from("user_roles")
+        .select("user_id, role")
+        .in("user_id", userIds)
+        .in("role", ["student", "student_leader", "class_rep"]);
+
+      if (rolesData) {
+        rolesData.forEach(r => {
+          rolesMap[r.user_id] = r.role;
+        });
+      }
+    }
+
+    // Combine students with their roles
+    const studentsWithRoles: StudentWithRole[] = studentsData.map(student => ({
+      ...student,
+      role: student.user_id ? (rolesMap[student.user_id] || "student") : "student"
+    }));
+
+    setStudents(studentsWithRoles);
+  };
+
+  const loadSubjects = async () => {
+    const { data } = await supabase
+      .from("subjects")
+      .select("id, title")
+      .order("display_order");
+
     if (data) {
-      setStudents(data);
+      setSubjects(data);
     }
   };
 
@@ -153,7 +239,10 @@ const TeacherPortal = () => {
                     <SelectContent>
                       {students.map((student) => (
                         <SelectItem key={student.id} value={student.id}>
-                          {student.full_name} ({student.admission_number})
+                          <div className="flex items-center gap-2">
+                            <span>{student.full_name} ({student.admission_number})</span>
+                            <span className="text-xs text-muted-foreground">- {student.class}</span>
+                          </div>
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -162,12 +251,18 @@ const TeacherPortal = () => {
 
                 <div className="space-y-2">
                   <Label>Subject</Label>
-                  <Input
-                    value={subject}
-                    onChange={(e) => setSubject(e.target.value)}
-                    placeholder="e.g., Mathematics"
-                    required
-                  />
+                  <Select value={subject} onValueChange={setSubject} required>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select subject" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {subjects.map((subj) => (
+                        <SelectItem key={subj.id} value={subj.title}>
+                          {subj.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -256,18 +351,28 @@ const TeacherPortal = () => {
                 <Users className="h-5 w-5" />
                 Students List
               </CardTitle>
-              <CardDescription>Total: {students.length} students</CardDescription>
+              <CardDescription>
+                Total: {students.length} students | 
+                <span className="text-amber-600 ml-1">{students.filter(s => s.role === "student_leader").length} Leaders</span> | 
+                <span className="text-blue-600 ml-1">{students.filter(s => s.role === "class_rep").length} Class Reps</span>
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-2 max-h-96 overflow-y-auto">
                 {students.map((student) => (
-                  <div key={student.id} className="p-3 border rounded-lg">
-                    <p className="font-medium">{student.full_name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {student.admission_number} - {student.class}
-                    </p>
+                  <div key={student.id} className="p-3 border rounded-lg flex items-center justify-between">
+                    <div>
+                      <p className="font-medium">{student.full_name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {student.admission_number} - {student.class}
+                      </p>
+                    </div>
+                    {getRoleBadge(student.role)}
                   </div>
                 ))}
+                {students.length === 0 && (
+                  <p className="text-center text-muted-foreground py-4">No students registered yet.</p>
+                )}
               </div>
             </CardContent>
           </Card>
