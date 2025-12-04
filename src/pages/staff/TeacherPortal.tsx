@@ -7,8 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
-import { BookOpen, Users, LogOut, Crown, Shield, GraduationCap } from "lucide-react";
+import { BookOpen, Users, LogOut, Crown, Shield, GraduationCap, Edit, Trash2, ClipboardList } from "lucide-react";
 
 interface StudentWithRole {
   id: string;
@@ -22,6 +23,19 @@ interface StudentWithRole {
 interface Subject {
   id: string;
   title: string;
+}
+
+interface AcademicResult {
+  id: string;
+  student_id: string;
+  subject: string;
+  term: string;
+  year: number;
+  marks: number;
+  grade: string | null;
+  remarks: string | null;
+  created_at: string;
+  student_name?: string;
 }
 
 const getRoleBadge = (role: string | null) => {
@@ -56,7 +70,9 @@ const TeacherPortal = () => {
   const [userName, setUserName] = useState("");
   const [students, setStudents] = useState<StudentWithRole[]>([]);
   const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [myResults, setMyResults] = useState<AcademicResult[]>([]);
   const [loading, setLoading] = useState(false);
+  const [currentTeacherId, setCurrentTeacherId] = useState<string | null>(null);
 
   // Result form state
   const [selectedStudent, setSelectedStudent] = useState("");
@@ -67,10 +83,15 @@ const TeacherPortal = () => {
   const [grade, setGrade] = useState("");
   const [remarks, setRemarks] = useState("");
 
+  // Edit modal state
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingResult, setEditingResult] = useState<AcademicResult | null>(null);
+  const [editMarks, setEditMarks] = useState("");
+  const [editGrade, setEditGrade] = useState("");
+  const [editRemarks, setEditRemarks] = useState("");
+
   useEffect(() => {
     checkAuth();
-    loadStudents();
-    loadSubjects();
   }, []);
 
   const checkAuth = async () => {
@@ -81,11 +102,10 @@ const TeacherPortal = () => {
       return;
     }
 
-    // If super admin is impersonating a teacher, bypass role checks
     const impersonationRaw = localStorage.getItem("impersonation");
     const impersonation = impersonationRaw ? JSON.parse(impersonationRaw) : null;
-
     const effectiveUserId = impersonation?.userId || session.user.id;
+    setCurrentTeacherId(effectiveUserId);
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -106,16 +126,38 @@ const TeacherPortal = () => {
       if (!roles || roles.length === 0 || (roles[0].role !== "teacher" && roles[0].role !== "hod")) {
         toast.error("Access denied");
         navigate("/auth");
+        return;
       }
     }
+
+    await loadStudents();
+    await loadSubjects();
+    await loadMyResults(effectiveUserId);
   };
 
   const loadStudents = async () => {
-    // First get all registered students
+    // Get all users with student roles first
+    const { data: rolesData } = await supabase
+      .from("user_roles")
+      .select("user_id, role")
+      .in("role", ["student", "student_leader", "class_rep"]);
+
+    if (!rolesData || rolesData.length === 0) {
+      setStudents([]);
+      return;
+    }
+
+    const userIds = rolesData.map(r => r.user_id);
+    const rolesMap: Record<string, string> = {};
+    rolesData.forEach(r => {
+      rolesMap[r.user_id] = r.role;
+    });
+
+    // Get students_data for users with roles (ignore is_registered)
     const { data: studentsData } = await supabase
       .from("students_data")
       .select("id, full_name, admission_number, class, user_id")
-      .eq("is_registered", true)
+      .in("user_id", userIds)
       .order("full_name");
 
     if (!studentsData) {
@@ -123,31 +165,9 @@ const TeacherPortal = () => {
       return;
     }
 
-    // Get user_ids that exist
-    const userIds = studentsData
-      .filter(s => s.user_id)
-      .map(s => s.user_id) as string[];
-
-    // Fetch roles for these users
-    let rolesMap: Record<string, string> = {};
-    if (userIds.length > 0) {
-      const { data: rolesData } = await supabase
-        .from("user_roles")
-        .select("user_id, role")
-        .in("user_id", userIds)
-        .in("role", ["student", "student_leader", "class_rep"]);
-
-      if (rolesData) {
-        rolesData.forEach(r => {
-          rolesMap[r.user_id] = r.role;
-        });
-      }
-    }
-
-    // Combine students with their roles
     const studentsWithRoles: StudentWithRole[] = studentsData.map(student => ({
       ...student,
-      role: student.user_id ? (rolesMap[student.user_id] || "student") : "student"
+      role: student.user_id ? rolesMap[student.user_id] : "student"
     }));
 
     setStudents(studentsWithRoles);
@@ -164,11 +184,53 @@ const TeacherPortal = () => {
     }
   };
 
+  const loadMyResults = async (teacherId: string) => {
+    const { data } = await supabase
+      .from("academic_results")
+      .select("*")
+      .eq("teacher_id", teacherId)
+      .order("created_at", { ascending: false });
+
+    if (data && data.length > 0) {
+      const studentIds = [...new Set(data.map(r => r.student_id))];
+      const { data: studentsData } = await supabase
+        .from("students_data")
+        .select("id, full_name")
+        .in("id", studentIds);
+
+      const studentNameMap: Record<string, string> = {};
+      studentsData?.forEach(s => {
+        studentNameMap[s.id] = s.full_name;
+      });
+
+      const resultsWithNames = data.map(r => ({
+        ...r,
+        student_name: studentNameMap[r.student_id] || "Unknown"
+      }));
+
+      setMyResults(resultsWithNames);
+    } else {
+      setMyResults([]);
+    }
+  };
+
   const handleSubmitResult = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    
+    // Check for duplicate
+    const existingResult = myResults.find(
+      r => r.student_id === selectedStudent && 
+           r.subject === subject && 
+           r.term === term && 
+           r.year === parseInt(year)
+    );
 
-    const { data: { session } } = await supabase.auth.getSession();
+    if (existingResult) {
+      toast.error("Result already exists for this student, subject, term and year. Please edit instead.");
+      return;
+    }
+
+    setLoading(true);
 
     const { error } = await supabase
       .from("academic_results")
@@ -180,22 +242,76 @@ const TeacherPortal = () => {
         marks: parseInt(marks),
         grade,
         remarks,
-        teacher_id: session?.user.id
+        teacher_id: currentTeacherId
       });
 
     if (error) {
       toast.error("Failed to add result");
     } else {
       toast.success("Result added successfully");
-      // Reset form
       setSelectedStudent("");
       setSubject("");
       setTerm("");
       setMarks("");
       setGrade("");
       setRemarks("");
+      if (currentTeacherId) {
+        await loadMyResults(currentTeacherId);
+      }
     }
     setLoading(false);
+  };
+
+  const handleEditClick = (result: AcademicResult) => {
+    setEditingResult(result);
+    setEditMarks(result.marks.toString());
+    setEditGrade(result.grade || "");
+    setEditRemarks(result.remarks || "");
+    setEditModalOpen(true);
+  };
+
+  const handleUpdateResult = async () => {
+    if (!editingResult) return;
+
+    setLoading(true);
+    const { error } = await supabase
+      .from("academic_results")
+      .update({
+        marks: parseInt(editMarks),
+        grade: editGrade,
+        remarks: editRemarks
+      })
+      .eq("id", editingResult.id);
+
+    if (error) {
+      toast.error("Failed to update result");
+    } else {
+      toast.success("Result updated successfully");
+      setEditModalOpen(false);
+      setEditingResult(null);
+      if (currentTeacherId) {
+        await loadMyResults(currentTeacherId);
+      }
+    }
+    setLoading(false);
+  };
+
+  const handleDeleteResult = async (resultId: string) => {
+    if (!confirm("Are you sure you want to delete this result?")) return;
+
+    const { error } = await supabase
+      .from("academic_results")
+      .delete()
+      .eq("id", resultId);
+
+    if (error) {
+      toast.error("Failed to delete result");
+    } else {
+      toast.success("Result deleted");
+      if (currentTeacherId) {
+        await loadMyResults(currentTeacherId);
+      }
+    }
   };
 
   const handleLogout = async () => {
@@ -219,7 +335,8 @@ const TeacherPortal = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Add Results Card */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -345,6 +462,7 @@ const TeacherPortal = () => {
             </CardContent>
           </Card>
 
+          {/* Students List Card */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -371,13 +489,135 @@ const TeacherPortal = () => {
                   </div>
                 ))}
                 {students.length === 0 && (
-                  <p className="text-center text-muted-foreground py-4">No students registered yet.</p>
+                  <p className="text-center text-muted-foreground py-4">No students with assigned roles yet.</p>
                 )}
               </div>
             </CardContent>
           </Card>
         </div>
+
+        {/* My Added Results Card */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ClipboardList className="h-5 w-5" />
+              My Added Results
+            </CardTitle>
+            <CardDescription>
+              Results you have recorded ({myResults.length} total)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {myResults.length > 0 ? (
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {myResults.map((result) => (
+                  <div key={result.id} className="p-4 border rounded-lg flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{result.student_name}</p>
+                        <Badge variant="outline">{result.subject}</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        Term {result.term}, {result.year} • Marks: {result.marks}% • Grade: {result.grade}
+                      </p>
+                      {result.remarks && (
+                        <p className="text-xs text-muted-foreground mt-1">Remarks: {result.remarks}</p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditClick(result)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => handleDeleteResult(result.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-muted-foreground py-4">No results added yet.</p>
+            )}
+          </CardContent>
+        </Card>
       </main>
+
+      {/* Edit Result Modal */}
+      <Dialog open={editModalOpen} onOpenChange={setEditModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Result</DialogTitle>
+          </DialogHeader>
+          {editingResult && (
+            <div className="space-y-4">
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="font-medium">{editingResult.student_name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {editingResult.subject} • Term {editingResult.term}, {editingResult.year}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Marks</Label>
+                  <Input
+                    type="number"
+                    value={editMarks}
+                    onChange={(e) => setEditMarks(e.target.value)}
+                    min="0"
+                    max="100"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Grade</Label>
+                  <Select value={editGrade} onValueChange={setEditGrade}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select grade" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="A">A</SelectItem>
+                      <SelectItem value="A-">A-</SelectItem>
+                      <SelectItem value="B+">B+</SelectItem>
+                      <SelectItem value="B">B</SelectItem>
+                      <SelectItem value="B-">B-</SelectItem>
+                      <SelectItem value="C+">C+</SelectItem>
+                      <SelectItem value="C">C</SelectItem>
+                      <SelectItem value="C-">C-</SelectItem>
+                      <SelectItem value="D+">D+</SelectItem>
+                      <SelectItem value="D">D</SelectItem>
+                      <SelectItem value="D-">D-</SelectItem>
+                      <SelectItem value="E">E</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Remarks</Label>
+                <Input
+                  value={editRemarks}
+                  onChange={(e) => setEditRemarks(e.target.value)}
+                  placeholder="Teacher's comments"
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditModalOpen(false)}>Cancel</Button>
+            <Button onClick={handleUpdateResult} disabled={loading}>
+              {loading ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
