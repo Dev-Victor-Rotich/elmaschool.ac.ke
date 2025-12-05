@@ -7,13 +7,17 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Loader2 } from "lucide-react";
+import { Plus, Trash2, Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 import { RoleSelector } from "./RoleSelector";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export const StudentRegistryManager = () => {
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [approveDialogOpen, setApproveDialogOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<any>(null);
+  const [selectedRole, setSelectedRole] = useState<'student' | 'student_leader' | 'class_rep'>('student');
   const [formData, setFormData] = useState({
     full_name: '',
     admission_number: '',
@@ -97,10 +101,7 @@ export const StudentRegistryManager = () => {
   });
 
   const approveStudentMutation = useMutation({
-    mutationFn: async ({ studentId, email, fullName }: { studentId: string; email: string; fullName: string }) => {
-      // Retrieve the stored role preference
-      const storedRole = localStorage.getItem(`pending_student_role_${email}`) || 'student';
-      
+    mutationFn: async ({ studentId, email, fullName, role }: { studentId: string; email: string; fullName: string; role: string }) => {
       // Create auth user account via edge function
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Not authenticated");
@@ -108,7 +109,7 @@ export const StudentRegistryManager = () => {
       const response = await supabase.functions.invoke('register-user', {
         body: { 
           email, 
-          role: storedRole,
+          role: role,
           fullName 
         },
         headers: {
@@ -121,24 +122,28 @@ export const StudentRegistryManager = () => {
 
       const newUserId = response.data.user.id;
 
-      // Update students_data with user_id and approval status
+      // Update students_data with user_id, approval status, and is_registered
       const { error: updateError } = await supabase
         .from('students_data')
         .update({ 
           approval_status: 'approved',
-          user_id: newUserId
+          user_id: newUserId,
+          is_registered: true
         })
         .eq('id', studentId);
       
       if (updateError) throw updateError;
 
-      // Clean up localStorage
+      // Clean up localStorage if exists
       localStorage.removeItem(`pending_student_role_${email}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['student-registry'] });
       queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
       toast.success("Student approved, account created, and role assigned");
+      setApproveDialogOpen(false);
+      setSelectedStudent(null);
+      setSelectedRole('student');
     },
     onError: (error: any) => {
       toast.error(error.message || "Failed to approve student");
@@ -154,6 +159,24 @@ export const StudentRegistryManager = () => {
     }
 
     addStudentMutation.mutate(formData);
+  };
+
+  const handleApproveClick = (student: any) => {
+    setSelectedStudent(student);
+    // Check if there's a stored role preference from Super Admin add
+    const storedRole = localStorage.getItem(`pending_student_role_${student.email}`);
+    setSelectedRole((storedRole as any) || 'student');
+    setApproveDialogOpen(true);
+  };
+
+  const handleConfirmApproval = () => {
+    if (!selectedStudent) return;
+    approveStudentMutation.mutate({
+      studentId: selectedStudent.id,
+      email: selectedStudent.email,
+      fullName: selectedStudent.full_name,
+      role: selectedRole
+    });
   };
 
   if (isLoading) {
@@ -256,6 +279,48 @@ export const StudentRegistryManager = () => {
         </Dialog>
       </div>
 
+      {/* Approval Dialog */}
+      <Dialog open={approveDialogOpen} onOpenChange={setApproveDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Approve Student</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="p-4 bg-muted rounded-lg">
+              <p className="font-medium">{selectedStudent?.full_name}</p>
+              <p className="text-sm text-muted-foreground">{selectedStudent?.email}</p>
+              <p className="text-sm text-muted-foreground">Class: {selectedStudent?.class}</p>
+            </div>
+            <div>
+              <Label>Assign Role</Label>
+              <Select value={selectedRole} onValueChange={(value: any) => setSelectedRole(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="student">Student</SelectItem>
+                  <SelectItem value="student_leader">Student Leader</SelectItem>
+                  <SelectItem value="class_rep">Class Rep</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={() => setApproveDialogOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleConfirmApproval} disabled={approveStudentMutation.isPending}>
+                {approveStudentMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Check className="h-4 w-4 mr-2" />
+                )}
+                Approve & Assign Role
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {!studentRegistry || studentRegistry.length === 0 ? (
         <div className="text-center p-8 text-muted-foreground">
           No students in registry
@@ -289,7 +354,7 @@ export const StudentRegistryManager = () => {
                       onRoleChange={() => queryClient.invalidateQueries({ queryKey: ['student-registry'] })}
                     />
                   ) : (
-                    <span className="text-muted-foreground text-sm">Not assigned</span>
+                    <span className="text-muted-foreground text-sm">Pending approval</span>
                   )}
                 </TableCell>
                 <TableCell>
@@ -302,11 +367,7 @@ export const StudentRegistryManager = () => {
                     {student.approval_status === 'pending' && (
                       <Button
                         size="sm"
-                        onClick={() => approveStudentMutation.mutate({ 
-                          studentId: student.id, 
-                          email: student.email,
-                          fullName: student.full_name 
-                        })}
+                        onClick={() => handleApproveClick(student)}
                         disabled={approveStudentMutation.isPending}
                       >
                         Approve
