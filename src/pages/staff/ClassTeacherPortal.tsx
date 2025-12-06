@@ -14,6 +14,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { useImpersonation } from "@/hooks/useImpersonation";
 import { StudentSubjectsManager } from "@/components/classteacher/StudentSubjectsManager";
+import { SubjectOfferingsManager } from "@/components/classteacher/SubjectOfferingsManager";
 
 const ClassTeacherPortal = () => {
   const navigate = useNavigate();
@@ -461,7 +462,8 @@ const ClassTeacherPortal = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="subjects">
+          <TabsContent value="subjects" className="space-y-6">
+            <SubjectOfferingsManager assignedClass={assignedClass} />
             <StudentSubjectsManager assignedClass={assignedClass} />
           </TabsContent>
 

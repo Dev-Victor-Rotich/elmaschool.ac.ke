@@ -337,6 +337,47 @@ export type Database = {
         }
         Relationships: []
       }
+      class_subject_offerings: {
+        Row: {
+          class_name: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          offering_type: string
+          sub_subject: string | null
+          subject_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          class_name: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          offering_type: string
+          sub_subject?: string | null
+          subject_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          class_name?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          offering_type?: string
+          sub_subject?: string | null
+          subject_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "class_subject_offerings_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       classteacher_assignments: {
         Row: {
           assigned_class: string
@@ -663,6 +704,51 @@ export type Database = {
         }
         Relationships: []
       }
+      exams: {
+        Row: {
+          class_name: string
+          created_at: string | null
+          created_by: string | null
+          end_date: string
+          exam_name: string
+          id: string
+          start_date: string
+          status: string | null
+          term: string
+          timetable: Json | null
+          updated_at: string | null
+          year: number
+        }
+        Insert: {
+          class_name: string
+          created_at?: string | null
+          created_by?: string | null
+          end_date: string
+          exam_name: string
+          id?: string
+          start_date: string
+          status?: string | null
+          term: string
+          timetable?: Json | null
+          updated_at?: string | null
+          year: number
+        }
+        Update: {
+          class_name?: string
+          created_at?: string | null
+          created_by?: string | null
+          end_date?: string
+          exam_name?: string
+          id?: string
+          start_date?: string
+          status?: string | null
+          term?: string
+          timetable?: Json | null
+          updated_at?: string | null
+          year?: number
+        }
+        Relationships: []
+      }
       facilities: {
         Row: {
           created_at: string | null
@@ -808,6 +894,59 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      grade_boundaries: {
+        Row: {
+          boundary_type: string
+          class_name: string
+          created_at: string | null
+          created_by: string | null
+          grade: string
+          id: string
+          max_marks: number
+          min_marks: number
+          points: number
+          sub_subject: string | null
+          subject_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          boundary_type: string
+          class_name: string
+          created_at?: string | null
+          created_by?: string | null
+          grade: string
+          id?: string
+          max_marks: number
+          min_marks: number
+          points: number
+          sub_subject?: string | null
+          subject_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          boundary_type?: string
+          class_name?: string
+          created_at?: string | null
+          created_by?: string | null
+          grade?: string
+          id?: string
+          max_marks?: number
+          min_marks?: number
+          points?: number
+          sub_subject?: string | null
+          subject_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "grade_boundaries_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       hero_content: {
         Row: {
@@ -1565,6 +1704,47 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      teacher_subject_assignments: {
+        Row: {
+          assigned_by: string | null
+          class_name: string
+          created_at: string | null
+          id: string
+          sub_subject: string | null
+          subject_id: string
+          teacher_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_by?: string | null
+          class_name: string
+          created_at?: string | null
+          id?: string
+          sub_subject?: string | null
+          subject_id: string
+          teacher_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_by?: string | null
+          class_name?: string
+          created_at?: string | null
+          id?: string
+          sub_subject?: string | null
+          subject_id?: string
+          teacher_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_subject_assignments_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       trust_badges: {
         Row: {
