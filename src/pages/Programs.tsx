@@ -523,6 +523,7 @@ const Programs = () => {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {subjects?.map((subject) => {
                 const Icon = getIcon(subject.icon_name);
+                const subSubjects = (subject.sub_subjects as string[]) || [];
                 return (
                   <Card
                     key={subject.id}
@@ -535,7 +536,22 @@ const Programs = () => {
                       <CardTitle className="text-xl">{subject.title}</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <CardDescription className="text-base">{subject.description}</CardDescription>
+                      <CardDescription className="text-base mb-3">{subject.description}</CardDescription>
+                      {subSubjects.length > 0 && (
+                        <div className="mt-4 pt-4 border-t">
+                          <p className="text-sm font-medium text-foreground mb-2">Includes:</p>
+                          <div className="flex flex-wrap gap-2">
+                            {subSubjects.map((sub, idx) => (
+                              <span
+                                key={idx}
+                                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary"
+                              >
+                                {sub}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </CardContent>
                   </Card>
                 );

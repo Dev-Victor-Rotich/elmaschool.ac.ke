@@ -1443,6 +1443,51 @@ export type Database = {
         }
         Relationships: []
       }
+      student_subjects: {
+        Row: {
+          assigned_by: string | null
+          created_at: string | null
+          id: string
+          student_id: string
+          sub_subject: string | null
+          subject_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_by?: string | null
+          created_at?: string | null
+          id?: string
+          student_id: string
+          sub_subject?: string | null
+          subject_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_by?: string | null
+          created_at?: string | null
+          id?: string
+          student_id?: string
+          sub_subject?: string | null
+          subject_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_subjects_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students_data"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "student_subjects_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       students_data: {
         Row: {
           admission_number: string
@@ -1495,6 +1540,7 @@ export type Database = {
           display_order: number | null
           icon_name: string | null
           id: string
+          sub_subjects: string[] | null
           title: string
           updated_at: string | null
         }
@@ -1504,6 +1550,7 @@ export type Database = {
           display_order?: number | null
           icon_name?: string | null
           id?: string
+          sub_subjects?: string[] | null
           title: string
           updated_at?: string | null
         }
@@ -1513,6 +1560,7 @@ export type Database = {
           display_order?: number | null
           icon_name?: string | null
           id?: string
+          sub_subjects?: string[] | null
           title?: string
           updated_at?: string | null
         }
