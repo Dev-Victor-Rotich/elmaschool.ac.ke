@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Pencil, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 const ICON_OPTIONS = [
@@ -17,11 +18,13 @@ const ICON_OPTIONS = [
 export const SubjectsManager = () => {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [newSubSubject, setNewSubSubject] = useState("");
   const [formData, setFormData] = useState({
     title: "",
     description: "",
     icon_name: "BookOpen",
-    display_order: 0
+    display_order: 0,
+    sub_subjects: [] as string[]
   });
 
   const queryClient = useQueryClient();
@@ -74,8 +77,9 @@ export const SubjectsManager = () => {
   });
 
   const resetForm = () => {
-    setFormData({ title: "", description: "", icon_name: "BookOpen", display_order: 0 });
+    setFormData({ title: "", description: "", icon_name: "BookOpen", display_order: 0, sub_subjects: [] });
     setEditingId(null);
+    setNewSubSubject("");
     setOpen(false);
   };
 
@@ -93,10 +97,28 @@ export const SubjectsManager = () => {
       title: subject.title,
       description: subject.description,
       icon_name: subject.icon_name,
-      display_order: subject.display_order || 0
+      display_order: subject.display_order || 0,
+      sub_subjects: subject.sub_subjects || []
     });
     setEditingId(subject.id);
     setOpen(true);
+  };
+
+  const addSubSubject = () => {
+    if (newSubSubject.trim() && !formData.sub_subjects.includes(newSubSubject.trim())) {
+      setFormData({
+        ...formData,
+        sub_subjects: [...formData.sub_subjects, newSubSubject.trim()]
+      });
+      setNewSubSubject("");
+    }
+  };
+
+  const removeSubSubject = (subSubject: string) => {
+    setFormData({
+      ...formData,
+      sub_subjects: formData.sub_subjects.filter(s => s !== subSubject)
+    });
   };
 
   return (
@@ -108,7 +130,7 @@ export const SubjectsManager = () => {
             Add Subject
           </Button>
         </DialogTrigger>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{editingId ? "Edit" : "Add"} Subject</DialogTitle>
           </DialogHeader>
@@ -134,7 +156,7 @@ export const SubjectsManager = () => {
               <select
                 value={formData.icon_name}
                 onChange={(e) => setFormData({ ...formData, icon_name: e.target.value })}
-                className="w-full p-2 border rounded"
+                className="w-full p-2 border rounded bg-background"
               >
                 {ICON_OPTIONS.map(icon => (
                   <option key={icon} value={icon}>{icon}</option>
@@ -149,6 +171,44 @@ export const SubjectsManager = () => {
                 onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) })}
               />
             </div>
+            
+            {/* Sub-subjects section */}
+            <div>
+              <Label>Sub-Subjects (e.g., Biology, Chemistry, Physics for Sciences)</Label>
+              <div className="flex gap-2 mt-2">
+                <Input
+                  value={newSubSubject}
+                  onChange={(e) => setNewSubSubject(e.target.value)}
+                  placeholder="Enter sub-subject name"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addSubSubject();
+                    }
+                  }}
+                />
+                <Button type="button" onClick={addSubSubject} variant="secondary">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {formData.sub_subjects.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {formData.sub_subjects.map((sub, idx) => (
+                    <Badge key={idx} variant="secondary" className="flex items-center gap-1">
+                      {sub}
+                      <button
+                        type="button"
+                        onClick={() => removeSubSubject(sub)}
+                        className="ml-1 hover:text-destructive"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+            
             <Button type="submit" className="w-full">
               {editingId ? "Update" : "Add"} Subject
             </Button>
@@ -161,6 +221,7 @@ export const SubjectsManager = () => {
           <TableRow>
             <TableHead>Title</TableHead>
             <TableHead>Description</TableHead>
+            <TableHead>Sub-Subjects</TableHead>
             <TableHead>Icon</TableHead>
             <TableHead>Order</TableHead>
             <TableHead>Actions</TableHead>
@@ -169,8 +230,21 @@ export const SubjectsManager = () => {
         <TableBody>
           {subjects?.map((subject) => (
             <TableRow key={subject.id}>
-              <TableCell>{subject.title}</TableCell>
-              <TableCell>{subject.description}</TableCell>
+              <TableCell className="font-medium">{subject.title}</TableCell>
+              <TableCell className="max-w-xs truncate">{subject.description}</TableCell>
+              <TableCell>
+                <div className="flex flex-wrap gap-1">
+                  {(subject.sub_subjects as string[] || []).length > 0 ? (
+                    (subject.sub_subjects as string[]).map((sub, idx) => (
+                      <Badge key={idx} variant="outline" className="text-xs">
+                        {sub}
+                      </Badge>
+                    ))
+                  ) : (
+                    <span className="text-muted-foreground text-xs">None</span>
+                  )}
+                </div>
+              </TableCell>
               <TableCell>{subject.icon_name}</TableCell>
               <TableCell>{subject.display_order}</TableCell>
               <TableCell>

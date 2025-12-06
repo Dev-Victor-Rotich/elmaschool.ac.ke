@@ -8,11 +8,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Users, ClipboardCheck, AlertCircle, MessageSquare, FileText, LogOut, Eye, Plus, Pencil, Trash2 } from "lucide-react";
+import { Users, ClipboardCheck, AlertCircle, MessageSquare, FileText, LogOut, Eye, Plus, Pencil, Trash2, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { useImpersonation } from "@/hooks/useImpersonation";
+import { StudentSubjectsManager } from "@/components/classteacher/StudentSubjectsManager";
 
 const ClassTeacherPortal = () => {
   const navigate = useNavigate();
@@ -286,10 +287,14 @@ const ClassTeacherPortal = () => {
         </div>
 
         <Tabs defaultValue="students" className="space-y-4">
-          <TabsList>
+          <TabsList className="flex-wrap">
             <TabsTrigger value="students">
               <Users className="w-4 h-4 mr-2" />
               My Class
+            </TabsTrigger>
+            <TabsTrigger value="subjects">
+              <BookOpen className="w-4 h-4 mr-2" />
+              Subjects
             </TabsTrigger>
             <TabsTrigger value="attendance">
               <ClipboardCheck className="w-4 h-4 mr-2" />
@@ -454,6 +459,10 @@ const ClassTeacherPortal = () => {
                 </Table>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="subjects">
+            <StudentSubjectsManager assignedClass={assignedClass} />
           </TabsContent>
 
           <TabsContent value="attendance">
