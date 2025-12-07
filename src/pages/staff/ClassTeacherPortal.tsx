@@ -16,6 +16,7 @@ import { useImpersonation } from "@/hooks/useImpersonation";
 import { StudentSubjectsManager } from "@/components/classteacher/StudentSubjectsManager";
 import { SubjectOfferingsManager } from "@/components/classteacher/SubjectOfferingsManager";
 import { GradeBoundariesManager } from "@/components/classteacher/GradeBoundariesManager";
+import { ExamsManager } from "@/components/classteacher/ExamsManager";
 
 const ClassTeacherPortal = () => {
   const navigate = useNavigate();
@@ -472,8 +473,9 @@ const ClassTeacherPortal = () => {
             <StudentSubjectsManager assignedClass={assignedClass} />
           </TabsContent>
 
-          <TabsContent value="academics">
+          <TabsContent value="academics" className="space-y-6">
             <GradeBoundariesManager assignedClass={assignedClass} />
+            <ExamsManager assignedClass={assignedClass} />
           </TabsContent>
 
           <TabsContent value="attendance">
