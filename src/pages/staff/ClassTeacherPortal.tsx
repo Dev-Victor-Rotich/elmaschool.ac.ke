@@ -8,13 +8,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Users, ClipboardCheck, AlertCircle, MessageSquare, FileText, LogOut, Eye, Plus, Pencil, Trash2, BookOpen } from "lucide-react";
+import { Users, ClipboardCheck, AlertCircle, MessageSquare, FileText, LogOut, Eye, Plus, Pencil, Trash2, BookOpen, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 import { useImpersonation } from "@/hooks/useImpersonation";
 import { StudentSubjectsManager } from "@/components/classteacher/StudentSubjectsManager";
 import { SubjectOfferingsManager } from "@/components/classteacher/SubjectOfferingsManager";
+import { GradeBoundariesManager } from "@/components/classteacher/GradeBoundariesManager";
 
 const ClassTeacherPortal = () => {
   const navigate = useNavigate();
@@ -297,6 +298,10 @@ const ClassTeacherPortal = () => {
               <BookOpen className="w-4 h-4 mr-2" />
               Subjects
             </TabsTrigger>
+            <TabsTrigger value="academics">
+              <GraduationCap className="w-4 h-4 mr-2" />
+              Academics
+            </TabsTrigger>
             <TabsTrigger value="attendance">
               <ClipboardCheck className="w-4 h-4 mr-2" />
               Attendance
@@ -465,6 +470,10 @@ const ClassTeacherPortal = () => {
           <TabsContent value="subjects" className="space-y-6">
             <SubjectOfferingsManager assignedClass={assignedClass} />
             <StudentSubjectsManager assignedClass={assignedClass} />
+          </TabsContent>
+
+          <TabsContent value="academics">
+            <GradeBoundariesManager assignedClass={assignedClass} />
           </TabsContent>
 
           <TabsContent value="attendance">
