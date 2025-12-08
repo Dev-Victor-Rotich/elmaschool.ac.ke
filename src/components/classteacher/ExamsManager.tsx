@@ -10,10 +10,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Pencil, Trash2, Calendar, Clock, FileText, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Trash2, Calendar, Clock, FileText, ChevronRight, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import type { Json } from "@/integrations/supabase/types";
+import { ExamResultsMatrix } from "./ExamResultsMatrix";
 
 interface ExamsManagerProps {
   assignedClass: string;
@@ -36,7 +37,7 @@ export function ExamsManager({ assignedClass }: ExamsManagerProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [timetableDialogOpen, setTimetableDialogOpen] = useState(false);
   const [selectedExam, setSelectedExam] = useState<any>(null);
-  const [viewMode, setViewMode] = useState<"list" | "details">("list");
+  const [viewMode, setViewMode] = useState<"list" | "details" | "results">("list");
   
   const [formData, setFormData] = useState({
     exam_name: "",
@@ -237,6 +238,17 @@ export function ExamsManager({ assignedClass }: ExamsManagerProps) {
     setViewMode("details");
   };
 
+  // Results Matrix View
+  if (viewMode === "results" && selectedExam) {
+    return (
+      <ExamResultsMatrix 
+        exam={selectedExam} 
+        assignedClass={assignedClass} 
+        onBack={() => setViewMode("details")} 
+      />
+    );
+  }
+
   if (viewMode === "details" && selectedExam) {
     return (
       <Card>
@@ -386,12 +398,13 @@ export function ExamsManager({ assignedClass }: ExamsManagerProps) {
 
             <TabsContent value="results" className="mt-4">
               <div className="border rounded-lg p-8 text-center text-muted-foreground">
-                <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <BarChart3 className="w-12 h-12 mx-auto mb-4 opacity-50" />
                 <h4 className="font-medium mb-2">Results Matrix</h4>
                 <p className="text-sm">
                   View full exam results with student scores, grades, positions and analytics.
                 </p>
-                <Button className="mt-4" variant="outline">
+                <Button className="mt-4" onClick={() => setViewMode("results")}>
+                  <BarChart3 className="w-4 h-4 mr-2" />
                   View Full Results Matrix
                 </Button>
               </div>
