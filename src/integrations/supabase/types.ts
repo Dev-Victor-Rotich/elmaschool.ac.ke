@@ -57,6 +57,7 @@ export type Database = {
         Row: {
           approved_by: string | null
           created_at: string
+          exam_id: string | null
           grade: string | null
           id: string
           marks: number
@@ -71,6 +72,7 @@ export type Database = {
         Insert: {
           approved_by?: string | null
           created_at?: string
+          exam_id?: string | null
           grade?: string | null
           id?: string
           marks: number
@@ -85,6 +87,7 @@ export type Database = {
         Update: {
           approved_by?: string | null
           created_at?: string
+          exam_id?: string | null
           grade?: string | null
           id?: string
           marks?: number
@@ -97,6 +100,13 @@ export type Database = {
           year?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "academic_results_exam_id_fkey"
+            columns: ["exam_id"]
+            isOneToOne: false
+            referencedRelation: "exams"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "academic_results_student_id_fkey"
             columns: ["student_id"]
