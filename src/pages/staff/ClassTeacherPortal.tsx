@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Users, ClipboardCheck, AlertCircle, MessageSquare, FileText, LogOut, Eye, Plus, Pencil, Trash2, BookOpen, GraduationCap, UserCheck } from "lucide-react";
+import { Users, ClipboardCheck, AlertCircle, MessageSquare, FileText, LogOut, Eye, Plus, Pencil, Trash2, BookOpen, GraduationCap, UserCheck, ClipboardList } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
@@ -18,6 +18,7 @@ import { SubjectOfferingsManager } from "@/components/classteacher/SubjectOfferi
 import { GradeBoundariesManager } from "@/components/classteacher/GradeBoundariesManager";
 import { ExamsManager } from "@/components/classteacher/ExamsManager";
 import { TeacherAssignmentsManager } from "@/components/classteacher/TeacherAssignmentsManager";
+import { StudentResultsManager } from "@/components/classteacher/StudentResultsManager";
 
 const ClassTeacherPortal = () => {
   const navigate = useNavigate();
@@ -308,6 +309,10 @@ const ClassTeacherPortal = () => {
               <UserCheck className="w-4 h-4 mr-2" />
               Teachers
             </TabsTrigger>
+            <TabsTrigger value="results">
+              <ClipboardList className="w-4 h-4 mr-2" />
+              Results
+            </TabsTrigger>
             <TabsTrigger value="attendance">
               <ClipboardCheck className="w-4 h-4 mr-2" />
               Attendance
@@ -485,6 +490,10 @@ const ClassTeacherPortal = () => {
 
           <TabsContent value="teachers">
             <TeacherAssignmentsManager assignedClass={assignedClass} />
+          </TabsContent>
+
+          <TabsContent value="results">
+            <StudentResultsManager assignedClass={assignedClass} />
           </TabsContent>
 
           <TabsContent value="attendance">
