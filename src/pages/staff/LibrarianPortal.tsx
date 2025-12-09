@@ -4,12 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { BookOpen, BookMarked, Clock, FileText, LogOut } from "lucide-react";
+import { BookOpen, BookMarked, Clock, FileText, LogOut, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
+import MyClassesManager from "@/components/staff/MyClassesManager";
 
 const LibrarianPortal = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -28,6 +30,8 @@ const LibrarianPortal = () => {
     // If super admin is impersonating a librarian, bypass role checks
     const impersonationRaw = localStorage.getItem("impersonation");
     const impersonation = impersonationRaw ? JSON.parse(impersonationRaw) : null;
+    const effectiveUserId = impersonation?.userId || session.user.id;
+    setUserId(effectiveUserId);
 
     if (!impersonation) {
       const { data: roles } = await supabase
@@ -112,6 +116,10 @@ const LibrarianPortal = () => {
               <FileText className="w-4 h-4 mr-2" />
               Reports
             </TabsTrigger>
+            <TabsTrigger value="classes">
+              <GraduationCap className="w-4 h-4 mr-2" />
+              My Classes
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="books">
@@ -151,6 +159,10 @@ const LibrarianPortal = () => {
                 <Button>View Reports</Button>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="classes">
+            {userId && <MyClassesManager userId={userId} />}
           </TabsContent>
         </Tabs>
       </div>

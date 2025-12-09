@@ -6,11 +6,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { DollarSign, Receipt, LogOut } from "lucide-react";
+import { DollarSign, Receipt, LogOut, BookOpen } from "lucide-react";
+import MyClassesManager from "@/components/staff/MyClassesManager";
 
 const BursarPortal = () => {
   const navigate = useNavigate();
+  const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState("");
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -43,6 +46,7 @@ const BursarPortal = () => {
     const impersonation = impersonationRaw ? JSON.parse(impersonationRaw) : null;
 
     const effectiveUserId = impersonation?.userId || session.user.id;
+    setUserId(effectiveUserId);
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -135,116 +139,135 @@ const BursarPortal = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Receipt className="h-5 w-5" />
-                Record Fee Payment
-              </CardTitle>
-              <CardDescription>Track student fee payments</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleRecordPayment} className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Student</Label>
-                  <Select value={selectedStudent} onValueChange={setSelectedStudent} required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select student" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {students.map((student) => (
-                        <SelectItem key={student.id} value={student.id}>
-                          {student.full_name} ({student.admission_number})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+        <Tabs defaultValue="fees" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="fees">
+              <Receipt className="h-4 w-4 mr-2" />
+              Fee Management
+            </TabsTrigger>
+            <TabsTrigger value="classes">
+              <BookOpen className="h-4 w-4 mr-2" />
+              My Classes
+            </TabsTrigger>
+          </TabsList>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Term</Label>
-                    <Select value={term} onValueChange={setTerm} required>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select term" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">Term 1</SelectItem>
-                        <SelectItem value="2">Term 2</SelectItem>
-                        <SelectItem value="3">Term 3</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+          <TabsContent value="fees">
+            <div className="grid gap-6 md:grid-cols-2">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Receipt className="h-5 w-5" />
+                    Record Fee Payment
+                  </CardTitle>
+                  <CardDescription>Track student fee payments</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleRecordPayment} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label>Student</Label>
+                      <Select value={selectedStudent} onValueChange={setSelectedStudent} required>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select student" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {students.map((student) => (
+                            <SelectItem key={student.id} value={student.id}>
+                              {student.full_name} ({student.admission_number})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-                  <div className="space-y-2">
-                    <Label>Year</Label>
-                    <Input type="number" value={year} onChange={(e) => setYear(e.target.value)} required />
-                  </div>
-                </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label>Term</Label>
+                        <Select value={term} onValueChange={setTerm} required>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select term" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="1">Term 1</SelectItem>
+                            <SelectItem value="2">Term 2</SelectItem>
+                            <SelectItem value="3">Term 3</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                <div className="space-y-2">
-                  <Label>Amount Due (KES)</Label>
-                  <Input
-                    type="number"
-                    value={amountDue}
-                    onChange={(e) => setAmountDue(e.target.value)}
-                    placeholder="0.00"
-                    step="0.01"
-                    required
-                  />
-                </div>
+                      <div className="space-y-2">
+                        <Label>Year</Label>
+                        <Input type="number" value={year} onChange={(e) => setYear(e.target.value)} required />
+                      </div>
+                    </div>
 
-                <div className="space-y-2">
-                  <Label>Amount Paid (KES)</Label>
-                  <Input
-                    type="number"
-                    value={amountPaid}
-                    onChange={(e) => setAmountPaid(e.target.value)}
-                    placeholder="0.00"
-                    step="0.01"
-                    required
-                  />
-                </div>
+                    <div className="space-y-2">
+                      <Label>Amount Due (KES)</Label>
+                      <Input
+                        type="number"
+                        value={amountDue}
+                        onChange={(e) => setAmountDue(e.target.value)}
+                        placeholder="0.00"
+                        step="0.01"
+                        required
+                      />
+                    </div>
 
-                {amountDue && amountPaid && (
-                  <div className="p-3 bg-muted rounded-lg">
-                    <p className="text-sm font-medium">
-                      Balance: KES {(parseFloat(amountDue) - parseFloat(amountPaid)).toFixed(2)}
-                    </p>
-                  </div>
-                )}
+                    <div className="space-y-2">
+                      <Label>Amount Paid (KES)</Label>
+                      <Input
+                        type="number"
+                        value={amountPaid}
+                        onChange={(e) => setAmountPaid(e.target.value)}
+                        placeholder="0.00"
+                        step="0.01"
+                        required
+                      />
+                    </div>
 
-                <div className="space-y-2">
-                  <Label>Receipt Number</Label>
-                  <Input
-                    value={receiptNumber}
-                    onChange={(e) => setReceiptNumber(e.target.value)}
-                    placeholder="RCP-2024-001"
-                    required
-                  />
-                </div>
+                    {amountDue && amountPaid && (
+                      <div className="p-3 bg-muted rounded-lg">
+                        <p className="text-sm font-medium">
+                          Balance: KES {(parseFloat(amountDue) - parseFloat(amountPaid)).toFixed(2)}
+                        </p>
+                      </div>
+                    )}
 
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Recording..." : "Record Payment"}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
+                    <div className="space-y-2">
+                      <Label>Receipt Number</Label>
+                      <Input
+                        value={receiptNumber}
+                        onChange={(e) => setReceiptNumber(e.target.value)}
+                        placeholder="RCP-2024-001"
+                        required
+                      />
+                    </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                Recent Payments
-              </CardTitle>
-              <CardDescription>Latest fee transactions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground text-center py-8">Payment history will appear here</p>
-            </CardContent>
-          </Card>
-        </div>
+                    <Button type="submit" className="w-full" disabled={loading}>
+                      {loading ? "Recording..." : "Record Payment"}
+                    </Button>
+                  </form>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5" />
+                    Recent Payments
+                  </CardTitle>
+                  <CardDescription>Latest fee transactions</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground text-center py-8">Payment history will appear here</p>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="classes">
+            {userId && <MyClassesManager userId={userId} />}
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );

@@ -4,12 +4,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Heart, Quote, CalendarDays, MessageSquare, FileText, LogOut } from "lucide-react";
+import { Heart, Quote, CalendarDays, MessageSquare, FileText, LogOut, BookOpen } from "lucide-react";
 import { toast } from "sonner";
+import MyClassesManager from "@/components/staff/MyClassesManager";
 
 const ChaplainPortal = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuth();
@@ -26,6 +28,8 @@ const ChaplainPortal = () => {
     // If super admin is impersonating a chaplain, bypass role checks
     const impersonationRaw = localStorage.getItem("impersonation");
     const impersonation = impersonationRaw ? JSON.parse(impersonationRaw) : null;
+    const effectiveUserId = impersonation?.userId || session.user.id;
+    setUserId(effectiveUserId);
 
     if (!impersonation) {
       const { data: roles } = await supabase
@@ -85,6 +89,10 @@ const ChaplainPortal = () => {
             <TabsTrigger value="reports">
               <FileText className="w-4 h-4 mr-2" />
               Reports
+            </TabsTrigger>
+            <TabsTrigger value="classes">
+              <BookOpen className="w-4 h-4 mr-2" />
+              My Classes
             </TabsTrigger>
           </TabsList>
 
@@ -151,6 +159,10 @@ const ChaplainPortal = () => {
                 <Button>Generate Report</Button>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="classes">
+            {userId && <MyClassesManager userId={userId} />}
           </TabsContent>
         </Tabs>
       </div>

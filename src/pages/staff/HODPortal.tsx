@@ -8,10 +8,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Users, BarChart3, LogOut, MessageSquare, Edit } from "lucide-react";
+import { Users, BarChart3, LogOut, MessageSquare, Edit, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useImpersonation } from "@/hooks/useImpersonation";
+import MyClassesManager from "@/components/staff/MyClassesManager";
 
 const HODPortal = () => {
   const navigate = useNavigate();
@@ -244,7 +245,7 @@ const HODPortal = () => {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="staff" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="staff" className="flex items-center gap-2">
               <Users className="w-4 h-4" />
               <span className="hidden sm:inline">Staff Management</span>
@@ -259,6 +260,11 @@ const HODPortal = () => {
               <MessageSquare className="w-4 h-4" />
               <span className="hidden sm:inline">Communications</span>
               <span className="sm:hidden">Messages</span>
+            </TabsTrigger>
+            <TabsTrigger value="classes" className="flex items-center gap-2">
+              <BookOpen className="w-4 h-4" />
+              <span className="hidden sm:inline">My Classes</span>
+              <span className="sm:hidden">Classes</span>
             </TabsTrigger>
           </TabsList>
 
@@ -371,6 +377,10 @@ const HODPortal = () => {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="classes">
+            {effectiveUserId && <MyClassesManager userId={effectiveUserId} />}
           </TabsContent>
         </Tabs>
 
