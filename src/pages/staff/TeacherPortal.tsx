@@ -8,8 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { BookOpen, Users, LogOut, Crown, Shield, GraduationCap, Edit, Trash2, ClipboardList } from "lucide-react";
+import MyClassesManager from "@/components/staff/MyClassesManager";
 
 interface StudentWithRole {
   id: string;
@@ -335,9 +337,28 @@ const TeacherPortal = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Add Results Card */}
-          <Card>
+        <Tabs defaultValue="add-results" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="add-results">
+              <BookOpen className="h-4 w-4 mr-2" />
+              Add Results
+            </TabsTrigger>
+            <TabsTrigger value="my-classes">
+              <GraduationCap className="h-4 w-4 mr-2" />
+              My Classes
+            </TabsTrigger>
+            <TabsTrigger value="students">
+              <Users className="h-4 w-4 mr-2" />
+              All Students
+            </TabsTrigger>
+            <TabsTrigger value="my-results">
+              <ClipboardList className="h-4 w-4 mr-2" />
+              My Results
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="add-results">
+            <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5" />
@@ -460,94 +481,101 @@ const TeacherPortal = () => {
                 </Button>
               </form>
             </CardContent>
-          </Card>
+            </Card>
+          </TabsContent>
 
-          {/* Students List Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Students List
-              </CardTitle>
-              <CardDescription>
-                Total: {students.length} students | 
-                <span className="text-amber-600 ml-1">{students.filter(s => s.role === "student_leader").length} Leaders</span> | 
-                <span className="text-blue-600 ml-1">{students.filter(s => s.role === "class_rep").length} Class Reps</span>
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 max-h-96 overflow-y-auto">
-                {students.map((student) => (
-                  <div key={student.id} className="p-3 border rounded-lg flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">{student.full_name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {student.admission_number} - {student.class}
-                      </p>
-                    </div>
-                    {getRoleBadge(student.role)}
-                  </div>
-                ))}
-                {students.length === 0 && (
-                  <p className="text-center text-muted-foreground py-4">No students with assigned roles yet.</p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+          <TabsContent value="my-classes">
+            {currentTeacherId && <MyClassesManager userId={currentTeacherId} />}
+          </TabsContent>
 
-        {/* My Added Results Card */}
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ClipboardList className="h-5 w-5" />
-              My Added Results
-            </CardTitle>
-            <CardDescription>
-              Results you have recorded ({myResults.length} total)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {myResults.length > 0 ? (
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {myResults.map((result) => (
-                  <div key={result.id} className="p-4 border rounded-lg flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{result.student_name}</p>
-                        <Badge variant="outline">{result.subject}</Badge>
+          <TabsContent value="students">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  Students List
+                </CardTitle>
+                <CardDescription>
+                  Total: {students.length} students | 
+                  <span className="text-amber-600 ml-1">{students.filter(s => s.role === "student_leader").length} Leaders</span> | 
+                  <span className="text-blue-600 ml-1">{students.filter(s => s.role === "class_rep").length} Class Reps</span>
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-96 overflow-y-auto">
+                  {students.map((student) => (
+                    <div key={student.id} className="p-3 border rounded-lg flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">{student.full_name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {student.admission_number} - {student.class}
+                        </p>
                       </div>
-                      <p className="text-sm text-muted-foreground">
-                        Term {result.term}, {result.year} • Marks: {result.marks}% • Grade: {result.grade}
-                      </p>
-                      {result.remarks && (
-                        <p className="text-xs text-muted-foreground mt-1">Remarks: {result.remarks}</p>
-                      )}
+                      {getRoleBadge(student.role)}
                     </div>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEditClick(result)}
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDeleteResult(result.id)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  ))}
+                  {students.length === 0 && (
+                    <p className="text-center text-muted-foreground py-4">No students with assigned roles yet.</p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="my-results">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ClipboardList className="h-5 w-5" />
+                  My Added Results
+                </CardTitle>
+                <CardDescription>
+                  Results you have recorded ({myResults.length} total)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {myResults.length > 0 ? (
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {myResults.map((result) => (
+                      <div key={result.id} className="p-4 border rounded-lg flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{result.student_name}</p>
+                            <Badge variant="outline">{result.subject}</Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            Term {result.term}, {result.year} • Marks: {result.marks}% • Grade: {result.grade}
+                          </p>
+                          {result.remarks && (
+                            <p className="text-xs text-muted-foreground mt-1">Remarks: {result.remarks}</p>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleEditClick(result)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDeleteResult(result.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-center text-muted-foreground py-4">No results added yet.</p>
-            )}
-          </CardContent>
-        </Card>
+                ) : (
+                  <p className="text-center text-muted-foreground py-4">No results added yet.</p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Edit Result Modal */}
