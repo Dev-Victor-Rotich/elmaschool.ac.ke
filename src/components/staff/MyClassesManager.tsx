@@ -7,9 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { useQuery } from "@tanstack/react-query";
-import { BookOpen, Users, GraduationCap, ChevronRight, Plus, ArrowLeft } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { BookOpen, Users, GraduationCap, ChevronRight, Plus, ArrowLeft, Trash2, FileText } from "lucide-react";
 
 interface TeacherAssignment {
   id: string;
@@ -34,9 +36,11 @@ interface MyClassesManagerProps {
 }
 
 const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
+  const queryClient = useQueryClient();
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const [selectedSubject, setSelectedSubject] = useState<TeacherAssignment | null>(null);
   const [isAddResultOpen, setIsAddResultOpen] = useState(false);
+  const [showMyResults, setShowMyResults] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState("");
   const [marks, setMarks] = useState("");
   const [grade, setGrade] = useState("");
@@ -44,6 +48,7 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
   const [term, setTerm] = useState("");
   const [year, setYear] = useState(new Date().getFullYear().toString());
   const [loading, setLoading] = useState(false);
+  const [deleteResultId, setDeleteResultId] = useState<string | null>(null);
 
   // Fetch teacher's subject assignments
   const { data: assignments, isLoading: assignmentsLoading } = useQuery({
@@ -130,6 +135,57 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
     enabled: !!selectedClass && !!selectedSubject
   });
 
+  // Fetch teacher's added results
+  const { data: myResults, isLoading: resultsLoading } = useQuery({
+    queryKey: ['my-added-results', userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('academic_results')
+        .select(`
+          id,
+          student_id,
+          subject,
+          term,
+          year,
+          marks,
+          grade,
+          remarks,
+          created_at,
+          students_data!academic_results_student_id_fkey (
+            full_name,
+            admission_number,
+            class
+          )
+        `)
+        .eq('teacher_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!userId
+  });
+
+  // Delete result mutation
+  const deleteResultMutation = useMutation({
+    mutationFn: async (resultId: string) => {
+      const { error } = await supabase
+        .from('academic_results')
+        .delete()
+        .eq('id', resultId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['my-added-results', userId] });
+      toast.success('Result deleted successfully');
+      setDeleteResultId(null);
+    },
+    onError: (error: any) => {
+      toast.error('Failed to delete result: ' + error.message);
+    }
+  });
+
   const handleAddResult = async () => {
     if (!selectedStudent || !marks || !grade || !term || !selectedSubject) {
       toast.error("Please fill in all required fields");
@@ -163,6 +219,7 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
       }
     } else {
       toast.success("Result added successfully");
+      queryClient.invalidateQueries({ queryKey: ['my-added-results', userId] });
       setIsAddResultOpen(false);
       setSelectedStudent("");
       setMarks("");
@@ -173,7 +230,9 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
   };
 
   const handleBack = () => {
-    if (selectedSubject) {
+    if (showMyResults) {
+      setShowMyResults(false);
+    } else if (selectedSubject) {
       setSelectedSubject(null);
     } else if (selectedClass) {
       setSelectedClass(null);
@@ -222,27 +281,105 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
           <div>
             <CardTitle className="flex items-center gap-2">
               <BookOpen className="h-5 w-5" />
-              My Classes
+              {showMyResults ? 'My Added Results' : 'My Classes'}
             </CardTitle>
             <CardDescription>
-              {selectedSubject 
-                ? `Students taking ${selectedSubject.subject.title}${selectedSubject.sub_subject ? ` (${selectedSubject.sub_subject})` : ''} in ${selectedClass}`
-                : selectedClass 
-                  ? `Subjects you teach in ${selectedClass}`
-                  : `${uniqueClasses.length} class${uniqueClasses.length !== 1 ? 'es' : ''} assigned`}
+              {showMyResults
+                ? `${myResults?.length || 0} result${(myResults?.length || 0) !== 1 ? 's' : ''} added by you`
+                : selectedSubject 
+                  ? `Students taking ${selectedSubject.subject.title}${selectedSubject.sub_subject ? ` (${selectedSubject.sub_subject})` : ''} in ${selectedClass}`
+                  : selectedClass 
+                    ? `Subjects you teach in ${selectedClass}`
+                    : `${uniqueClasses.length} class${uniqueClasses.length !== 1 ? 'es' : ''} assigned`}
             </CardDescription>
           </div>
-          {(selectedClass || selectedSubject) && (
-            <Button variant="ghost" size="sm" onClick={handleBack}>
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            {!showMyResults && !selectedClass && !selectedSubject && (
+              <Button variant="outline" size="sm" onClick={() => setShowMyResults(true)}>
+                <FileText className="h-4 w-4 mr-1" />
+                My Results
+              </Button>
+            )}
+            {(selectedClass || selectedSubject || showMyResults) && (
+              <Button variant="ghost" size="sm" onClick={handleBack}>
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                Back
+              </Button>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>
+        {/* My Results View */}
+        {showMyResults && (
+          <div className="space-y-4">
+            {resultsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+              </div>
+            ) : myResults && myResults.length > 0 ? (
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Student</TableHead>
+                      <TableHead>Class</TableHead>
+                      <TableHead>Subject</TableHead>
+                      <TableHead>Term</TableHead>
+                      <TableHead>Year</TableHead>
+                      <TableHead>Marks</TableHead>
+                      <TableHead>Grade</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {myResults.map((result: any) => (
+                      <TableRow key={result.id}>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{result.students_data?.full_name || 'Unknown'}</p>
+                            <p className="text-xs text-muted-foreground">{result.students_data?.admission_number}</p>
+                          </div>
+                        </TableCell>
+                        <TableCell>{result.students_data?.class || '-'}</TableCell>
+                        <TableCell>{result.subject}</TableCell>
+                        <TableCell>Term {result.term}</TableCell>
+                        <TableCell>{result.year}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{result.marks}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge>{result.grade}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                            onClick={() => setDeleteResultId(result.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <FileText className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
+                <p className="text-muted-foreground">No results added yet</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Select a class and subject to add student results
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Classes List */}
-        {!selectedClass && (
+        {!showMyResults && !selectedClass && (
           <div className="space-y-2">
             {uniqueClasses.map((className) => {
               const subjectCount = assignments.filter(a => a.class_name === className).length;
@@ -271,7 +408,7 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
         )}
 
         {/* Subjects for Selected Class */}
-        {selectedClass && !selectedSubject && (
+        {!showMyResults && selectedClass && !selectedSubject && (
           <div className="space-y-2">
             {classSubjects.map((assignment) => (
               <div
@@ -299,7 +436,7 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
         )}
 
         {/* Students for Selected Subject */}
-        {selectedClass && selectedSubject && (
+        {!showMyResults && selectedClass && selectedSubject && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -454,6 +591,27 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deleteResultId} onOpenChange={(open) => !open && setDeleteResultId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Result</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this result? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteResultId && deleteResultMutation.mutate(deleteResultId)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteResultMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };
