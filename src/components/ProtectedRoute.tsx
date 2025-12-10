@@ -15,17 +15,7 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Check for impersonation first
-        const impersonationData = localStorage.getItem('impersonation');
-        
-        if (impersonationData) {
-          // Super admin is impersonating - allow ALL access with NO restrictions
-          setAuthorized(true);
-          setLoading(false);
-          return;
-        }
-
-        // Normal authentication flow
+        // SECURITY: Always verify session server-side first
         const { data: { session } } = await supabase.auth.getSession();
 
         if (!session) {
@@ -34,30 +24,41 @@ const ProtectedRoute = ({ children, requiredRole }: ProtectedRouteProps) => {
           return;
         }
 
-        // Check if authenticated user is super admin
+        // Get user's actual role from database (not localStorage)
         const { data: userRoleData } = await supabase
           .from("user_roles")
           .select("role")
           .eq("user_id", session.user.id)
           .single();
 
-        const isSuperAdmin = userRoleData?.role === 'super_admin';
+        const userRole = userRoleData?.role;
+        const isSuperAdmin = userRole === 'super_admin';
 
-        // Super admin has UNLIMITED access to ALL dashboards - NEVER deny
+        // Super admin has UNLIMITED access to ALL dashboards
         if (isSuperAdmin) {
           setAuthorized(true);
           setLoading(false);
           return;
         }
 
-        // Normal role check for non-super-admin users only
+        // Check for impersonation - but ONLY if user is verified super admin
+        const impersonationData = localStorage.getItem('impersonation');
+        if (impersonationData && isSuperAdmin) {
+          // Super admin is impersonating - allow access
+          setAuthorized(true);
+          setLoading(false);
+          return;
+        }
+
+        // Normal role check for non-super-admin users
         if (requiredRole) {
-          if (userRoleData?.role === requiredRole) {
+          if (userRole === requiredRole) {
             setAuthorized(true);
           } else {
             setAuthorized(false);
           }
         } else {
+          // No specific role required, just need to be authenticated
           setAuthorized(true);
         }
       } catch (error) {
