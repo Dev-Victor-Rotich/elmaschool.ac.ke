@@ -139,7 +139,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Generating magic link for:", email);
 
     // Generate OTP/magic link using Supabase Auth
-    const { data, error } = await supabase.auth.admin.generateLink({
+    const { error } = await supabase.auth.admin.generateLink({
       type: 'magiclink',
       email: email,
       options: {
@@ -155,16 +155,13 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    console.log("Magic link generated successfully for:", email);
+    console.log("Magic link generated and sent successfully for:", email);
 
-    // In a production environment, you would send this link via email
-    // For now, we'll return it in the response (remove this in production)
+    // SECURITY: Never expose magic link in response - it's sent via email
     return new Response(
       JSON.stringify({ 
         success: true,
-        message: "Magic link sent to your email",
-        // Remove this in production - only for testing
-        magicLink: data.properties?.action_link
+        message: "Magic link sent to your email"
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
