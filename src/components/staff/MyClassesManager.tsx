@@ -50,9 +50,28 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
   const [loading, setLoading] = useState(false);
   const [deleteResultId, setDeleteResultId] = useState<string | null>(null);
 
+  // Get staff_registry.id using email (staff assignments use staff_registry.id, not auth.uid())
+  const { data: staffRecord, isLoading: staffLoading } = useQuery({
+    queryKey: ['my-staff-record'],
+    queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user?.email) return null;
+      
+      const { data } = await supabase
+        .from('staff_registry')
+        .select('id')
+        .eq('email', user.email)
+        .maybeSingle();
+      return data;
+    }
+  });
+
+  // Use staff_registry.id OR userId as fallback
+  const teacherId = staffRecord?.id || userId;
+
   // Fetch teacher's subject assignments
   const { data: assignments, isLoading: assignmentsLoading } = useQuery({
-    queryKey: ['my-teaching-assignments', userId],
+    queryKey: ['my-teaching-assignments', teacherId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('teacher_subject_assignments')
@@ -66,12 +85,12 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
             title
           )
         `)
-        .eq('teacher_id', userId);
+        .eq('teacher_id', teacherId);
 
       if (error) throw error;
       return data as unknown as TeacherAssignment[];
     },
-    enabled: !!userId
+    enabled: !!teacherId && !staffLoading
   });
 
   // Get unique classes from assignments
@@ -137,7 +156,7 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
 
   // Fetch teacher's added results
   const { data: myResults, isLoading: resultsLoading } = useQuery({
-    queryKey: ['my-added-results', userId],
+    queryKey: ['my-added-results', teacherId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('academic_results')
@@ -157,13 +176,13 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
             class
           )
         `)
-        .eq('teacher_id', userId)
+        .eq('teacher_id', teacherId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       return data;
     },
-    enabled: !!userId
+    enabled: !!teacherId && !staffLoading
   });
 
   // Delete result mutation
@@ -177,7 +196,7 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['my-added-results', userId] });
+      queryClient.invalidateQueries({ queryKey: ['my-added-results', teacherId] });
       toast.success('Result deleted successfully');
       setDeleteResultId(null);
     },
@@ -208,7 +227,7 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
         marks: parseInt(marks),
         grade,
         remarks: remarks || null,
-        teacher_id: userId
+        teacher_id: teacherId
       });
 
     if (error) {
@@ -219,7 +238,7 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
       }
     } else {
       toast.success("Result added successfully");
-      queryClient.invalidateQueries({ queryKey: ['my-added-results', userId] });
+      queryClient.invalidateQueries({ queryKey: ['my-added-results', teacherId] });
       setIsAddResultOpen(false);
       setSelectedStudent("");
       setMarks("");
@@ -239,7 +258,7 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
     }
   };
 
-  if (assignmentsLoading) {
+  if (staffLoading || assignmentsLoading) {
     return (
       <Card>
         <CardContent className="py-8">
