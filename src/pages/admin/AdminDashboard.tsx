@@ -4,13 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, GraduationCap, DollarSign, CalendarDays, Settings, LogOut, BookOpen } from "lucide-react";
+import { Users, GraduationCap, DollarSign, CalendarDays, LogOut, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery } from "@tanstack/react-query";
+import MyClassesManager from "@/components/staff/MyClassesManager";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string>("");
 
   useEffect(() => {
     checkAuth();
@@ -23,6 +25,8 @@ const AdminDashboard = () => {
       navigate("/auth");
       return;
     }
+
+    setUserId(session.user.id);
 
     // If super admin is impersonating an admin, bypass role checks
     const impersonationRaw = localStorage.getItem("impersonation");
@@ -122,6 +126,10 @@ const AdminDashboard = () => {
               <Users className="w-4 h-4 mr-2" />
               Manage Users
             </TabsTrigger>
+            <TabsTrigger value="myclasses">
+              <GraduationCap className="w-4 h-4 mr-2" />
+              My Classes
+            </TabsTrigger>
             <TabsTrigger value="academic">
               <BookOpen className="w-4 h-4 mr-2" />
               Academic
@@ -154,6 +162,10 @@ const AdminDashboard = () => {
                 </Button>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="myclasses">
+            {userId && <MyClassesManager userId={userId} />}
           </TabsContent>
 
           <TabsContent value="academic">
