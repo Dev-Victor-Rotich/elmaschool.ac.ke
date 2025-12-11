@@ -327,6 +327,7 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
           .eq("id", existingResult.id);
         if (error) throw error;
       } else {
+        const { data: { user } } = await supabase.auth.getUser();
         const { error } = await supabase.from("academic_results").insert({
           student_id: selectedCell.studentId,
           exam_id: exam.id,
@@ -336,6 +337,7 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
           remarks: resultForm.remarks,
           term: exam.term,
           year: exam.year,
+          teacher_id: user?.id,
         });
         if (error) throw error;
       }

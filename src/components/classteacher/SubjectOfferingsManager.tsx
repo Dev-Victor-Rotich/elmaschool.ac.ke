@@ -49,19 +49,32 @@ export const SubjectOfferingsManager = ({ assignedClass }: SubjectOfferingsManag
   });
 
   // Fetch class subject offerings
-  const { data: offerings = [], isLoading } = useQuery({
+  const { data: offerings = [], isLoading, error: offeringsError } = useQuery({
     queryKey: ["class-subject-offerings", assignedClass],
     queryFn: async () => {
-      if (!assignedClass) return [];
+      if (!assignedClass) {
+        console.log("SubjectOfferingsManager: No assignedClass provided");
+        return [];
+      }
+      console.log("SubjectOfferingsManager: Fetching offerings for class:", assignedClass);
       const { data, error } = await supabase
         .from("class_subject_offerings")
         .select("*")
         .eq("class_name", assignedClass);
-      if (error) throw error;
+      if (error) {
+        console.error("SubjectOfferingsManager: Error fetching offerings:", error);
+        throw error;
+      }
+      console.log("SubjectOfferingsManager: Fetched offerings:", data);
       return (data || []) as SubjectOffering[];
     },
     enabled: !!assignedClass,
   });
+
+  // Log any query errors
+  if (offeringsError) {
+    console.error("SubjectOfferingsManager: Query error:", offeringsError);
+  }
 
   // Save offerings mutation
   const saveOfferingsMutation = useMutation({
