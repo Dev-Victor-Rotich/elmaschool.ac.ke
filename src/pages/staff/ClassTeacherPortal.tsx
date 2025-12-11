@@ -74,14 +74,20 @@ const ClassTeacherPortal = () => {
       }
     }
 
-    const { data: assignment } = await supabase
+    const { data: assignment, error: assignmentError } = await supabase
       .from("classteacher_assignments")
       .select("assigned_class")
       .eq("user_id", effectiveUserId)
       .single();
 
+    console.log("ClassTeacherPortal: effectiveUserId:", effectiveUserId);
+    console.log("ClassTeacherPortal: assignment result:", assignment, "error:", assignmentError);
+
     if (assignment) {
+      console.log("ClassTeacherPortal: Setting assignedClass to:", assignment.assigned_class);
       setAssignedClass(assignment.assigned_class);
+    } else {
+      console.warn("ClassTeacherPortal: No class assignment found for user");
     }
 
     setLoading(false);
