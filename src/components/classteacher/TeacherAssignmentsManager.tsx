@@ -108,7 +108,15 @@ export function TeacherAssignmentsManager({ assignedClass }: TeacherAssignmentsM
     mutationFn: async ({ teacherId, subjectId, subSubject }: { teacherId: string; subjectId: string; subSubject: string | null }) => {
       const { data: { user } } = await supabase.auth.getUser();
       
-      const { error } = await supabase
+      console.log("TeacherAssignmentsManager: Inserting assignment", {
+        teacherId,
+        subjectId,
+        subSubject,
+        class_name: assignedClass,
+        assigned_by: user?.id
+      });
+      
+      const { data, error } = await supabase
         .from('teacher_subject_assignments')
         .insert({
           teacher_id: teacherId,
@@ -116,9 +124,16 @@ export function TeacherAssignmentsManager({ assignedClass }: TeacherAssignmentsM
           sub_subject: subSubject,
           class_name: assignedClass,
           assigned_by: user?.id
-        });
+        })
+        .select();
       
-      if (error) throw error;
+      if (error) {
+        console.error("TeacherAssignmentsManager: Insert error", error);
+        throw error;
+      }
+      
+      console.log("TeacherAssignmentsManager: Insert success", data);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['teacher-assignments', assignedClass] });
@@ -127,10 +142,11 @@ export function TeacherAssignmentsManager({ assignedClass }: TeacherAssignmentsM
       resetForm();
     },
     onError: (error: any) => {
+      console.error("TeacherAssignmentsManager: Mutation error", error);
       if (error.message?.includes('duplicate')) {
         toast.error('This teacher is already assigned to this subject');
       } else {
-        toast.error('Failed to assign teacher');
+        toast.error(`Failed to assign teacher: ${error.message || 'Unknown error'}`);
       }
     }
   });
