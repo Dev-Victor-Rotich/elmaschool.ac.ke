@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Users, ClipboardCheck, AlertCircle, MessageSquare, FileText, LogOut, Eye, Plus, Pencil, Trash2, BookOpen, GraduationCap, UserCheck, ClipboardList } from "lucide-react";
+import { Users, ClipboardCheck, AlertCircle, MessageSquare, FileText, LogOut, Eye, Plus, Pencil, Trash2, BookOpen, GraduationCap, UserCheck, ClipboardList, Briefcase } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
@@ -19,12 +19,15 @@ import { GradeBoundariesManager } from "@/components/classteacher/GradeBoundarie
 import { ExamsManager } from "@/components/classteacher/ExamsManager";
 import { TeacherAssignmentsManager } from "@/components/classteacher/TeacherAssignmentsManager";
 import { StudentResultsManager } from "@/components/classteacher/StudentResultsManager";
+import MyClassesManager from "@/components/staff/MyClassesManager";
+import { CommunicationManager } from "@/components/classteacher/CommunicationManager";
 
 const ClassTeacherPortal = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [loading, setLoading] = useState(true);
   const [assignedClass, setAssignedClass] = useState<string>("");
+  const [userId, setUserId] = useState<string>("");
   const { isImpersonating, impersonationData, exitImpersonation } = useImpersonation();
   
   // Dialog states
@@ -60,6 +63,7 @@ const ClassTeacherPortal = () => {
     const impersonation = impersonationRaw ? JSON.parse(impersonationRaw) : null;
 
     const effectiveUserId = impersonation?.userId || session.user.id;
+    setUserId(effectiveUserId);
 
     if (!impersonation) {
       const { data: roles } = await supabase
@@ -335,6 +339,10 @@ const ClassTeacherPortal = () => {
               <FileText className="w-4 h-4 mr-2" />
               Reports
             </TabsTrigger>
+            <TabsTrigger value="myclasses">
+              <Briefcase className="w-4 h-4 mr-2" />
+              My Classes
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="students">
@@ -529,16 +537,7 @@ const ClassTeacherPortal = () => {
           </TabsContent>
 
           <TabsContent value="communication">
-            <Card>
-              <CardHeader>
-                <CardTitle>Communication</CardTitle>
-                <CardDescription>Message parents and teachers</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground mb-4">Communicate with parents and other teachers.</p>
-                <Button>Send Message</Button>
-              </CardContent>
-            </Card>
+            <CommunicationManager assignedClass={assignedClass} />
           </TabsContent>
 
           <TabsContent value="reports">
@@ -552,6 +551,10 @@ const ClassTeacherPortal = () => {
                 <Button>Generate Report</Button>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value="myclasses">
+            {userId && <MyClassesManager userId={userId} />}
           </TabsContent>
         </Tabs>
 

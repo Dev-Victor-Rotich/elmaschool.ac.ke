@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, TrendingUp, TrendingDown, Minus, Trophy, Users, BarChart3, Save } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Minus, Trophy, Users, BarChart3, Save, Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
 interface ExamResultsMatrixProps {
@@ -28,6 +29,7 @@ const GRADE_POINTS: Record<string, number> = {
 export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMatrixProps) {
   const queryClient = useQueryClient();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [selectedCell, setSelectedCell] = useState<{ studentId: string; subject: string; subSubject: string } | null>(null);
   const [resultForm, setResultForm] = useState({ marks: 0, remarks: "" });
 
@@ -352,6 +354,34 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
       toast.error(error.message || "Failed to save result");
     },
   });
+
+  // Delete result mutation
+  const deleteResultMutation = useMutation({
+    mutationFn: async (resultId: string) => {
+      const { error } = await supabase
+        .from("academic_results")
+        .delete()
+        .eq("id", resultId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Result deleted");
+      queryClient.invalidateQueries({ queryKey: ["exam-results", exam.id] });
+      setAddDialogOpen(false);
+      setDeleteConfirmOpen(false);
+      setSelectedCell(null);
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to delete result");
+    },
+  });
+
+  // Get current result ID for delete
+  const getCurrentResultId = () => {
+    if (!selectedCell) return null;
+    const subjectLabel = `${selectedCell.subject}${selectedCell.subSubject ? ` - ${selectedCell.subSubject}` : ""}`;
+    return resultsMap[`${selectedCell.studentId}-${subjectLabel}`]?.id;
+  };
 
   const openAddResultDialog = (studentId: string, subject: string, subSubject: string) => {
     const subjectLabel = `${subject}${subSubject ? ` - ${subSubject}` : ""}`;
@@ -681,18 +711,57 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
                 onChange={(e) => setResultForm({ ...resultForm, remarks: e.target.value })}
               />
             </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={() => saveResultMutation.mutate()} disabled={saveResultMutation.isPending}>
-                <Save className="w-4 h-4 mr-2" />
-                {saveResultMutation.isPending ? "Saving..." : "Save Result"}
-              </Button>
+            <div className="flex justify-between">
+              <div>
+                {getCurrentResultId() && (
+                  <Button 
+                    variant="destructive" 
+                    onClick={() => setDeleteConfirmOpen(true)}
+                    disabled={deleteResultMutation.isPending}
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete Result
+                  </Button>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={() => setAddDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={() => saveResultMutation.mutate()} disabled={saveResultMutation.isPending}>
+                  <Save className="w-4 h-4 mr-2" />
+                  {saveResultMutation.isPending ? "Saving..." : "Save Result"}
+                </Button>
+              </div>
             </div>
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Result?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this result. This action cannot be undone.
+              Use this if you accidentally entered a result for the wrong subject.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                const resultId = getCurrentResultId();
+                if (resultId) deleteResultMutation.mutate(resultId);
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteResultMutation.isPending ? "Deleting..." : "Delete Result"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

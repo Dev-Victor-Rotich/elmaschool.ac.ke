@@ -4,16 +4,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { GraduationCap, DollarSign, Calendar, BookOpen } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { GraduationCap, DollarSign, Calendar, BookOpen, MessageSquare, Mail, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 const StudentPortal = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [studentData, setStudentData] = useState<any>(null);
+  const [studentId, setStudentId] = useState<string>("");
   const [feeData, setFeeData] = useState<any[]>([]);
   const [results, setResults] = useState<any[]>([]);
   const [events, setEvents] = useState<any[]>([]);
   const [isStudentLeader, setIsStudentLeader] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState<any>(null);
+  const [messageDialogOpen, setMessageDialogOpen] = useState(false);
 
   useEffect(() => {
     checkAuth();
@@ -66,6 +73,8 @@ const StudentPortal = () => {
       return;
     }
 
+    setStudentId(studentRecord.id);
+
     // Check if user has student_leader role
     const { data: roleData } = await supabase
       .from("user_roles")
@@ -78,6 +87,7 @@ const StudentPortal = () => {
 
     await loadStudentData(studentRecord.id);
   };
+
   const loadStudentData = async (studentId: string) => {
     // Load student data
     const { data: student } = await supabase
@@ -117,6 +127,47 @@ const StudentPortal = () => {
 
     setEvents(approvedEvents || []);
   };
+
+  // Fetch messages for this student
+  const { data: messages = [] } = useQuery({
+    queryKey: ["student-messages", studentId],
+    queryFn: async () => {
+      if (!studentId) return [];
+      const { data, error } = await supabase
+        .from("message_recipients")
+        .select("*, class_messages(*)")
+        .eq("student_id", studentId)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!studentId,
+  });
+
+  // Mark message as read mutation
+  const markAsReadMutation = useMutation({
+    mutationFn: async (recipientId: string) => {
+      const { error } = await supabase
+        .from("message_recipients")
+        .update({ is_read: true, read_at: new Date().toISOString() })
+        .eq("id", recipientId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["student-messages"] });
+    },
+  });
+
+  const openMessage = (msg: any) => {
+    setSelectedMessage(msg);
+    setMessageDialogOpen(true);
+    if (!msg.is_read) {
+      markAsReadMutation.mutate(msg.id);
+    }
+  };
+
+  const unreadCount = messages.filter((m: any) => !m.is_read).length;
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
@@ -151,7 +202,7 @@ const StudentPortal = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 mb-8">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
           {/* Student Info */}
           <Card>
             <CardHeader>
@@ -223,6 +274,53 @@ const StudentPortal = () => {
               )}
             </CardContent>
           </Card>
+
+          {/* Messages */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <MessageSquare className="w-5 h-5 mr-2" />
+                Messages
+                {unreadCount > 0 && (
+                  <Badge variant="destructive" className="ml-2">{unreadCount} new</Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {messages.length > 0 ? (
+                <div className="space-y-2">
+                  {messages.slice(0, 3).map((msg: any) => (
+                    <div 
+                      key={msg.id} 
+                      className={`p-2 rounded-md cursor-pointer hover:bg-muted/50 transition-colors ${
+                        !msg.is_read ? "bg-primary/10 border-l-2 border-primary" : "bg-muted/30"
+                      }`}
+                      onClick={() => openMessage(msg)}
+                    >
+                      <div className="flex items-center gap-2">
+                        {!msg.is_read ? (
+                          <Mail className="w-3 h-3 text-primary" />
+                        ) : (
+                          <CheckCircle className="w-3 h-3 text-muted-foreground" />
+                        )}
+                        <p className="text-sm font-medium truncate">{msg.class_messages?.subject}</p>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(msg.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  ))}
+                  {messages.length > 3 && (
+                    <p className="text-xs text-muted-foreground text-center">
+                      +{messages.length - 3} more messages
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">No messages</p>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Academic Results */}
@@ -257,7 +355,67 @@ const StudentPortal = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* All Messages Section */}
+        {messages.length > 0 && (
+          <Card className="mt-6">
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Mail className="w-5 h-5 mr-2" />
+                All Messages
+              </CardTitle>
+              <CardDescription>Messages from your class teacher</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ScrollArea className="h-64">
+                <div className="space-y-2">
+                  {messages.map((msg: any) => (
+                    <div 
+                      key={msg.id}
+                      className={`p-3 rounded-md cursor-pointer hover:bg-muted/50 transition-colors border ${
+                        !msg.is_read ? "bg-primary/5 border-primary/30" : "border-transparent"
+                      }`}
+                      onClick={() => openMessage(msg)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {!msg.is_read ? (
+                            <Mail className="w-4 h-4 text-primary" />
+                          ) : (
+                            <CheckCircle className="w-4 h-4 text-muted-foreground" />
+                          )}
+                          <p className="font-medium">{msg.class_messages?.subject}</p>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(msg.created_at).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-1">
+                        {msg.class_messages?.message}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </CardContent>
+          </Card>
+        )}
       </main>
+
+      {/* Message Detail Dialog */}
+      <Dialog open={messageDialogOpen} onOpenChange={setMessageDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{selectedMessage?.class_messages?.subject}</DialogTitle>
+            <DialogDescription>
+              Received on {selectedMessage && new Date(selectedMessage.created_at).toLocaleString()}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="bg-muted p-4 rounded-md">
+            <p className="text-sm whitespace-pre-wrap">{selectedMessage?.class_messages?.message}</p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

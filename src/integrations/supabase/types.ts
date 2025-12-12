@@ -347,6 +347,39 @@ export type Database = {
         }
         Relationships: []
       }
+      class_messages: {
+        Row: {
+          class_name: string
+          created_at: string
+          filter_type: string
+          filter_value: Json | null
+          id: string
+          message: string
+          sender_id: string
+          subject: string
+        }
+        Insert: {
+          class_name: string
+          created_at?: string
+          filter_type?: string
+          filter_value?: Json | null
+          id?: string
+          message: string
+          sender_id: string
+          subject: string
+        }
+        Update: {
+          class_name?: string
+          created_at?: string
+          filter_type?: string
+          filter_value?: Json | null
+          id?: string
+          message?: string
+          sender_id?: string
+          subject?: string
+        }
+        Relationships: []
+      }
       class_subject_offerings: {
         Row: {
           class_name: string
@@ -1157,6 +1190,48 @@ export type Database = {
           used?: boolean | null
         }
         Relationships: []
+      }
+      message_recipients: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message_id: string
+          read_at: string | null
+          student_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message_id: string
+          read_at?: string | null
+          student_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message_id?: string
+          read_at?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_recipients_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "class_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_recipients_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students_data"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notable_alumni: {
         Row: {
