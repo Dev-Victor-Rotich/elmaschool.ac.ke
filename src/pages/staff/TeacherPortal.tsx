@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { BookOpen, Users, LogOut, Crown, Shield, GraduationCap, Edit, Trash2, ClipboardList } from "lucide-react";
+import { Users, LogOut, Crown, Shield, GraduationCap, Edit, Trash2, ClipboardList } from "lucide-react";
 import MyClassesManager from "@/components/staff/MyClassesManager";
 
 interface StudentWithRole {
@@ -20,11 +20,6 @@ interface StudentWithRole {
   class: string;
   user_id: string | null;
   role: string | null;
-}
-
-interface Subject {
-  id: string;
-  title: string;
 }
 
 interface AcademicResult {
@@ -71,19 +66,9 @@ const TeacherPortal = () => {
   const navigate = useNavigate();
   const [userName, setUserName] = useState("");
   const [students, setStudents] = useState<StudentWithRole[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
   const [myResults, setMyResults] = useState<AcademicResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [currentTeacherId, setCurrentTeacherId] = useState<string | null>(null);
-
-  // Result form state
-  const [selectedStudent, setSelectedStudent] = useState("");
-  const [subject, setSubject] = useState("");
-  const [term, setTerm] = useState("");
-  const [year, setYear] = useState(new Date().getFullYear().toString());
-  const [marks, setMarks] = useState("");
-  const [grade, setGrade] = useState("");
-  const [remarks, setRemarks] = useState("");
 
   // Edit modal state
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -133,12 +118,10 @@ const TeacherPortal = () => {
     }
 
     await loadStudents();
-    await loadSubjects();
     await loadMyResults(effectiveUserId);
   };
 
   const loadStudents = async () => {
-    // Get all users with student roles first
     const { data: rolesData } = await supabase
       .from("user_roles")
       .select("user_id, role")
@@ -155,7 +138,6 @@ const TeacherPortal = () => {
       rolesMap[r.user_id] = r.role;
     });
 
-    // Get students_data for users with roles (ignore is_registered)
     const { data: studentsData } = await supabase
       .from("students_data")
       .select("id, full_name, admission_number, class, user_id")
@@ -173,17 +155,6 @@ const TeacherPortal = () => {
     }));
 
     setStudents(studentsWithRoles);
-  };
-
-  const loadSubjects = async () => {
-    const { data } = await supabase
-      .from("subjects")
-      .select("id, title")
-      .order("display_order");
-
-    if (data) {
-      setSubjects(data);
-    }
   };
 
   const loadMyResults = async (teacherId: string) => {
@@ -214,54 +185,6 @@ const TeacherPortal = () => {
     } else {
       setMyResults([]);
     }
-  };
-
-  const handleSubmitResult = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Check for duplicate
-    const existingResult = myResults.find(
-      r => r.student_id === selectedStudent && 
-           r.subject === subject && 
-           r.term === term && 
-           r.year === parseInt(year)
-    );
-
-    if (existingResult) {
-      toast.error("Result already exists for this student, subject, term and year. Please edit instead.");
-      return;
-    }
-
-    setLoading(true);
-
-    const { error } = await supabase
-      .from("academic_results")
-      .insert({
-        student_id: selectedStudent,
-        subject,
-        term,
-        year: parseInt(year),
-        marks: parseInt(marks),
-        grade,
-        remarks,
-        teacher_id: currentTeacherId
-      });
-
-    if (error) {
-      toast.error("Failed to add result");
-    } else {
-      toast.success("Result added successfully");
-      setSelectedStudent("");
-      setSubject("");
-      setTerm("");
-      setMarks("");
-      setGrade("");
-      setRemarks("");
-      if (currentTeacherId) {
-        await loadMyResults(currentTeacherId);
-      }
-    }
-    setLoading(false);
   };
 
   const handleEditClick = (result: AcademicResult) => {
@@ -337,12 +260,8 @@ const TeacherPortal = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="add-results" className="space-y-6">
+        <Tabs defaultValue="my-classes" className="space-y-6">
           <TabsList>
-            <TabsTrigger value="add-results">
-              <BookOpen className="h-4 w-4 mr-2" />
-              Add Results
-            </TabsTrigger>
             <TabsTrigger value="my-classes">
               <GraduationCap className="h-4 w-4 mr-2" />
               My Classes
@@ -356,133 +275,6 @@ const TeacherPortal = () => {
               My Results
             </TabsTrigger>
           </TabsList>
-
-          <TabsContent value="add-results">
-            <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BookOpen className="h-5 w-5" />
-                Add Academic Results
-              </CardTitle>
-              <CardDescription>Record student performance</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmitResult} className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Student</Label>
-                  <Select value={selectedStudent} onValueChange={setSelectedStudent} required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select student" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {students.map((student) => (
-                        <SelectItem key={student.id} value={student.id}>
-                          <div className="flex items-center gap-2">
-                            <span>{student.full_name} ({student.admission_number})</span>
-                            <span className="text-xs text-muted-foreground">- {student.class}</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Subject</Label>
-                  <Select value={subject} onValueChange={setSubject} required>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select subject" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {subjects.map((subj) => (
-                        <SelectItem key={subj.id} value={subj.title}>
-                          {subj.title}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Term</Label>
-                    <Select value={term} onValueChange={setTerm} required>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select term" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">Term 1</SelectItem>
-                        <SelectItem value="2">Term 2</SelectItem>
-                        <SelectItem value="3">Term 3</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Year</Label>
-                    <Input
-                      type="number"
-                      value={year}
-                      onChange={(e) => setYear(e.target.value)}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Marks</Label>
-                    <Input
-                      type="number"
-                      value={marks}
-                      onChange={(e) => setMarks(e.target.value)}
-                      placeholder="0-100"
-                      min="0"
-                      max="100"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>Grade</Label>
-                    <Select value={grade} onValueChange={setGrade} required>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select grade" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="A">A</SelectItem>
-                        <SelectItem value="A-">A-</SelectItem>
-                        <SelectItem value="B+">B+</SelectItem>
-                        <SelectItem value="B">B</SelectItem>
-                        <SelectItem value="B-">B-</SelectItem>
-                        <SelectItem value="C+">C+</SelectItem>
-                        <SelectItem value="C">C</SelectItem>
-                        <SelectItem value="C-">C-</SelectItem>
-                        <SelectItem value="D+">D+</SelectItem>
-                        <SelectItem value="D">D</SelectItem>
-                        <SelectItem value="D-">D-</SelectItem>
-                        <SelectItem value="E">E</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Remarks (Optional)</Label>
-                  <Input
-                    value={remarks}
-                    onChange={(e) => setRemarks(e.target.value)}
-                    placeholder="Teacher's comments"
-                  />
-                </div>
-
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading ? "Adding..." : "Add Result"}
-                </Button>
-              </form>
-            </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="my-classes">
             {currentTeacherId && <MyClassesManager userId={currentTeacherId} />}
