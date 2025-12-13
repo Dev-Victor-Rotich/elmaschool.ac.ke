@@ -29,8 +29,8 @@ export function CommunicationManager({ assignedClass }: CommunicationManagerProp
   const [selectedMessage, setSelectedMessage] = useState<any>(null);
   
   // Form state
-  const [subject, setSubject] = useState("");
-  const [message, setMessage] = useState("");
+  const [messageSubject, setMessageSubject] = useState("");
+  const [messageContent, setMessageContent] = useState("");
   const [filterType, setFilterType] = useState<FilterType>("all");
   const [filterSubject, setFilterSubject] = useState("");
   const [filterGrade, setFilterGrade] = useState("");
@@ -203,7 +203,7 @@ export function CommunicationManager({ assignedClass }: CommunicationManagerProp
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async () => {
-      if (!subject.trim() || !message.trim()) {
+      if (!messageSubject.trim() || !messageContent.trim()) {
         throw new Error("Subject and message are required");
       }
       
@@ -220,8 +220,8 @@ export function CommunicationManager({ assignedClass }: CommunicationManagerProp
         .insert({
           sender_id: user.id,
           class_name: assignedClass,
-          subject: subject.trim(),
-          message: message.trim(),
+          subject: messageSubject.trim(),
+          message: messageContent.trim(),
           filter_type: filterType,
           filter_value: { filterSubject, filterGrade, selectedStudents }
         })
@@ -256,8 +256,8 @@ export function CommunicationManager({ assignedClass }: CommunicationManagerProp
   });
 
   const resetForm = () => {
-    setSubject("");
-    setMessage("");
+    setMessageSubject("");
+    setMessageContent("");
     setFilterType("all");
     setFilterSubject("");
     setFilterGrade("");
@@ -371,8 +371,8 @@ export function CommunicationManager({ assignedClass }: CommunicationManagerProp
                 <Label>Subject</Label>
                 <Input
                   placeholder="Message subject"
-                  value={subject}
-                  onChange={(e) => setSubject(e.target.value)}
+                  value={messageSubject}
+                  onChange={(e) => setMessageSubject(e.target.value)}
                 />
               </div>
 
@@ -380,8 +380,8 @@ export function CommunicationManager({ assignedClass }: CommunicationManagerProp
                 <Label>Message</Label>
                 <Textarea
                   placeholder="Type your message here..."
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
+                  value={messageContent}
+                  onChange={(e) => setMessageContent(e.target.value)}
                   rows={5}
                 />
               </div>
@@ -389,7 +389,7 @@ export function CommunicationManager({ assignedClass }: CommunicationManagerProp
               <Button 
                 className="w-full" 
                 onClick={() => sendMessageMutation.mutate()}
-                disabled={sendMessageMutation.isPending || !subject.trim() || !message.trim() || filteredStudents.length === 0}
+                disabled={sendMessageMutation.isPending || !messageSubject.trim() || !messageContent.trim() || filteredStudents.length === 0}
               >
                 <Send className="w-4 h-4 mr-2" />
                 {sendMessageMutation.isPending ? "Sending..." : `Send to ${filteredStudents.length} Student(s)`}
