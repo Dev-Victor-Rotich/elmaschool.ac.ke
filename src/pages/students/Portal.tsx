@@ -412,7 +412,9 @@ const StudentPortal = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="bg-muted p-4 rounded-md">
-            <p className="text-sm whitespace-pre-wrap">{selectedMessage?.class_messages?.message}</p>
+            <p className="text-sm whitespace-pre-wrap text-foreground">
+              {selectedMessage?.class_messages?.message || "No message content"}
+            </p>
           </div>
         </DialogContent>
       </Dialog>

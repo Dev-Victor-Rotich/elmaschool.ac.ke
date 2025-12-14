@@ -81,23 +81,56 @@ export function TeacherAssignmentsManager({ assignedClass }: TeacherAssignmentsM
     }
   });
 
-  // Get staff details for assignments
+  // Get staff details for assignments with current roles from user_roles
   const { data: assignedStaffDetails } = useQuery({
     queryKey: ['assigned-staff-details', assignments],
     queryFn: async () => {
       if (!assignments || assignments.length === 0) return {};
       
       const teacherIds = [...new Set(assignments.map(a => a.teacher_id))];
-      const { data, error } = await supabase
+      
+      // Get staff info from staff_registry
+      const { data: staffData, error: staffError } = await supabase
         .from('staff_registry')
-        .select('id, full_name, email, role')
+        .select('id, full_name, email')
         .in('id', teacherIds);
       
-      if (error) throw error;
+      if (staffError) throw staffError;
+      
+      // Get current roles from user_roles via profiles (email match)
+      const emails = staffData?.map(s => s.email).filter(Boolean) || [];
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, full_name');
+      
+      // Get user_roles for those profile IDs
+      const { data: userRoles } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+      
+      // Create a map of email -> current role
+      const roleMap: Record<string, string> = {};
+      
+      // Match staff email to auth user email to get current role
+      for (const staff of staffData || []) {
+        // Find matching user role - we need to match by checking profiles
+        const matchingRole = userRoles?.find(ur => {
+          // Check if this user has a profile that matches staff email
+          const profile = profiles?.find(p => p.id === ur.user_id);
+          return profile !== undefined;
+        });
+        
+        if (matchingRole) {
+          roleMap[staff.email] = matchingRole.role;
+        }
+      }
       
       const staffMap: Record<string, any> = {};
-      data?.forEach(staff => {
-        staffMap[staff.id] = staff;
+      staffData?.forEach(staff => {
+        staffMap[staff.id] = {
+          ...staff,
+          role: roleMap[staff.email] || 'Unknown'
+        };
       });
       return staffMap;
     },
