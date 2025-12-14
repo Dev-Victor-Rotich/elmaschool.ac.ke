@@ -302,46 +302,46 @@ const ClassTeacherPortal = () => {
         </div>
 
         <Tabs defaultValue="students" className="space-y-4">
-          <TabsList className="flex-wrap">
-            <TabsTrigger value="students">
-              <Users className="w-4 h-4 mr-2" />
-              My Class
+          <TabsList className="grid grid-cols-5 md:flex md:flex-wrap h-auto gap-1 p-1">
+            <TabsTrigger value="students" className="text-xs md:text-sm px-2 md:px-3">
+              <Users className="w-4 h-4 md:mr-2" />
+              <span className="hidden md:inline">My Class</span>
             </TabsTrigger>
-            <TabsTrigger value="subjects">
-              <BookOpen className="w-4 h-4 mr-2" />
-              Subjects
+            <TabsTrigger value="subjects" className="text-xs md:text-sm px-2 md:px-3">
+              <BookOpen className="w-4 h-4 md:mr-2" />
+              <span className="hidden md:inline">Subjects</span>
             </TabsTrigger>
-            <TabsTrigger value="academics">
-              <GraduationCap className="w-4 h-4 mr-2" />
-              Academics
+            <TabsTrigger value="academics" className="text-xs md:text-sm px-2 md:px-3">
+              <GraduationCap className="w-4 h-4 md:mr-2" />
+              <span className="hidden md:inline">Academics</span>
             </TabsTrigger>
-            <TabsTrigger value="teachers">
-              <UserCheck className="w-4 h-4 mr-2" />
-              Teachers
+            <TabsTrigger value="teachers" className="text-xs md:text-sm px-2 md:px-3">
+              <UserCheck className="w-4 h-4 md:mr-2" />
+              <span className="hidden md:inline">Teachers</span>
             </TabsTrigger>
-            <TabsTrigger value="results">
-              <ClipboardList className="w-4 h-4 mr-2" />
-              Results
+            <TabsTrigger value="results" className="text-xs md:text-sm px-2 md:px-3">
+              <ClipboardList className="w-4 h-4 md:mr-2" />
+              <span className="hidden md:inline">Results</span>
             </TabsTrigger>
-            <TabsTrigger value="attendance">
-              <ClipboardCheck className="w-4 h-4 mr-2" />
-              Attendance
+            <TabsTrigger value="attendance" className="text-xs md:text-sm px-2 md:px-3">
+              <ClipboardCheck className="w-4 h-4 md:mr-2" />
+              <span className="hidden md:inline">Attendance</span>
             </TabsTrigger>
-            <TabsTrigger value="discipline">
-              <AlertCircle className="w-4 h-4 mr-2" />
-              Discipline
+            <TabsTrigger value="discipline" className="text-xs md:text-sm px-2 md:px-3">
+              <AlertCircle className="w-4 h-4 md:mr-2" />
+              <span className="hidden md:inline">Discipline</span>
             </TabsTrigger>
-            <TabsTrigger value="communication">
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Communication
+            <TabsTrigger value="communication" className="text-xs md:text-sm px-2 md:px-3">
+              <MessageSquare className="w-4 h-4 md:mr-2" />
+              <span className="hidden md:inline">Communication</span>
             </TabsTrigger>
-            <TabsTrigger value="reports">
-              <FileText className="w-4 h-4 mr-2" />
-              Reports
+            <TabsTrigger value="reports" className="text-xs md:text-sm px-2 md:px-3">
+              <FileText className="w-4 h-4 md:mr-2" />
+              <span className="hidden md:inline">Reports</span>
             </TabsTrigger>
-            <TabsTrigger value="myclasses">
-              <Briefcase className="w-4 h-4 mr-2" />
-              My Classes
+            <TabsTrigger value="myclasses" className="text-xs md:text-sm px-2 md:px-3">
+              <Briefcase className="w-4 h-4 md:mr-2" />
+              <span className="hidden md:inline">My Classes</span>
             </TabsTrigger>
           </TabsList>
 
