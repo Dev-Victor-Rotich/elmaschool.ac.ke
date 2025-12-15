@@ -1860,6 +1860,7 @@ export type Database = {
       cleanup_expired_magic_links: { Args: never; Returns: undefined }
       count_super_admins: { Args: never; Returns: number }
       get_message_class: { Args: { _message_id: string }; Returns: string }
+      get_staff_role_by_email: { Args: { _email: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
