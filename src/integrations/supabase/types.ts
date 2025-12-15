@@ -1859,11 +1859,20 @@ export type Database = {
     Functions: {
       cleanup_expired_magic_links: { Args: never; Returns: undefined }
       count_super_admins: { Args: never; Returns: number }
+      get_message_class: { Args: { _message_id: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_classteacher_for_class: {
+        Args: { _class_name: string; _user_id: string }
+        Returns: boolean
+      }
+      is_message_recipient: {
+        Args: { _message_id: string; _user_id: string }
         Returns: boolean
       }
       is_super_admin: { Args: { user_id: string }; Returns: boolean }
