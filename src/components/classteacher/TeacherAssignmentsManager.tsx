@@ -39,6 +39,29 @@ export function TeacherAssignmentsManager({ assignedClass }: TeacherAssignmentsM
     }
   });
 
+  // Fetch current roles for all staff from user_roles via RPC function
+  const { data: staffRolesMap } = useQuery({
+    queryKey: ['staff-roles-map', staffList],
+    queryFn: async () => {
+      if (!staffList || staffList.length === 0) return {};
+      
+      const rolesMap: Record<string, string> = {};
+      
+      // Fetch role for each staff email using the RPC function
+      for (const staff of staffList) {
+        if (staff.email) {
+          const { data } = await supabase.rpc('get_staff_role_by_email', { _email: staff.email });
+          if (data) {
+            rolesMap[staff.email] = data;
+          }
+        }
+      }
+      
+      return rolesMap;
+    },
+    enabled: !!staffList && staffList.length > 0
+  });
+
   // Fetch subjects with sub-subjects
   const { data: subjects } = useQuery({
     queryKey: ['subjects-for-assignment'],
@@ -83,7 +106,7 @@ export function TeacherAssignmentsManager({ assignedClass }: TeacherAssignmentsM
 
   // Get staff details for assignments with current roles from user_roles
   const { data: assignedStaffDetails } = useQuery({
-    queryKey: ['assigned-staff-details', assignments],
+    queryKey: ['assigned-staff-details', assignments, staffRolesMap],
     queryFn: async () => {
       if (!assignments || assignments.length === 0) return {};
       
@@ -97,41 +120,19 @@ export function TeacherAssignmentsManager({ assignedClass }: TeacherAssignmentsM
       
       if (staffError) throw staffError;
       
-      // Get current roles from user_roles via profiles (email match)
-      const emails = staffData?.map(s => s.email).filter(Boolean) || [];
-      const { data: profiles } = await supabase
-        .from('profiles')
-        .select('id, full_name');
-      
-      // Get user_roles for those profile IDs
-      const { data: userRoles } = await supabase
-        .from('user_roles')
-        .select('user_id, role');
-      
-      // Create a map of email -> current role
-      const roleMap: Record<string, string> = {};
-      
-      // Match staff email to auth user email to get current role
-      for (const staff of staffData || []) {
-        // Find matching user role - we need to match by checking profiles
-        const matchingRole = userRoles?.find(ur => {
-          // Check if this user has a profile that matches staff email
-          const profile = profiles?.find(p => p.id === ur.user_id);
-          return profile !== undefined;
-        });
-        
-        if (matchingRole) {
-          roleMap[staff.email] = matchingRole.role;
-        }
-      }
-      
       const staffMap: Record<string, any> = {};
-      staffData?.forEach(staff => {
+      for (const staff of staffData || []) {
+        // Use the staffRolesMap if available, otherwise fetch directly
+        let role = staffRolesMap?.[staff.email];
+        if (!role && staff.email) {
+          const { data } = await supabase.rpc('get_staff_role_by_email', { _email: staff.email });
+          role = data || 'Unknown';
+        }
         staffMap[staff.id] = {
           ...staff,
-          role: roleMap[staff.email] || 'Unknown'
+          role: role || 'Unknown'
         };
-      });
+      }
       return staffMap;
     },
     enabled: !!assignments && assignments.length > 0
@@ -310,7 +311,7 @@ export function TeacherAssignmentsManager({ assignedClass }: TeacherAssignmentsM
                           <p className="font-medium">{staff.full_name || 'No Name'}</p>
                           <p className="text-sm text-muted-foreground">{staff.email}</p>
                         </div>
-                        <Badge variant="outline">{staff.role}</Badge>
+                        <Badge variant="outline">{staffRolesMap?.[staff.email] || staff.role}</Badge>
                       </div>
                     </div>
                   ))}
@@ -444,7 +445,7 @@ export function TeacherAssignmentsManager({ assignedClass }: TeacherAssignmentsM
                     <TableCell className="font-medium">{staff.full_name || '-'}</TableCell>
                     <TableCell>{staff.email}</TableCell>
                     <TableCell>
-                      <Badge variant="outline">{staff.role}</Badge>
+                      <Badge variant="outline">{staffRolesMap?.[staff.email] || staff.role}</Badge>
                     </TableCell>
                     <TableCell>
                       {staffAssignments.length > 0 ? (
