@@ -443,7 +443,7 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
       </div>
 
       <Tabs defaultValue="matrix" className="space-y-4">
-        <TabsList>
+        <TabsList className="print:hidden">
           <TabsTrigger value="matrix">
             <Users className="w-4 h-4 mr-2" />
             Results Matrix
@@ -454,25 +454,25 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="matrix">
-          <Card>
-            <CardHeader>
-              <CardTitle>{exam.exam_name} - Results Matrix</CardTitle>
-              <CardDescription>
+        <TabsContent value="matrix" className="print:block">
+          <Card className="print-results-matrix">
+            <CardHeader className="print:pb-2">
+              <CardTitle className="print:text-lg">{exam.exam_name} - Results Matrix</CardTitle>
+              <CardDescription className="print:hidden">
                 Click on any cell to enter or edit marks. {exam.term} {exam.year}
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <ScrollArea className="w-full">
-                <div className="min-w-max">
+            <CardContent className="print:p-2">
+              <ScrollArea className="w-full print:overflow-visible">
+                <div className="min-w-max print:min-w-0 print:w-full">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="sticky left-0 bg-background z-10 min-w-[50px]">#</TableHead>
-                        <TableHead className="sticky left-[50px] bg-background z-10 min-w-[150px]">Student</TableHead>
-                        <TableHead className="sticky left-[200px] bg-background z-10 min-w-[100px]">Adm No.</TableHead>
+                        <TableHead className="sticky left-0 bg-background z-10 min-w-[50px] print:static print:min-w-0">#</TableHead>
+                        <TableHead className="sticky left-[50px] bg-background z-10 min-w-[150px] print:static print:min-w-0">Student</TableHead>
+                        <TableHead className="sticky left-[200px] bg-background z-10 min-w-[100px] print:static print:min-w-0">Adm No.</TableHead>
                         {subjects.map((subj, idx) => (
-                          <TableHead key={idx} className="text-center min-w-[100px]">
+                          <TableHead key={idx} className="text-center min-w-[100px] print:min-w-0">
                             <div className="text-xs">
                               {subj.title}
                               {subj.subSubject && <div className="text-muted-foreground">{subj.subSubject}</div>}
@@ -488,9 +488,9 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
                     <TableBody>
                       {studentStats.map((student: any, rowIdx: number) => (
                         <TableRow key={student.id}>
-                          <TableCell className="sticky left-0 bg-background font-medium">{rowIdx + 1}</TableCell>
-                          <TableCell className="sticky left-[50px] bg-background font-medium">{student.full_name}</TableCell>
-                          <TableCell className="sticky left-[200px] bg-background text-muted-foreground text-xs">
+                          <TableCell className="sticky left-0 bg-background font-medium print:static">{rowIdx + 1}</TableCell>
+                          <TableCell className="sticky left-[50px] bg-background font-medium print:static">{student.full_name}</TableCell>
+                          <TableCell className="sticky left-[200px] bg-background text-muted-foreground text-xs print:static">
                             {student.admission_number}
                           </TableCell>
                           {subjects.map((subj, colIdx) => {
@@ -537,7 +537,7 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
 
                       {/* Subject Averages Row */}
                       <TableRow className="bg-muted/50 font-medium">
-                        <TableCell colSpan={3} className="sticky left-0 bg-muted/50">
+                        <TableCell colSpan={3} className="sticky left-0 bg-muted/50 print:static">
                           Subject Averages
                         </TableCell>
                         {subjectStats.map((subj, idx) => (
@@ -561,7 +561,7 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
           </Card>
         </TabsContent>
 
-        <TabsContent value="analytics">
+        <TabsContent value="analytics" className="print:hidden">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {/* Top 3 Improved */}
             <Card>
