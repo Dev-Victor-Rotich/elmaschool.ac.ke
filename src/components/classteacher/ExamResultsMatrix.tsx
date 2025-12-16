@@ -472,10 +472,14 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
                         <TableHead className="sticky left-[50px] bg-background z-10 min-w-[150px] print:static print:min-w-0">Student</TableHead>
                         <TableHead className="sticky left-[200px] bg-background z-10 min-w-[100px] print:static print:min-w-0">Adm No.</TableHead>
                         {subjects.map((subj, idx) => (
-                          <TableHead key={idx} className="text-center min-w-[100px] print:min-w-0">
+                          <TableHead key={idx} className="text-center min-w-[80px] print:min-w-0">
                             <div className="text-xs">
-                              {subj.title}
-                              {subj.subSubject && <div className="text-muted-foreground">{subj.subSubject}</div>}
+                              {subj.title.substring(0, 4)}
+                              {subj.subSubject && (
+                                <div className="text-muted-foreground" title={subj.subSubject}>
+                                  {subj.subSubject.substring(0, 4)}
+                                </div>
+                              )}
                             </div>
                           </TableHead>
                         ))}
