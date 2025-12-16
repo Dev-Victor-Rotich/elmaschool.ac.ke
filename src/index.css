@@ -287,12 +287,46 @@ All colors MUST be HSL.
     display: none !important;
   }
   
-  /* Optimize tables for printing */
+  /* CRITICAL: Remove ScrollArea restrictions for full table print */
+  [data-radix-scroll-area-viewport] {
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
+  }
+  
+  [data-radix-scroll-area-scrollbar] {
+    display: none !important;
+  }
+  
+  /* Remove sticky positioning that causes print issues */
+  .sticky {
+    position: relative !important;
+    left: 0 !important;
+  }
+  
+  /* Force full width table without constraints */
+  .min-w-max {
+    min-width: 100% !important;
+    width: auto !important;
+  }
+  
+  /* Print table wrapper - full width without overflow restrictions */
+  .print-results-matrix {
+    overflow: visible !important;
+    width: 100% !important;
+  }
+  
+  .print-results-matrix > div {
+    overflow: visible !important;
+  }
+  
+  /* Optimize tables for printing - smaller font for more columns */
   table {
     page-break-inside: auto;
     border-collapse: collapse;
     width: 100%;
-    font-size: 10px;
+    font-size: 7px !important;
+    table-layout: auto;
   }
   
   tr {
@@ -302,18 +336,22 @@ All colors MUST be HSL.
   
   th, td {
     border: 1px solid hsl(var(--border));
-    padding: 4px 8px;
+    padding: 2px 3px !important;
+    white-space: nowrap;
   }
   
   /* Card styles for print */
   .card {
     box-shadow: none;
     border: 1px solid hsl(var(--border));
+    overflow: visible !important;
   }
   
-  /* Badge styles for print */
+  /* Badge styles for print - smaller */
   .badge {
     border: 1px solid currentColor;
+    font-size: 6px !important;
+    padding: 1px 3px !important;
   }
   
   /* Ensure background colors print */
@@ -324,6 +362,6 @@ All colors MUST be HSL.
   /* Page setup */
   @page {
     size: A4 landscape;
-    margin: 1cm;
+    margin: 0.5cm;
   }
 }
