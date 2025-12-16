@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, TrendingUp, TrendingDown, Minus, Trophy, Users, BarChart3, Save, Trash2 } from "lucide-react";
+import { Plus, TrendingUp, TrendingDown, Minus, Trophy, Users, BarChart3, Save, Trash2, Download, BookOpen } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
@@ -119,13 +119,13 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
     enabled: !!previousExam?.id,
   });
 
-  // Fetch teacher assignments
+  // Fetch teacher assignments - use staff_registry for teacher name lookup
   const { data: teacherAssignments = [] } = useQuery({
     queryKey: ["teacher-assignments", assignedClass],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("teacher_subject_assignments")
-        .select("*, profiles:teacher_id(full_name)")
+        .select("*, staff_registry:teacher_id(full_name)")
         .eq("class_name", assignedClass);
       if (error) throw error;
       return data || [];
@@ -270,39 +270,40 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
       .slice(0, 3);
   }, [studentStats]);
 
-  // Teacher performance analysis
-  const teacherPerformance = useMemo(() => {
-    const teacherStats: Record<string, { name: string; totalDiff: number; count: number }> = {};
+  // Subject performance analysis (replacing teacher performance)
+  const subjectPerformance = useMemo(() => {
+    const subjectStats: Record<string, { name: string; totalDiff: number; count: number }> = {};
 
     subjects.forEach((subj) => {
-      const assignment = teacherAssignments.find(
-        (a: any) => a.subject_id === subj.subjectId && (a.sub_subject || "") === subj.subSubject
-      );
-      if (!assignment) return;
-
-      const teacherName = (assignment as any).profiles?.full_name || "Unknown";
-      if (!teacherStats[teacherName]) {
-        teacherStats[teacherName] = { name: teacherName, totalDiff: 0, count: 0 };
-      }
+      const subjectLabel = subj.subSubject ? `${subj.title} - ${subj.subSubject}` : subj.title;
+      subjectStats[subjectLabel] = { name: subjectLabel, totalDiff: 0, count: 0 };
 
       students.forEach((student: any) => {
-        const key = `${student.id}-${subj.title}${subj.subSubject ? ` - ${subj.subSubject}` : ""}`;
+        const key = `${student.id}-${subjectLabel}`;
         const result = resultsMap[key];
         const prevResult = previousResultsMap[key];
 
         if (result && prevResult) {
-          teacherStats[teacherName].totalDiff += result.marks - prevResult.marks;
-          teacherStats[teacherName].count++;
+          subjectStats[subjectLabel].totalDiff += result.marks - prevResult.marks;
+          subjectStats[subjectLabel].count++;
         }
       });
     });
 
-    const sorted = Object.values(teacherStats).sort((a, b) => b.totalDiff - a.totalDiff);
+    const sorted = Object.values(subjectStats)
+      .filter(s => s.count > 0)
+      .sort((a, b) => b.totalDiff - a.totalDiff);
+    
     return {
       mostImproved: sorted[0],
       mostDropped: sorted[sorted.length - 1],
     };
-  }, [subjects, teacherAssignments, students, resultsMap, previousResultsMap]);
+  }, [subjects, students, resultsMap, previousResultsMap]);
+
+  // PDF Export function
+  const handleExportPDF = () => {
+    window.print();
+  };
 
   // Save result mutation
   const saveResultMutation = useMutation({
@@ -424,11 +425,21 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
   }, [studentStats]);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 print:space-y-4">
+      <div className="flex items-center justify-between print:hidden">
         <Button variant="ghost" onClick={onBack}>
           ← Back to Exam Details
         </Button>
+        <Button onClick={handleExportPDF} variant="outline">
+          <Download className="w-4 h-4 mr-2" />
+          Export PDF
+        </Button>
+      </div>
+      
+      {/* Print Header - Only visible when printing */}
+      <div className="hidden print:block print:mb-4">
+        <h1 className="text-2xl font-bold text-center">{exam.exam_name} - Results Matrix</h1>
+        <p className="text-center text-muted-foreground">{assignedClass} | {exam.term} {exam.year}</p>
       </div>
 
       <Tabs defaultValue="matrix" className="space-y-4">
@@ -603,37 +614,37 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
               </CardContent>
             </Card>
 
-            {/* Teacher Performance */}
+            {/* Subject Performance */}
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  Teacher Performance
+                  <BookOpen className="h-5 w-5" />
+                  Subject Performance
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {teacherPerformance.mostImproved && teacherPerformance.mostImproved.count > 0 && (
+                  {subjectPerformance.mostImproved && subjectPerformance.mostImproved.count > 0 && (
                     <div>
-                      <p className="text-xs text-muted-foreground">Most Improved</p>
+                      <p className="text-xs text-muted-foreground">Most Improved Subject</p>
                       <div className="flex items-center justify-between">
-                        <span className="font-medium">{teacherPerformance.mostImproved.name}</span>
+                        <span className="font-medium text-sm">{subjectPerformance.mostImproved.name}</span>
                         <Badge className="bg-green-100 text-green-700">
-                          +{teacherPerformance.mostImproved.totalDiff}
+                          +{subjectPerformance.mostImproved.totalDiff}
                         </Badge>
                       </div>
                     </div>
                   )}
-                  {teacherPerformance.mostDropped && teacherPerformance.mostDropped.count > 0 && teacherPerformance.mostDropped.totalDiff < 0 && (
+                  {subjectPerformance.mostDropped && subjectPerformance.mostDropped.count > 0 && subjectPerformance.mostDropped.totalDiff < 0 && (
                     <div>
                       <p className="text-xs text-muted-foreground">Needs Attention</p>
                       <div className="flex items-center justify-between">
-                        <span className="font-medium">{teacherPerformance.mostDropped.name}</span>
-                        <Badge variant="destructive">{teacherPerformance.mostDropped.totalDiff}</Badge>
+                        <span className="font-medium text-sm">{subjectPerformance.mostDropped.name}</span>
+                        <Badge variant="destructive">{subjectPerformance.mostDropped.totalDiff}</Badge>
                       </div>
                     </div>
                   )}
-                  {!teacherPerformance.mostImproved?.count && (
+                  {!subjectPerformance.mostImproved?.count && (
                     <p className="text-sm text-muted-foreground">No comparison data available</p>
                   )}
                 </div>
