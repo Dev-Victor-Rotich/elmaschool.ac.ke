@@ -170,6 +170,18 @@ const ReceiptModal = ({ open, onClose, payment, feeBreakdown }: ReceiptModalProp
                 </div>
               </div>
             </div>
+
+            {/* Action buttons at bottom for visibility after scrolling */}
+            <div className="flex justify-center gap-3 mt-6 pt-4 border-t print:hidden">
+              <Button onClick={handlePrint} size="sm" className="flex items-center gap-2">
+                <Printer className="h-4 w-4" />
+                Print Receipt
+              </Button>
+              <Button onClick={onClose} variant="outline" size="sm" className="flex items-center gap-2">
+                <X className="h-4 w-4" />
+                Close
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>
