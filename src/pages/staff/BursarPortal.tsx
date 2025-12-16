@@ -232,7 +232,6 @@ const BursarPortal = () => {
       year: parseInt(year),
       amount_due: dueAmount,
       amount_paid: paidAmount,
-      balance,
       receipt_number: receiptNumber,
       payment_date: new Date().toISOString(),
       recorded_by: session?.user.id,
