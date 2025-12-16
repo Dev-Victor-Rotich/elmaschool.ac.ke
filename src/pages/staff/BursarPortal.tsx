@@ -8,11 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { DollarSign, Receipt, LogOut, BookOpen, Settings, Users } from "lucide-react";
+import { DollarSign, Receipt, LogOut, BookOpen, Settings, Users, Loader2 } from "lucide-react";
 import MyClassesManager from "@/components/staff/MyClassesManager";
 import FeeStructureManager from "@/components/bursar/FeeStructureManager";
 import PaymentHistoryView from "@/components/bursar/PaymentHistoryView";
 import StudentFeeStatus from "@/components/bursar/StudentFeeStatus";
+import ReceiptModal from "@/components/bursar/ReceiptModal";
 
 const BursarPortal = () => {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ const BursarPortal = () => {
   const [userName, setUserName] = useState("");
   const [students, setStudents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [calculatingFee, setCalculatingFee] = useState(false);
 
   // Payment form state
   const [selectedStudent, setSelectedStudent] = useState("");
@@ -29,10 +31,64 @@ const BursarPortal = () => {
   const [amountPaid, setAmountPaid] = useState("");
   const [receiptNumber, setReceiptNumber] = useState("");
 
+  // Fee breakdown state
+  const [feeBreakdown, setFeeBreakdown] = useState<{
+    tuitionFee: number;
+    boardingFee: number;
+    activityFee: number;
+    otherFees: number;
+    totalFee: number;
+    previousPayments: number;
+  } | null>(null);
+
+  // Selected student info
+  const [selectedStudentInfo, setSelectedStudentInfo] = useState<{
+    fullName: string;
+    admissionNumber: string;
+    class: string;
+  } | null>(null);
+
+  // Receipt modal state
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [receiptPayment, setReceiptPayment] = useState<any>(null);
+
   useEffect(() => {
     checkAuth();
     loadStudents();
   }, []);
+
+  // Auto-calculate amount due when student, term, or year changes
+  useEffect(() => {
+    if (selectedStudent && term && year) {
+      calculateAmountDue();
+    } else {
+      setAmountDue("");
+      setFeeBreakdown(null);
+    }
+  }, [selectedStudent, term, year]);
+
+  // Update selected student info when student changes
+  useEffect(() => {
+    if (selectedStudent) {
+      const student = students.find(s => s.id === selectedStudent);
+      if (student) {
+        setSelectedStudentInfo({
+          fullName: student.full_name,
+          admissionNumber: student.admission_number,
+          class: student.class
+        });
+      }
+    } else {
+      setSelectedStudentInfo(null);
+    }
+  }, [selectedStudent, students]);
+
+  // Auto-generate receipt number when form is ready
+  useEffect(() => {
+    if (selectedStudent && term && year && !receiptNumber) {
+      generateReceiptNumber();
+    }
+  }, [selectedStudent, term, year]);
 
   const checkAuth = async () => {
     const {
@@ -44,7 +100,6 @@ const BursarPortal = () => {
       return;
     }
 
-    // If super admin is impersonating a bursar, bypass role checks but load that bursar's profile
     const impersonationRaw = localStorage.getItem("impersonation");
     const impersonation = impersonationRaw ? JSON.parse(impersonationRaw) : null;
 
@@ -86,6 +141,79 @@ const BursarPortal = () => {
     }
   };
 
+  const generateReceiptNumber = async () => {
+    const currentYear = new Date().getFullYear();
+    
+    // Get count of payments this year for sequential numbering
+    const { count } = await supabase
+      .from("fee_payments")
+      .select("*", { count: "exact", head: true })
+      .gte("created_at", `${currentYear}-01-01`);
+    
+    const sequenceNumber = ((count || 0) + 1).toString().padStart(4, "0");
+    setReceiptNumber(`RCP-${currentYear}-${sequenceNumber}`);
+  };
+
+  const calculateAmountDue = async () => {
+    if (!selectedStudent || !term || !year) return;
+
+    setCalculatingFee(true);
+    
+    const student = students.find(s => s.id === selectedStudent);
+    if (!student) {
+      setCalculatingFee(false);
+      return;
+    }
+
+    // Fetch fee structure for this class, term, and year
+    const { data: feeStructure } = await supabase
+      .from("fee_structures")
+      .select("*")
+      .eq("class_name", student.class)
+      .eq("term", term)
+      .eq("year", parseInt(year))
+      .single();
+
+    if (!feeStructure) {
+      toast.error(`No fee structure found for ${student.class}, Term ${term}, ${year}`);
+      setAmountDue("");
+      setFeeBreakdown(null);
+      setCalculatingFee(false);
+      return;
+    }
+
+    // Fetch previous payments for this student, term, and year
+    const { data: previousPayments } = await supabase
+      .from("fee_payments")
+      .select("amount_paid")
+      .eq("student_id", selectedStudent)
+      .eq("term", term)
+      .eq("year", parseInt(year));
+
+    const totalPreviousPayments = previousPayments?.reduce(
+      (sum, payment) => sum + Number(payment.amount_paid), 
+      0
+    ) || 0;
+
+    const totalFee = Number(feeStructure.total_fee) || 
+      (Number(feeStructure.tuition_fee) + Number(feeStructure.boarding_fee) + 
+       Number(feeStructure.activity_fee) + Number(feeStructure.other_fees));
+
+    const remainingDue = totalFee - totalPreviousPayments;
+
+    setFeeBreakdown({
+      tuitionFee: Number(feeStructure.tuition_fee),
+      boardingFee: Number(feeStructure.boarding_fee),
+      activityFee: Number(feeStructure.activity_fee),
+      otherFees: Number(feeStructure.other_fees),
+      totalFee,
+      previousPayments: totalPreviousPayments
+    });
+
+    setAmountDue(remainingDue.toString());
+    setCalculatingFee(false);
+  };
+
   const handleRecordPayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -93,14 +221,17 @@ const BursarPortal = () => {
     const {
       data: { session },
     } = await supabase.auth.getSession();
-    const balance = parseFloat(amountDue) - parseFloat(amountPaid);
+    
+    const dueAmount = parseFloat(amountDue);
+    const paidAmount = parseFloat(amountPaid);
+    const balance = dueAmount - paidAmount;
 
     const { error } = await supabase.from("fee_payments").insert({
       student_id: selectedStudent,
       term,
       year: parseInt(year),
-      amount_due: parseFloat(amountDue),
-      amount_paid: parseFloat(amountPaid),
+      amount_due: dueAmount,
+      amount_paid: paidAmount,
       balance,
       receipt_number: receiptNumber,
       payment_date: new Date().toISOString(),
@@ -109,15 +240,37 @@ const BursarPortal = () => {
 
     if (error) {
       toast.error("Failed to record payment");
-    } else {
-      toast.success("Payment recorded successfully");
-      // Reset form
-      setSelectedStudent("");
-      setTerm("");
-      setAmountDue("");
-      setAmountPaid("");
-      setReceiptNumber("");
+      setLoading(false);
+      return;
     }
+
+    // Prepare receipt data
+    setReceiptPayment({
+      receiptNumber,
+      studentName: selectedStudentInfo?.fullName || "",
+      admissionNumber: selectedStudentInfo?.admissionNumber || "",
+      studentClass: selectedStudentInfo?.class || "",
+      term,
+      year,
+      amountDue: dueAmount,
+      amountPaid: paidAmount,
+      balance,
+      paymentDate: new Date(),
+      recordedBy: userName
+    });
+
+    toast.success("Payment recorded successfully");
+    setShowReceipt(true);
+    
+    // Reset form
+    setSelectedStudent("");
+    setTerm("");
+    setAmountDue("");
+    setAmountPaid("");
+    setReceiptNumber("");
+    setFeeBreakdown(null);
+    setSelectedStudentInfo(null);
+    
     setLoading(false);
   };
 
@@ -174,7 +327,7 @@ const BursarPortal = () => {
                     <Receipt className="h-5 w-5" />
                     Record Fee Payment
                   </CardTitle>
-                  <CardDescription>Track student fee payments</CardDescription>
+                  <CardDescription>Track student fee payments with auto-calculated amounts</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <form onSubmit={handleRecordPayment} className="space-y-4">
@@ -187,7 +340,7 @@ const BursarPortal = () => {
                         <SelectContent>
                           {students.map((student) => (
                             <SelectItem key={student.id} value={student.id}>
-                              {student.full_name} ({student.admission_number})
+                              {student.full_name} ({student.admission_number}) - {student.class}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -215,16 +368,52 @@ const BursarPortal = () => {
                       </div>
                     </div>
 
+                    {/* Fee Breakdown Display */}
+                    {calculatingFee && (
+                      <div className="flex items-center justify-center p-4 bg-muted rounded-lg">
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        <span className="text-sm">Calculating fees...</span>
+                      </div>
+                    )}
+
+                    {feeBreakdown && !calculatingFee && (
+                      <div className="p-4 bg-muted/50 rounded-lg space-y-2 text-sm">
+                        <h4 className="font-semibold">Fee Breakdown</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                          <span className="text-muted-foreground">Tuition Fee:</span>
+                          <span>KES {feeBreakdown.tuitionFee.toLocaleString()}</span>
+                          <span className="text-muted-foreground">Boarding Fee:</span>
+                          <span>KES {feeBreakdown.boardingFee.toLocaleString()}</span>
+                          <span className="text-muted-foreground">Activity Fee:</span>
+                          <span>KES {feeBreakdown.activityFee.toLocaleString()}</span>
+                          <span className="text-muted-foreground">Other Fees:</span>
+                          <span>KES {feeBreakdown.otherFees.toLocaleString()}</span>
+                        </div>
+                        <div className="border-t pt-2 mt-2">
+                          <div className="flex justify-between font-medium">
+                            <span>Total Fee:</span>
+                            <span>KES {feeBreakdown.totalFee.toLocaleString()}</span>
+                          </div>
+                          {feeBreakdown.previousPayments > 0 && (
+                            <div className="flex justify-between text-green-600">
+                              <span>Previous Payments:</span>
+                              <span>- KES {feeBreakdown.previousPayments.toLocaleString()}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-2">
                       <Label>Amount Due (KES)</Label>
                       <Input
                         type="number"
                         value={amountDue}
-                        onChange={(e) => setAmountDue(e.target.value)}
-                        placeholder="0.00"
-                        step="0.01"
-                        required
+                        readOnly
+                        className="bg-muted"
+                        placeholder={calculatingFee ? "Calculating..." : "Select student, term & year"}
                       />
+                      <p className="text-xs text-muted-foreground">Auto-calculated from fee structure</p>
                     </div>
 
                     <div className="space-y-2">
@@ -233,16 +422,18 @@ const BursarPortal = () => {
                         type="number"
                         value={amountPaid}
                         onChange={(e) => setAmountPaid(e.target.value)}
-                        placeholder="0.00"
+                        placeholder="Enter amount being paid"
                         step="0.01"
                         required
                       />
                     </div>
 
                     {amountDue && amountPaid && (
-                      <div className="p-3 bg-muted rounded-lg">
+                      <div className="p-3 bg-primary/10 rounded-lg">
                         <p className="text-sm font-medium">
-                          Balance: KES {(parseFloat(amountDue) - parseFloat(amountPaid)).toFixed(2)}
+                          Remaining Balance: <span className={parseFloat(amountDue) - parseFloat(amountPaid) > 0 ? "text-destructive" : "text-green-600"}>
+                            KES {(parseFloat(amountDue) - parseFloat(amountPaid)).toLocaleString()}
+                          </span>
                         </p>
                       </div>
                     )}
@@ -251,19 +442,78 @@ const BursarPortal = () => {
                       <Label>Receipt Number</Label>
                       <Input
                         value={receiptNumber}
-                        onChange={(e) => setReceiptNumber(e.target.value)}
-                        placeholder="RCP-2024-001"
-                        required
+                        readOnly
+                        className="bg-muted font-mono"
+                        placeholder="Auto-generated"
                       />
+                      <p className="text-xs text-muted-foreground">Auto-generated receipt number</p>
                     </div>
 
-                    <Button type="submit" className="w-full" disabled={loading}>
-                      {loading ? "Recording..." : "Record Payment"}
+                    <Button 
+                      type="submit" 
+                      className="w-full" 
+                      disabled={loading || !amountDue || !amountPaid}
+                    >
+                      {loading ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Recording...
+                        </>
+                      ) : (
+                        "Record Payment & Generate Receipt"
+                      )}
                     </Button>
                   </form>
                 </CardContent>
               </Card>
 
+              {/* Quick Stats Card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Quick Guide</CardTitle>
+                  <CardDescription>How to record a payment</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium">1</div>
+                      <div>
+                        <p className="font-medium">Select Student</p>
+                        <p className="text-sm text-muted-foreground">Choose the student making payment</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium">2</div>
+                      <div>
+                        <p className="font-medium">Select Term & Year</p>
+                        <p className="text-sm text-muted-foreground">Amount due will auto-calculate from fee structure</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium">3</div>
+                      <div>
+                        <p className="font-medium">Enter Amount Paid</p>
+                        <p className="text-sm text-muted-foreground">Enter the amount the student is paying</p>
+                      </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-sm font-medium">4</div>
+                      <div>
+                        <p className="font-medium">Record & Print Receipt</p>
+                        <p className="text-sm text-muted-foreground">Receipt will be generated automatically</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-200 dark:border-amber-800">
+                    <p className="text-sm font-medium text-amber-800 dark:text-amber-200">Important</p>
+                    <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                      Ensure fee structure is set up for the class before recording payments. 
+                      Go to "Fee Structure" tab to configure fees.
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
           </TabsContent>
 
@@ -284,6 +534,19 @@ const BursarPortal = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Receipt Modal */}
+      <ReceiptModal
+        open={showReceipt}
+        onClose={() => setShowReceipt(false)}
+        payment={receiptPayment}
+        feeBreakdown={feeBreakdown ? {
+          tuitionFee: feeBreakdown.tuitionFee,
+          boardingFee: feeBreakdown.boardingFee,
+          activityFee: feeBreakdown.activityFee,
+          otherFees: feeBreakdown.otherFees
+        } : undefined}
+      />
     </div>
   );
 };

@@ -359,9 +359,55 @@ All colors MUST be HSL.
     background-color: hsl(var(--muted)) !important;
   }
   
-  /* Page setup */
+  /* Page setup - default */
   @page {
     size: A4 landscape;
     margin: 0.5cm;
+  }
+
+  /* Receipt-specific print styles */
+  .receipt-printable {
+    width: 100% !important;
+    max-width: 400px !important;
+    margin: 0 auto !important;
+    padding: 20px !important;
+    border: 2px solid hsl(var(--foreground)) !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  .receipt-printable * {
+    color: black !important;
+  }
+
+  .receipt-printable .text-muted-foreground {
+    color: #666 !important;
+  }
+
+  .receipt-printable .text-green-600 {
+    color: #16a34a !important;
+  }
+
+  .receipt-printable .text-destructive {
+    color: #dc2626 !important;
+  }
+
+  /* Hide dialog overlay when printing receipt */
+  [data-radix-dialog-overlay] {
+    background: white !important;
+  }
+
+  [data-radix-dialog-content] {
+    position: static !important;
+    transform: none !important;
+    box-shadow: none !important;
+    max-width: none !important;
+    border: none !important;
+  }
+
+  /* Receipt page setup */
+  @page receipt {
+    size: A5 portrait;
+    margin: 1cm;
   }
 }
