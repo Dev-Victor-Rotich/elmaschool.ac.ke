@@ -902,6 +902,54 @@ export type Database = {
           },
         ]
       }
+      fee_structures: {
+        Row: {
+          activity_fee: number
+          boarding_fee: number
+          class_name: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          other_fees: number
+          term: string
+          total_fee: number | null
+          tuition_fee: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          activity_fee?: number
+          boarding_fee?: number
+          class_name: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          other_fees?: number
+          term: string
+          total_fee?: number | null
+          tuition_fee?: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          activity_fee?: number
+          boarding_fee?: number
+          class_name?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          other_fees?: number
+          term?: string
+          total_fee?: number | null
+          tuition_fee?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
       gallery_media: {
         Row: {
           created_at: string | null
