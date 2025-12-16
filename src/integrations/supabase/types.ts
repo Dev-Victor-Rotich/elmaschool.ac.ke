@@ -1868,6 +1868,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      has_teaching_assignment_for_class: {
+        Args: { _class_name: string; _user_id: string }
+        Returns: boolean
+      }
       is_classteacher_for_class: {
         Args: { _class_name: string; _user_id: string }
         Returns: boolean
