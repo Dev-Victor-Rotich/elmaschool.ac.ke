@@ -8,8 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { DollarSign, Receipt, LogOut, BookOpen } from "lucide-react";
+import { DollarSign, Receipt, LogOut, BookOpen, Settings, Users } from "lucide-react";
 import MyClassesManager from "@/components/staff/MyClassesManager";
+import FeeStructureManager from "@/components/bursar/FeeStructureManager";
+import PaymentHistoryView from "@/components/bursar/PaymentHistoryView";
+import StudentFeeStatus from "@/components/bursar/StudentFeeStatus";
 
 const BursarPortal = () => {
   const navigate = useNavigate();
@@ -140,10 +143,22 @@ const BursarPortal = () => {
 
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="fees" className="space-y-6">
-          <TabsList>
+          <TabsList className="flex-wrap h-auto gap-1">
             <TabsTrigger value="fees">
               <Receipt className="h-4 w-4 mr-2" />
-              Fee Management
+              Record Payment
+            </TabsTrigger>
+            <TabsTrigger value="history">
+              <DollarSign className="h-4 w-4 mr-2" />
+              Payment History
+            </TabsTrigger>
+            <TabsTrigger value="structure">
+              <Settings className="h-4 w-4 mr-2" />
+              Fee Structure
+            </TabsTrigger>
+            <TabsTrigger value="status">
+              <Users className="h-4 w-4 mr-2" />
+              Student Status
             </TabsTrigger>
             <TabsTrigger value="classes">
               <BookOpen className="h-4 w-4 mr-2" />
@@ -249,19 +264,19 @@ const BursarPortal = () => {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <DollarSign className="h-5 w-5" />
-                    Recent Payments
-                  </CardTitle>
-                  <CardDescription>Latest fee transactions</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground text-center py-8">Payment history will appear here</p>
-                </CardContent>
-              </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="history">
+            <PaymentHistoryView />
+          </TabsContent>
+
+          <TabsContent value="structure">
+            <FeeStructureManager />
+          </TabsContent>
+
+          <TabsContent value="status">
+            <StudentFeeStatus />
           </TabsContent>
 
           <TabsContent value="classes">
