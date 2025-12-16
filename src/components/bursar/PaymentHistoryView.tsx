@@ -74,7 +74,30 @@ const PaymentHistoryView = () => {
     0
   ) || 0;
 
-  const handleViewReceipt = (payment: any) => {
+  const [feeBreakdown, setFeeBreakdown] = useState<{
+    tuitionFee: number;
+    boardingFee: number;
+    activityFee: number;
+    otherFees: number;
+  } | null>(null);
+
+  const handleViewReceipt = async (payment: any) => {
+    // Fetch fee structure for breakdown
+    const { data: feeStructure } = await supabase
+      .from("fee_structures")
+      .select("tuition_fee, boarding_fee, activity_fee, other_fees")
+      .eq("class_name", payment.student?.class || "")
+      .eq("term", payment.term)
+      .eq("year", payment.year)
+      .maybeSingle();
+
+    setFeeBreakdown(feeStructure ? {
+      tuitionFee: Number(feeStructure.tuition_fee),
+      boardingFee: Number(feeStructure.boarding_fee),
+      activityFee: Number(feeStructure.activity_fee),
+      otherFees: Number(feeStructure.other_fees),
+    } : null);
+
     setSelectedPayment({
       receiptNumber: payment.receipt_number || "N/A",
       studentName: payment.student?.full_name || "Unknown",
@@ -238,6 +261,7 @@ const PaymentHistoryView = () => {
         open={showReceipt}
         onClose={() => setShowReceipt(false)}
         payment={selectedPayment}
+        feeBreakdown={feeBreakdown}
       />
     </>
   );
