@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { ArrowLeft, TrendingUp, TrendingDown, Minus, Save, Trash2, Trophy, Users, BarChart3 } from "lucide-react";
+import { ArrowLeft, TrendingUp, TrendingDown, Minus, Save, Trash2, Trophy, Users, BarChart3, Download } from "lucide-react";
 import { toast } from "sonner";
 
 interface TeacherExamResultsProps {
@@ -311,13 +311,27 @@ export function TeacherExamResults({
     return <Minus className="w-4 h-4 text-muted-foreground" />;
   };
 
+  const handleExportPDF = () => {
+    window.print();
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-6 print:space-y-4">
+      <div className="flex items-center justify-between print:hidden">
         <Button variant="ghost" onClick={onBack}>
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Exams
         </Button>
+        <Button onClick={handleExportPDF} variant="outline">
+          <Download className="w-4 h-4 mr-2" />
+          Export PDF
+        </Button>
+      </div>
+      
+      {/* Print Header - Only visible when printing */}
+      <div className="hidden print:block print:mb-4">
+        <h1 className="text-2xl font-bold text-center">{exam.exam_name} - {subjectLabel}</h1>
+        <p className="text-center text-muted-foreground">{assignedClass} | {exam.term} {exam.year}</p>
       </div>
 
       {/* Stats Cards */}
