@@ -79,23 +79,67 @@ const PaymentHistoryView = () => {
     boardingFee: number;
     activityFee: number;
     otherFees: number;
+    creditFromPreviousTerms?: number;
   } | null>(null);
 
   const handleViewReceipt = async (payment: any) => {
+    const currentTerm = parseInt(payment.term);
+    const currentYear = payment.year;
+    const studentClass = payment.student?.class || "";
+    const studentId = payment.student_id;
+
     // Fetch fee structure for breakdown
     const { data: feeStructure } = await supabase
       .from("fee_structures")
       .select("tuition_fee, boarding_fee, activity_fee, other_fees")
-      .eq("class_name", payment.student?.class || "")
+      .eq("class_name", studentClass)
       .eq("term", payment.term)
-      .eq("year", payment.year)
+      .eq("year", currentYear)
       .maybeSingle();
+
+    // Calculate credit from previous terms
+    let creditFromPreviousTerms = 0;
+
+    if (currentTerm > 1) {
+      // Get all previous terms' fee structures
+      const { data: previousFeeStructures } = await supabase
+        .from("fee_structures")
+        .select("term, total_fee, tuition_fee, boarding_fee, activity_fee, other_fees")
+        .eq("class_name", studentClass)
+        .eq("year", currentYear)
+        .lt("term", payment.term);
+
+      // Get all previous terms' payments
+      const { data: previousTermPayments } = await supabase
+        .from("fee_payments")
+        .select("term, amount_paid")
+        .eq("student_id", studentId)
+        .eq("year", currentYear)
+        .lt("term", payment.term);
+
+      // Calculate total fees due for previous terms
+      const totalPreviousFeesDue = previousFeeStructures?.reduce((sum, fs) => {
+        const termTotal = Number(fs.total_fee) || 
+          (Number(fs.tuition_fee) + Number(fs.boarding_fee) + 
+           Number(fs.activity_fee) + Number(fs.other_fees));
+        return sum + termTotal;
+      }, 0) || 0;
+
+      // Calculate total payments made for previous terms
+      const totalPreviousPaymentsMade = previousTermPayments?.reduce(
+        (sum, p) => sum + Number(p.amount_paid), 
+        0
+      ) || 0;
+
+      creditFromPreviousTerms = Math.max(0, totalPreviousPaymentsMade - totalPreviousFeesDue);
+    }
 
     setFeeBreakdown(feeStructure ? {
       tuitionFee: Number(feeStructure.tuition_fee),
       boardingFee: Number(feeStructure.boarding_fee),
       activityFee: Number(feeStructure.activity_fee),
       otherFees: Number(feeStructure.other_fees),
+      creditFromPreviousTerms,
     } : null);
 
     setSelectedPayment({

@@ -24,6 +24,7 @@ interface ReceiptModalProps {
     boardingFee: number;
     activityFee: number;
     otherFees: number;
+    creditFromPreviousTerms?: number;
   };
 }
 
@@ -119,6 +120,12 @@ const ReceiptModal = ({ open, onClose, payment, feeBreakdown }: ReceiptModalProp
                     <span className="text-muted-foreground">Other Fees:</span>
                     <span>KES {feeBreakdown.otherFees.toLocaleString()}</span>
                   </div>
+                  {feeBreakdown.creditFromPreviousTerms && feeBreakdown.creditFromPreviousTerms > 0 && (
+                    <div className="flex justify-between text-blue-600 font-medium border-t pt-1 mt-1">
+                      <span>Credit from Previous Terms:</span>
+                      <span>- KES {feeBreakdown.creditFromPreviousTerms.toLocaleString()}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

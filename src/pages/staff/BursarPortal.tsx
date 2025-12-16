@@ -39,6 +39,7 @@ const BursarPortal = () => {
     otherFees: number;
     totalFee: number;
     previousPayments: number;
+    creditFromPreviousTerms: number;
   } | null>(null);
 
   // Selected student info
@@ -165,13 +166,16 @@ const BursarPortal = () => {
       return;
     }
 
+    const currentTerm = parseInt(term);
+    const currentYear = parseInt(year);
+
     // Fetch fee structure for this class, term, and year
     const { data: feeStructure } = await supabase
       .from("fee_structures")
       .select("*")
       .eq("class_name", student.class)
       .eq("term", term)
-      .eq("year", parseInt(year))
+      .eq("year", currentYear)
       .single();
 
     if (!feeStructure) {
@@ -182,15 +186,53 @@ const BursarPortal = () => {
       return;
     }
 
-    // Fetch previous payments for this student, term, and year
-    const { data: previousPayments } = await supabase
+    // Calculate credit from previous terms in the same year
+    let creditFromPreviousTerms = 0;
+
+    if (currentTerm > 1) {
+      // Get all previous terms' fee structures
+      const { data: previousFeeStructures } = await supabase
+        .from("fee_structures")
+        .select("term, total_fee, tuition_fee, boarding_fee, activity_fee, other_fees")
+        .eq("class_name", student.class)
+        .eq("year", currentYear)
+        .lt("term", term);
+
+      // Get all previous terms' payments
+      const { data: previousTermPayments } = await supabase
+        .from("fee_payments")
+        .select("term, amount_paid")
+        .eq("student_id", selectedStudent)
+        .eq("year", currentYear)
+        .lt("term", term);
+
+      // Calculate total fees due for previous terms
+      const totalPreviousFeesDue = previousFeeStructures?.reduce((sum, fs) => {
+        const termTotal = Number(fs.total_fee) || 
+          (Number(fs.tuition_fee) + Number(fs.boarding_fee) + 
+           Number(fs.activity_fee) + Number(fs.other_fees));
+        return sum + termTotal;
+      }, 0) || 0;
+
+      // Calculate total payments made for previous terms
+      const totalPreviousPaymentsMade = previousTermPayments?.reduce(
+        (sum, payment) => sum + Number(payment.amount_paid), 
+        0
+      ) || 0;
+
+      // Credit is positive if paid more than due
+      creditFromPreviousTerms = Math.max(0, totalPreviousPaymentsMade - totalPreviousFeesDue);
+    }
+
+    // Fetch current term payments for this student
+    const { data: currentTermPayments } = await supabase
       .from("fee_payments")
       .select("amount_paid")
       .eq("student_id", selectedStudent)
       .eq("term", term)
-      .eq("year", parseInt(year));
+      .eq("year", currentYear);
 
-    const totalPreviousPayments = previousPayments?.reduce(
+    const totalCurrentTermPayments = currentTermPayments?.reduce(
       (sum, payment) => sum + Number(payment.amount_paid), 
       0
     ) || 0;
@@ -199,7 +241,9 @@ const BursarPortal = () => {
       (Number(feeStructure.tuition_fee) + Number(feeStructure.boarding_fee) + 
        Number(feeStructure.activity_fee) + Number(feeStructure.other_fees));
 
-    const remainingDue = totalFee - totalPreviousPayments;
+    // Apply credit from previous terms to current term
+    const effectiveAmountDue = totalFee - creditFromPreviousTerms - totalCurrentTermPayments;
+    const remainingDue = Math.max(0, effectiveAmountDue);
 
     setFeeBreakdown({
       tuitionFee: Number(feeStructure.tuition_fee),
@@ -207,7 +251,8 @@ const BursarPortal = () => {
       activityFee: Number(feeStructure.activity_fee),
       otherFees: Number(feeStructure.other_fees),
       totalFee,
-      previousPayments: totalPreviousPayments
+      previousPayments: totalCurrentTermPayments,
+      creditFromPreviousTerms
     });
 
     setAmountDue(remainingDue.toString());
@@ -388,14 +433,20 @@ const BursarPortal = () => {
                           <span className="text-muted-foreground">Other Fees:</span>
                           <span>KES {feeBreakdown.otherFees.toLocaleString()}</span>
                         </div>
-                        <div className="border-t pt-2 mt-2">
+                        <div className="border-t pt-2 mt-2 space-y-1">
                           <div className="flex justify-between font-medium">
                             <span>Total Fee:</span>
                             <span>KES {feeBreakdown.totalFee.toLocaleString()}</span>
                           </div>
+                          {feeBreakdown.creditFromPreviousTerms > 0 && (
+                            <div className="flex justify-between text-blue-600 font-medium">
+                              <span>Credit from Previous Terms:</span>
+                              <span>- KES {feeBreakdown.creditFromPreviousTerms.toLocaleString()}</span>
+                            </div>
+                          )}
                           {feeBreakdown.previousPayments > 0 && (
                             <div className="flex justify-between text-green-600">
-                              <span>Previous Payments:</span>
+                              <span>Paid This Term:</span>
                               <span>- KES {feeBreakdown.previousPayments.toLocaleString()}</span>
                             </div>
                           )}
