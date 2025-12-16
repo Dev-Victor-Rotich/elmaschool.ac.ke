@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -27,14 +27,40 @@ interface PaymentData {
 
 const PaymentHistoryView = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
+  const [filterYear, setFilterYear] = useState<string>("");
   const [filterTerm, setFilterTerm] = useState("all");
   const [showReceipt, setShowReceipt] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<PaymentData | null>(null);
 
+  // Fetch available years from fee_payments
+  const { data: availableYears } = useQuery({
+    queryKey: ["payment-years"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("fee_payments")
+        .select("year")
+        .order("year", { ascending: false });
+      
+      if (error) throw error;
+      
+      // Get unique years
+      const uniqueYears = [...new Set(data?.map(p => p.year) || [])];
+      return uniqueYears.length > 0 ? uniqueYears : [new Date().getFullYear()];
+    },
+  });
+
+  // Set default year to latest year with payments
+  useEffect(() => {
+    if (availableYears && availableYears.length > 0 && !filterYear) {
+      setFilterYear(availableYears[0].toString());
+    }
+  }, [availableYears, filterYear]);
+
   const { data: payments, isLoading } = useQuery({
     queryKey: ["payment-history", filterYear, filterTerm],
     queryFn: async () => {
+      if (!filterYear) return [];
+      
       let query = supabase
         .from("fee_payments")
         .select(`
@@ -52,6 +78,7 @@ const PaymentHistoryView = () => {
       if (error) throw error;
       return data;
     },
+    enabled: !!filterYear,
   });
 
   const filteredPayments = payments?.filter((payment) => {
@@ -193,10 +220,10 @@ const PaymentHistoryView = () => {
               </Select>
               <Select value={filterYear} onValueChange={setFilterYear}>
                 <SelectTrigger className="w-[100px]">
-                  <SelectValue />
+                  <SelectValue placeholder="Year" />
                 </SelectTrigger>
                 <SelectContent>
-                  {[2024, 2025, 2026].map((y) => (
+                  {availableYears?.map((y) => (
                     <SelectItem key={y} value={y.toString()}>
                       {y}
                     </SelectItem>
