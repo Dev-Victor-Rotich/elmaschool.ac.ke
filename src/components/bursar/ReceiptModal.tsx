@@ -31,7 +31,11 @@ const ReceiptModal = ({ open, onClose, payment, feeBreakdown }: ReceiptModalProp
   if (!payment) return null;
 
   const handlePrint = () => {
+    document.body.classList.add('printing-receipt');
     window.print();
+    setTimeout(() => {
+      document.body.classList.remove('printing-receipt');
+    }, 100);
   };
 
   return (
@@ -54,8 +58,6 @@ const ReceiptModal = ({ open, onClose, payment, feeBreakdown }: ReceiptModalProp
             {/* Header */}
             <div className="text-center border-b pb-4 mb-4">
               <h1 className="text-xl font-bold">ELMA KAMONONG HIGH SCHOOL</h1>
-              <p className="text-sm text-muted-foreground">P.O. Box 123, Eldoret, Kenya</p>
-              <p className="text-sm text-muted-foreground">Tel: +254 700 000 000</p>
               <div className="mt-2 inline-block px-3 py-1 bg-primary/10 rounded-full">
                 <span className="text-sm font-semibold text-primary">FEE PAYMENT RECEIPT</span>
               </div>
