@@ -825,18 +825,18 @@ const Brochures = () => {
                   <div className="space-y-2 mb-3">
                     <div className="grid grid-cols-2 gap-2">
                       {facilities?.slice(0, 4).map((facility, idx) => (
-                        <div key={idx} className="relative overflow-hidden rounded-lg aspect-square">
+                        <div key={idx} className="relative overflow-hidden rounded-lg aspect-[4/3]">
                           <img
                             src={facility.image_url}
                             alt={facility.title}
                             className="w-full h-full object-cover"
                           />
                           <div className="absolute inset-0 bg-black/40 flex items-end p-1.5">
-                            <p className="text-xs font-medium">{facility.title}</p>
+                            <p className="text-xs font-medium leading-tight">{facility.title}</p>
                           </div>
                         </div>
                       )) ||
-                        [1, 2, 3, 4].map((i) => <Skeleton key={i} className="aspect-square bg-white/10" />)}
+                        [1, 2, 3, 4].map((i) => <Skeleton key={i} className="aspect-[4/3] bg-white/10" />)}
                     </div>
 
                     <div className="bg-white/20 rounded-lg px-3 py-2">
@@ -1036,22 +1036,22 @@ const Brochures = () => {
                   </div>
 
                   {/* Features */}
-                  <div className="space-y-1.5 mb-3">
-                    <div className="flex items-center gap-2 bg-white/15 rounded-lg px-3 py-1.5">
-                      <Check className="h-4 w-4" />
-                      <span className="text-sm">Dual Curriculum (8-4-4 & CBC)</span>
+                  <div className="space-y-1 mb-3">
+                    <div className="flex items-center gap-2 bg-white/15 rounded-lg px-3 py-1">
+                      <Check className="h-3.5 w-3.5" />
+                      <span className="text-xs">Dual Curriculum (8-4-4 & CBC)</span>
                     </div>
-                    <div className="flex items-center gap-2 bg-white/15 rounded-lg px-3 py-1.5">
-                      <Check className="h-4 w-4" />
-                      <span className="text-sm">Christ-Centered Education</span>
+                    <div className="flex items-center gap-2 bg-white/15 rounded-lg px-3 py-1">
+                      <Check className="h-3.5 w-3.5" />
+                      <span className="text-xs">Christ-Centered Education</span>
                     </div>
-                    <div className="flex items-center gap-2 bg-white/15 rounded-lg px-3 py-1.5">
-                      <Check className="h-4 w-4" />
-                      <span className="text-sm">Qualified & Caring Teachers</span>
+                    <div className="flex items-center gap-2 bg-white/15 rounded-lg px-3 py-1">
+                      <Check className="h-3.5 w-3.5" />
+                      <span className="text-xs">Qualified & Caring Teachers</span>
                     </div>
-                    <div className="flex items-center gap-2 bg-white/15 rounded-lg px-3 py-1.5">
-                      <Check className="h-4 w-4" />
-                      <span className="text-sm">Modern Facilities & Boarding</span>
+                    <div className="flex items-center gap-2 bg-white/15 rounded-lg px-3 py-1">
+                      <Check className="h-3.5 w-3.5" />
+                      <span className="text-xs">Modern Facilities & Boarding</span>
                     </div>
                   </div>
 
