@@ -145,6 +145,21 @@ All colors MUST be HSL.
     box-shadow: var(--shadow-premium);
   }
 
+  /* Text clamping (used in brochures, etc.) */
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .line-clamp-3 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
   /* Scroll animations */
   @keyframes fadeInUp {
     from {
