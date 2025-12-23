@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Home, Info, BookOpen, Users, Image, Phone, Award, GraduationCap, Menu, LogIn, LogOut, User, LayoutDashboard } from "lucide-react";
+import { Home, Info, BookOpen, Users, Image, Phone, Award, GraduationCap, Menu, LogIn, LogOut, User, LayoutDashboard, FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import schoolLogo from "@/assets/school-logo.png";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -125,6 +125,7 @@ const Navigation = () => {
     { path: "/student", label: "Student Voice", icon: Award },
     { path: "/gallery", label: "Gallery", icon: Image },
     { path: "/admissions", label: "Admissions", icon: GraduationCap },
+    { path: "/brochures", label: "Brochures", icon: FileText },
     { path: "/contact", label: "Contact", icon: Phone },
   ];
 

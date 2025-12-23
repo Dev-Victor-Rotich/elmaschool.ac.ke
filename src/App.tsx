@@ -12,6 +12,7 @@ import Student from "./pages/Student";
 import Gallery from "./pages/Gallery";
 import Contact from "./pages/Contact";
 import Admissions from "./pages/Admissions";
+import Brochures from "./pages/Brochures";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
 import MagicLinkLogin from "./pages/MagicLinkLogin";
@@ -53,6 +54,7 @@ const App = () => (
           <Route path="/student" element={<Student />} />
           <Route path="/gallery" element={<Gallery />} />
           <Route path="/admissions" element={<Admissions />} />
+          <Route path="/brochures" element={<Brochures />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/login" element={<MagicLinkLogin />} />
           <Route path="/auth" element={<MagicLinkLogin />} />
