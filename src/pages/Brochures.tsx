@@ -39,9 +39,14 @@ import { Link } from "react-router-dom";
 const Brochures = () => {
   const [copiedLink, setCopiedLink] = useState(false);
   const [downloadingCard, setDownloadingCard] = useState<string | null>(null);
+  const [savingToGallery, setSavingToGallery] = useState(false);
+  const [savedBrochures, setSavedBrochures] = useState<string[]>([]);
 
   const websiteUrl = window.location.origin;
   const admissionsUrl = `${websiteUrl}/admissions`;
+
+  // Brochure card IDs
+  const brochureIds = ["cbc-excellence", "sports", "clubs", "facilities", "testimonials", "main"];
 
   // Fetch real data from database
   const { data: siteStats } = useQuery({
@@ -194,6 +199,106 @@ const Brochures = () => {
     }
   };
 
+  // Save a single brochure card to the gallery
+  const saveBrochureToGallery = async (cardId: string, title: string): Promise<boolean> => {
+    const element = document.getElementById(`brochure-${cardId}`);
+    if (!element) return false;
+
+    try {
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        backgroundColor: null,
+        logging: false,
+        useCORS: true,
+      });
+
+      // Convert canvas to blob
+      const blob = await new Promise<Blob | null>((resolve) => {
+        canvas.toBlob((blob) => resolve(blob), "image/png", 1.0);
+      });
+
+      if (!blob) throw new Error("Failed to create image blob");
+
+      // Generate unique filename
+      const filename = `brochure-${cardId}-${Date.now()}.png`;
+
+      // Upload to Supabase storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("gallery")
+        .upload(`brochures/${filename}`, blob, {
+          contentType: "image/png",
+          upsert: true,
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data: urlData } = supabase.storage.from("gallery").getPublicUrl(`brochures/${filename}`);
+
+      // Check if brochure already exists in gallery
+      const { data: existing } = await supabase
+        .from("gallery_media")
+        .select("id")
+        .eq("title", title)
+        .maybeSingle();
+
+      if (existing) {
+        // Update existing
+        await supabase
+          .from("gallery_media")
+          .update({
+            file_url: urlData.publicUrl,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", existing.id);
+      } else {
+        // Insert new
+        await supabase.from("gallery_media").insert({
+          media_type: "image",
+          file_url: urlData.publicUrl,
+          title: title,
+          description: "Enrollment brochure - download and share!",
+          display_order: 100 + brochureIds.indexOf(cardId),
+        });
+      }
+
+      return true;
+    } catch (error) {
+      console.error(`Failed to save brochure ${cardId}:`, error);
+      return false;
+    }
+  };
+
+  // Save all brochures to gallery
+  const saveAllBrochuresToGallery = async () => {
+    setSavingToGallery(true);
+    const brochureTitles: Record<string, string> = {
+      "cbc-excellence": "CBC & Academic Excellence Brochure",
+      "sports": "Sports & Athletics Brochure",
+      "clubs": "Clubs & Extracurriculars Brochure",
+      "facilities": "Modern Facilities Brochure",
+      "testimonials": "Parent Testimonials Brochure",
+      "main": "Main Enrollment Brochure",
+    };
+
+    const saved: string[] = [];
+    for (const cardId of brochureIds) {
+      const success = await saveBrochureToGallery(cardId, brochureTitles[cardId]);
+      if (success) saved.push(cardId);
+    }
+
+    setSavedBrochures(saved);
+    setSavingToGallery(false);
+
+    if (saved.length === brochureIds.length) {
+      toast.success("All brochures saved to Gallery! View them in the Gallery page.");
+    } else if (saved.length > 0) {
+      toast.success(`${saved.length} of ${brochureIds.length} brochures saved to Gallery.`);
+    } else {
+      toast.error("Failed to save brochures. Please try again.");
+    }
+  };
+
   const shareToWhatsApp = (cardId: string) => {
     const message = encodeURIComponent(
       `📚 *Elma School, Kamonong - Now Enrolling 2026!*\n\n` +
@@ -247,6 +352,29 @@ const Brochures = () => {
               <Button size="lg" variant="outline" onClick={copyLink}>
                 {copiedLink ? <Check className="mr-2 h-5 w-5" /> : <Copy className="mr-2 h-5 w-5" />}
                 {copiedLink ? "Copied!" : "Copy Admission Link"}
+              </Button>
+              <Button
+                size="lg"
+                variant="secondary"
+                onClick={saveAllBrochuresToGallery}
+                disabled={savingToGallery}
+              >
+                {savingToGallery ? (
+                  <>
+                    <span className="animate-spin mr-2">⏳</span>
+                    Saving to Gallery...
+                  </>
+                ) : savedBrochures.length === brochureIds.length ? (
+                  <>
+                    <Check className="mr-2 h-5 w-5" />
+                    Saved to Gallery
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="mr-2 h-5 w-5" />
+                    Save All to Gallery
+                  </>
+                )}
               </Button>
             </div>
           </div>
