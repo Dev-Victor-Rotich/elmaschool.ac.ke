@@ -1,7 +1,20 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Download, Copy, Check, MessageCircle, GraduationCap, Users, Award, BookOpen, Heart, Star, Phone, MapPin } from "lucide-react";
+import {
+  Download,
+  Copy,
+  Check,
+  MessageCircle,
+  GraduationCap,
+  Users,
+  Award,
+  BookOpen,
+  Heart,
+  Star,
+  Phone,
+  MapPin,
+} from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
@@ -11,10 +24,10 @@ import { Link } from "react-router-dom";
 const Brochures = () => {
   const [copiedLink, setCopiedLink] = useState(false);
   const [downloadingCard, setDownloadingCard] = useState<string | null>(null);
-  
+
   const websiteUrl = window.location.origin;
   const admissionsUrl = `${websiteUrl}/admissions`;
-  const contactPhone = "+254 700 000 000";
+  const contactPhone = "+254715748735";
 
   const brochureCards = [
     {
@@ -45,12 +58,8 @@ const Brochures = () => {
       id: "admission-info",
       title: "Admission Made Easy",
       subtitle: "3 Simple Steps to Join",
-      steps: [
-        "1. Visit our website or school",
-        "2. Fill the application form",
-        "3. Submit required documents",
-      ],
-      documents: ["KCPE/Grade 6 Results", "Birth Certificate", "Passport Photos"],
+      steps: ["1. Visit our website or school", "2. Fill the application form", "3. Submit required documents"],
+      documents: ["Latest/Grade 9 Results", "Birth Certificate", "Passport Photos"],
       gradient: "from-amber-600 via-amber-500 to-amber-400",
     },
     {
@@ -63,7 +72,7 @@ const Brochures = () => {
       },
       successStats: [
         { value: "95%", label: "Proceed to Higher Learning" },
-        { value: "A-", label: "Average KCSE Performance" },
+        { value: "C", label: "Average KCSE Performance" },
       ],
       gradient: "from-primary via-secondary/80 to-amber-500/70",
     },
@@ -80,7 +89,7 @@ const Brochures = () => {
         backgroundColor: null,
         logging: false,
       });
-      
+
       const link = document.createElement("a");
       link.download = `elma-school-${cardId}.png`;
       link.href = canvas.toDataURL("image/png");
@@ -96,12 +105,12 @@ const Brochures = () => {
   const shareToWhatsApp = (cardId: string) => {
     const message = encodeURIComponent(
       `📚 *Elma School, Kamonong - Now Enrolling 2026!*\n\n` +
-      `✨ Form 3, Form 4 & Grade 10 Admissions Open\n` +
-      `📍 Dual Curriculum (8-4-4 & CBC)\n` +
-      `🎓 98% Success Rate | 500+ Students\n\n` +
-      `🔗 Learn more & Apply: ${admissionsUrl}\n` +
-      `📞 Contact: ${contactPhone}\n\n` +
-      `_Knowledge and wisdom builds character_`
+        `✨ Form 3, Form 4 & Grade 10 Admissions Open\n` +
+        `📍 Dual Curriculum (8-4-4 & CBC)\n` +
+        `🎓 98% Success Rate | 500+ Students\n\n` +
+        `🔗 Learn more & Apply: ${admissionsUrl}\n` +
+        `📞 Contact: ${contactPhone}\n\n` +
+        `_Knowledge and wisdom builds character_`,
     );
     window.open(`https://wa.me/?text=${message}`, "_blank");
   };
@@ -127,30 +136,18 @@ const Brochures = () => {
               Enrollment <span className="text-primary">Brochures</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground mb-8">
-              Download or share our enrollment materials with parents and students. 
-              Help us build the next generation of leaders!
+              Download or share our enrollment materials with parents and students. Help us build the next generation of
+              leaders!
             </p>
-            
+
             {/* Quick Actions */}
             <div className="flex flex-wrap justify-center gap-4">
-              <Button 
-                size="lg" 
-                onClick={() => shareToWhatsApp("main")}
-                className="bg-green-600 hover:bg-green-700"
-              >
+              <Button size="lg" onClick={() => shareToWhatsApp("main")} className="bg-green-600 hover:bg-green-700">
                 <MessageCircle className="mr-2 h-5 w-5" />
                 Share on WhatsApp
               </Button>
-              <Button 
-                size="lg" 
-                variant="outline"
-                onClick={copyLink}
-              >
-                {copiedLink ? (
-                  <Check className="mr-2 h-5 w-5" />
-                ) : (
-                  <Copy className="mr-2 h-5 w-5" />
-                )}
+              <Button size="lg" variant="outline" onClick={copyLink}>
+                {copiedLink ? <Check className="mr-2 h-5 w-5" /> : <Copy className="mr-2 h-5 w-5" />}
                 {copiedLink ? "Copied!" : "Copy Admission Link"}
               </Button>
             </div>
@@ -282,11 +279,7 @@ const Brochures = () => {
                       </div>
                     </div>
                     <div className="bg-white p-2 rounded-lg">
-                      <QRCodeSVG 
-                        value={admissionsUrl} 
-                        size={64} 
-                        level="M"
-                      />
+                      <QRCodeSVG value={admissionsUrl} size={64} level="M" />
                     </div>
                   </div>
                 </div>
@@ -302,10 +295,7 @@ const Brochures = () => {
                     <Download className="mr-2 h-4 w-4" />
                     {downloadingCard === card.id ? "Downloading..." : "Download"}
                   </Button>
-                  <Button
-                    className="flex-1 bg-green-600 hover:bg-green-700"
-                    onClick={() => shareToWhatsApp(card.id)}
-                  >
+                  <Button className="flex-1 bg-green-600 hover:bg-green-700" onClick={() => shareToWhatsApp(card.id)}>
                     <MessageCircle className="mr-2 h-4 w-4" />
                     WhatsApp
                   </Button>
@@ -323,8 +313,8 @@ const Brochures = () => {
             Help Us Reach More Students
           </h2>
           <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-            Share these brochures with parents, teachers, and community members. 
-            Together, we can build the next generation of leaders.
+            Share these brochures with parents, teachers, and community members. Together, we can build the next
+            generation of leaders.
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <Button size="lg" asChild>
