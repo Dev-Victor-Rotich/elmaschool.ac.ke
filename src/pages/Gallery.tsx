@@ -1,10 +1,15 @@
-import { Play } from "lucide-react";
+import { useState } from "react";
+import { Download, Play } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import EnhancedFooter from "@/components/EnhancedFooter";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const Gallery = () => {
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
   const { data: images } = useQuery({
     queryKey: ["gallery-images"],
     queryFn: async () => {
@@ -31,6 +36,27 @@ const Gallery = () => {
     },
   });
 
+  const downloadImage = async (imageUrl: string, title: string, id: string) => {
+    setDownloadingId(id);
+    try {
+      const response = await fetch(imageUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `${title || "gallery-image"}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      toast.success("Image downloaded!");
+    } catch (error) {
+      toast.error("Failed to download image");
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   return (
     <div className="min-h-screen py-16">
       <div className="container mx-auto px-4">
@@ -38,27 +64,42 @@ const Gallery = () => {
           <h1 className="text-4xl md:text-5xl font-bold mb-8 text-center">School Gallery</h1>
           
           <p className="text-lg text-center text-muted-foreground mb-12 max-w-3xl mx-auto">
-            A glimpse into daily life at Elma School, Kamonong—moments of learning, growth, and joy
+            A glimpse into daily life at Elma School, Kamonong—moments of learning, growth, and joy. Click any image to download!
           </p>
 
           {images && images.length > 0 && (
             <div className="mb-16">
               <h2 className="text-3xl font-bold mb-8">Photo Gallery</h2>
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {images.map((image, index) => (
+                {images.map((image) => (
                   <div 
                     key={image.id}
-                    className="group relative overflow-hidden rounded-xl shadow-soft hover:shadow-hover transition-smooth"
+                    className="group relative overflow-hidden rounded-xl shadow-soft hover:shadow-hover transition-smooth cursor-pointer"
+                    onClick={() => downloadImage(image.file_url, image.title || "gallery-image", image.id)}
                   >
                     <img 
                       src={image.file_url}
                       alt={image.title || "Gallery image"}
                       className="w-full h-72 object-cover transition-transform duration-500 group-hover:scale-110"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-6">
-                      <div>
-                        {image.title && <p className="text-white font-semibold text-lg">{image.title}</p>}
-                        {image.description && <p className="text-white/90 text-sm mt-1">{image.description}</p>}
+                    <div className="absolute inset-0 bg-gradient-to-t from-primary/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          {image.title && <p className="text-white font-semibold text-lg">{image.title}</p>}
+                          {image.description && <p className="text-white/90 text-sm mt-1">{image.description}</p>}
+                        </div>
+                        <Button 
+                          size="icon" 
+                          variant="secondary" 
+                          className="shrink-0"
+                          disabled={downloadingId === image.id}
+                        >
+                          {downloadingId === image.id ? (
+                            <span className="animate-spin">⏳</span>
+                          ) : (
+                            <Download className="h-5 w-5" />
+                          )}
+                        </Button>
                       </div>
                     </div>
                   </div>
