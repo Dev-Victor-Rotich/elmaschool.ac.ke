@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -24,8 +24,13 @@ import {
   Leaf,
   Building,
   Quote,
+  Play,
+  Pause,
+  ChevronLeft,
+  ChevronRight,
+  Share2,
 } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
+import { QRCodeCanvas } from "qrcode.react";
 import html2canvas from "html2canvas";
 import { toast } from "sonner";
 import schoolLogo from "@/assets/school-logo.png";
@@ -59,6 +64,36 @@ const Brochures = () => {
       return data || [];
     },
   });
+
+  const { data: galleryVideos } = useQuery({
+    queryKey: ["brochure-videos"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("gallery_media")
+        .select("*")
+        .eq("media_type", "video")
+        .order("display_order")
+        .limit(5);
+      return data || [];
+    },
+  });
+
+  // Slideshow state
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const slideIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Auto-slideshow
+  useEffect(() => {
+    if (isPlaying && galleryImages?.length) {
+      slideIntervalRef.current = setInterval(() => {
+        setCurrentSlide((prev) => (prev + 1) % galleryImages.length);
+      }, 3000);
+    }
+    return () => {
+      if (slideIntervalRef.current) clearInterval(slideIntervalRef.current);
+    };
+  }, [isPlaying, galleryImages?.length]);
 
   const { data: clubs } = useQuery({
     queryKey: ["brochure-clubs"],
@@ -218,6 +253,207 @@ const Brochures = () => {
         </div>
       </section>
 
+      {/* Video Reel & Slideshow Section */}
+      <section className="py-12 md:py-16 bg-muted/30">
+        <div className="container mx-auto px-4">
+          <div className="text-center mb-8">
+            <Badge className="mb-4 bg-primary/20 text-primary hover:bg-primary/30">
+              📽️ Shareable Media
+            </Badge>
+            <h2 className="text-3xl md:text-4xl font-heading font-bold text-foreground mb-4">
+              Video <span className="text-primary">Reel</span> & Gallery
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Share our school videos and images on social media
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            {/* Video Player */}
+            {galleryVideos?.length ? (
+              <div className="space-y-4">
+                <div className="relative overflow-hidden rounded-2xl shadow-xl bg-black aspect-video">
+                  <video
+                    src={galleryVideos[0]?.file_url}
+                    poster={galleryVideos[0]?.thumbnail_url || galleryImages?.[0]?.file_url}
+                    controls
+                    className="w-full h-full object-contain"
+                  >
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+                <div className="bg-card rounded-lg p-4 border">
+                  <h3 className="font-heading font-bold text-foreground mb-2">
+                    {galleryVideos[0]?.title || "School Promotional Video"}
+                  </h3>
+                  <p className="text-sm text-muted-foreground mb-3">
+                    {galleryVideos[0]?.description || "Experience life at Elma School, Kamonong"}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        const link = document.createElement("a");
+                        link.href = galleryVideos[0]?.file_url || "";
+                        link.download = "elma-school-video.mp4";
+                        link.target = "_blank";
+                        link.click();
+                        toast.success("Video download started!");
+                      }}
+                    >
+                      <Download className="mr-2 h-4 w-4" />
+                      Download
+                    </Button>
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => {
+                        const message = encodeURIComponent(
+                          `🎬 *Watch: Elma School, Kamonong*\n\n` +
+                          `📽️ ${galleryVideos[0]?.title || "School Video"}\n\n` +
+                          `🔗 ${galleryVideos[0]?.file_url || websiteUrl}\n\n` +
+                          `📞 Contact: ${contactPhone}\n` +
+                          `_Knowledge and wisdom builds character_`
+                        );
+                        window.open(`https://wa.me/?text=${message}`, "_blank");
+                      }}
+                    >
+                      <Share2 className="mr-2 h-4 w-4" />
+                      WhatsApp
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="aspect-video bg-muted rounded-2xl flex items-center justify-center">
+                <p className="text-muted-foreground">No videos available</p>
+              </div>
+            )}
+
+            {/* Image Slideshow */}
+            <div className="space-y-4">
+              <div className="relative overflow-hidden rounded-2xl shadow-xl aspect-video">
+                {galleryImages?.length ? (
+                  <>
+                    <img
+                      src={galleryImages[currentSlide]?.file_url}
+                      alt={galleryImages[currentSlide]?.title || "School gallery"}
+                      className="w-full h-full object-cover transition-opacity duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                    
+                    {/* Slideshow Controls */}
+                    <div className="absolute bottom-0 left-0 right-0 p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="icon"
+                            variant="secondary"
+                            className="h-8 w-8 bg-white/20 hover:bg-white/30 text-white"
+                            onClick={() => setCurrentSlide((prev) => (prev - 1 + (galleryImages?.length || 1)) % (galleryImages?.length || 1))}
+                          >
+                            <ChevronLeft className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="secondary"
+                            className="h-8 w-8 bg-white/20 hover:bg-white/30 text-white"
+                            onClick={() => setIsPlaying(!isPlaying)}
+                          >
+                            {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="secondary"
+                            className="h-8 w-8 bg-white/20 hover:bg-white/30 text-white"
+                            onClick={() => setCurrentSlide((prev) => (prev + 1) % (galleryImages?.length || 1))}
+                          >
+                            <ChevronRight className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="text-white text-sm">
+                          {currentSlide + 1} / {galleryImages?.length}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* School Branding Overlay */}
+                    <div className="absolute top-4 left-4 flex items-center gap-2 bg-black/50 rounded-lg px-3 py-2">
+                      <img src={schoolLogo} alt="Elma School" className="h-6 w-6 rounded-full bg-white p-0.5" />
+                      <span className="text-white text-sm font-medium">Elma School</span>
+                    </div>
+                  </>
+                ) : (
+                  <Skeleton className="w-full h-full" />
+                )}
+              </div>
+              <div className="bg-card rounded-lg p-4 border">
+                <h3 className="font-heading font-bold text-foreground mb-2">Gallery Slideshow</h3>
+                <p className="text-sm text-muted-foreground mb-3">
+                  Auto-playing gallery of our school - perfect for social media stories
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      if (galleryImages?.[currentSlide]?.file_url) {
+                        const link = document.createElement("a");
+                        link.href = galleryImages[currentSlide].file_url;
+                        link.download = `elma-school-gallery-${currentSlide + 1}.jpg`;
+                        link.target = "_blank";
+                        link.click();
+                        toast.success("Image download started!");
+                      }
+                    }}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Save Image
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="bg-green-600 hover:bg-green-700"
+                    onClick={() => {
+                      const message = encodeURIComponent(
+                        `📸 *Elma School, Kamonong - Photo Gallery*\n\n` +
+                        `🏫 See our beautiful campus!\n\n` +
+                        `🔗 Visit: ${websiteUrl}/gallery\n\n` +
+                        `📞 Contact: ${contactPhone}\n` +
+                        `_Knowledge and wisdom builds character_`
+                      );
+                      window.open(`https://wa.me/?text=${message}`, "_blank");
+                    }}
+                  >
+                    <Share2 className="mr-2 h-4 w-4" />
+                    Share
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Thumbnail Strip */}
+          {galleryImages && galleryImages.length > 0 && (
+            <div className="mt-6 max-w-5xl mx-auto">
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                {galleryImages.slice(0, 8).map((img, idx) => (
+                  <button
+                    key={img.id}
+                    onClick={() => setCurrentSlide(idx)}
+                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                      currentSlide === idx ? "border-primary scale-105" : "border-transparent opacity-70 hover:opacity-100"
+                    }`}
+                  >
+                    <img src={img.file_url} alt={img.title || ""} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
       {/* Program-Specific Brochures */}
       <section className="py-12 md:py-16">
         <div className="container mx-auto px-4">
@@ -226,7 +462,7 @@ const Brochures = () => {
               Program <span className="text-primary">Brochures</span>
             </h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              Explore our specialized programs and share with prospective students
+              Click on any brochure to download it as an image
             </p>
           </div>
 
@@ -235,8 +471,10 @@ const Brochures = () => {
             <div className="space-y-4">
               <div
                 id="brochure-cbc-academic"
-                className="relative overflow-hidden rounded-2xl shadow-xl"
+                className="relative overflow-hidden rounded-2xl shadow-xl cursor-pointer hover:scale-[1.02] hover:shadow-2xl transition-all duration-300"
                 style={{ aspectRatio: "4/5" }}
+                onClick={() => downloadAsImage("cbc-academic")}
+                title="Click to download"
               >
                 {/* Background Image */}
                 <div
@@ -312,7 +550,7 @@ const Brochures = () => {
                       </div>
                     </div>
                     <div className="bg-white p-1.5 rounded-lg">
-                      <QRCodeSVG value={admissionsUrl} size={48} level="M" />
+                      <QRCodeCanvas value={admissionsUrl} size={48} level="M" />
                     </div>
                   </div>
                 </div>
@@ -339,8 +577,10 @@ const Brochures = () => {
             <div className="space-y-4">
               <div
                 id="brochure-sports"
-                className="relative overflow-hidden rounded-2xl shadow-xl"
+                className="relative overflow-hidden rounded-2xl shadow-xl cursor-pointer hover:scale-[1.02] hover:shadow-2xl transition-all duration-300"
                 style={{ aspectRatio: "4/5" }}
+                onClick={() => downloadAsImage("sports")}
+                title="Click to download"
               >
                 <div
                   className="absolute inset-0 bg-cover bg-center"
@@ -410,7 +650,7 @@ const Brochures = () => {
                       </div>
                     </div>
                     <div className="bg-white p-1.5 rounded-lg">
-                      <QRCodeSVG value={admissionsUrl} size={48} level="M" />
+                      <QRCodeCanvas value={admissionsUrl} size={48} level="M" />
                     </div>
                   </div>
                 </div>
@@ -437,8 +677,10 @@ const Brochures = () => {
             <div className="space-y-4">
               <div
                 id="brochure-clubs"
-                className="relative overflow-hidden rounded-2xl shadow-xl"
+                className="relative overflow-hidden rounded-2xl shadow-xl cursor-pointer hover:scale-[1.02] hover:shadow-2xl transition-all duration-300"
                 style={{ aspectRatio: "4/5" }}
+                onClick={() => downloadAsImage("clubs")}
+                title="Click to download"
               >
                 <div
                   className="absolute inset-0 bg-cover bg-center"
@@ -510,7 +752,7 @@ const Brochures = () => {
                       </div>
                     </div>
                     <div className="bg-white p-1.5 rounded-lg">
-                      <QRCodeSVG value={admissionsUrl} size={48} level="M" />
+                      <QRCodeCanvas value={admissionsUrl} size={48} level="M" />
                     </div>
                   </div>
                 </div>
@@ -537,8 +779,10 @@ const Brochures = () => {
             <div className="space-y-4">
               <div
                 id="brochure-facilities"
-                className="relative overflow-hidden rounded-2xl shadow-xl"
+                className="relative overflow-hidden rounded-2xl shadow-xl cursor-pointer hover:scale-[1.02] hover:shadow-2xl transition-all duration-300"
                 style={{ aspectRatio: "4/5" }}
+                onClick={() => downloadAsImage("facilities")}
+                title="Click to download"
               >
                 <div
                   className="absolute inset-0 bg-cover bg-center"
@@ -600,7 +844,7 @@ const Brochures = () => {
                       </div>
                     </div>
                     <div className="bg-white p-1.5 rounded-lg">
-                      <QRCodeSVG value={admissionsUrl} size={48} level="M" />
+                      <QRCodeCanvas value={admissionsUrl} size={48} level="M" />
                     </div>
                   </div>
                 </div>
@@ -627,8 +871,10 @@ const Brochures = () => {
             <div className="space-y-4">
               <div
                 id="brochure-testimonials"
-                className="relative overflow-hidden rounded-2xl shadow-xl"
+                className="relative overflow-hidden rounded-2xl shadow-xl cursor-pointer hover:scale-[1.02] hover:shadow-2xl transition-all duration-300"
                 style={{ aspectRatio: "4/5" }}
+                onClick={() => downloadAsImage("testimonials")}
+                title="Click to download"
               >
                 <div
                   className="absolute inset-0 bg-cover bg-center"
@@ -693,7 +939,7 @@ const Brochures = () => {
                       </div>
                     </div>
                     <div className="bg-white p-1.5 rounded-lg">
-                      <QRCodeSVG value={admissionsUrl} size={48} level="M" />
+                      <QRCodeCanvas value={admissionsUrl} size={48} level="M" />
                     </div>
                   </div>
                 </div>
@@ -720,8 +966,10 @@ const Brochures = () => {
             <div className="space-y-4">
               <div
                 id="brochure-main-enrollment"
-                className="relative overflow-hidden rounded-2xl shadow-xl"
+                className="relative overflow-hidden rounded-2xl shadow-xl cursor-pointer hover:scale-[1.02] hover:shadow-2xl transition-all duration-300"
                 style={{ aspectRatio: "4/5" }}
+                onClick={() => downloadAsImage("main-enrollment")}
+                title="Click to download"
               >
                 <div
                   className="absolute inset-0 bg-cover bg-center"
@@ -800,7 +1048,7 @@ const Brochures = () => {
                       </div>
                     </div>
                     <div className="bg-white p-1.5 rounded-lg">
-                      <QRCodeSVG value={admissionsUrl} size={48} level="M" />
+                      <QRCodeCanvas value={admissionsUrl} size={48} level="M" />
                     </div>
                   </div>
                 </div>
