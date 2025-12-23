@@ -485,9 +485,9 @@ const Brochures = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/95 via-primary/85 to-secondary/80" />
 
-                <div className="relative z-10 p-6 md:p-8 text-white h-full flex flex-col">
+                <div className="relative z-10 p-5 text-white h-full flex flex-col justify-between">
                   {/* Header */}
-                  <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-3 mb-3">
                     <img src={schoolLogo} alt="Elma School" className="h-10 w-10 rounded-full bg-white p-1" />
                     <div>
                       <h3 className="font-heading font-bold text-sm">Elma School, Kamonong</h3>
@@ -496,37 +496,37 @@ const Brochures = () => {
                   </div>
 
                   {/* Title */}
-                  <div className="mb-4">
+                  <div className="mb-3">
                     <Badge className="bg-white/20 text-white mb-2">🎓 Academic Excellence</Badge>
-                    <h2 className="text-2xl font-heading font-bold">CBC & 8-4-4 Curriculum</h2>
+                    <h2 className="text-xl md:text-2xl font-heading font-bold leading-tight">CBC & 8-4-4 Curriculum</h2>
                     <p className="text-sm opacity-90">Dual curriculum for maximum opportunities</p>
                   </div>
 
                   {/* Stats */}
-                  <div className="grid grid-cols-2 gap-2 mb-4">
-                    <div className="bg-white/20 rounded-lg p-3 text-center">
-                      <GraduationCap className="h-5 w-5 mx-auto mb-1" />
-                      <div className="font-bold text-lg">{getStatValue("success", "98%")}</div>
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div className="bg-white/20 rounded-lg p-2 text-center">
+                      <GraduationCap className="h-4 w-4 mx-auto mb-1" />
+                      <div className="font-bold text-base">{getStatValue("success", "98%")}</div>
                       <div className="text-xs opacity-80">Success Rate</div>
                     </div>
-                    <div className="bg-white/20 rounded-lg p-3 text-center">
-                      <Award className="h-5 w-5 mx-auto mb-1" />
-                      <div className="font-bold text-lg">{getStatValue("years", "10+")}</div>
+                    <div className="bg-white/20 rounded-lg p-2 text-center">
+                      <Award className="h-4 w-4 mx-auto mb-1" />
+                      <div className="font-bold text-base">{getStatValue("years", "10+")}</div>
                       <div className="text-xs opacity-80">Years Excellence</div>
                     </div>
                   </div>
 
                   {/* Top Students */}
-                  <div className="flex-1">
-                    <p className="text-xs font-medium mb-2 opacity-90">⭐ Recent Top Performers:</p>
-                    <div className="space-y-2">
-                      {academicExcellence?.slice(0, 3).map((student, idx) => (
-                        <div key={idx} className="flex items-center gap-2 bg-white/15 rounded-lg px-3 py-2">
+                  <div className="space-y-2 mb-3">
+                    <p className="text-xs font-medium opacity-90">⭐ Recent Top Performers:</p>
+                    <div className="space-y-1.5">
+                      {academicExcellence?.slice(0, 2).map((student, idx) => (
+                        <div key={idx} className="flex items-center gap-2 bg-white/15 rounded-lg px-3 py-1.5">
                           {student.image_url && (
                             <img
                               src={student.image_url}
                               alt={student.student_name}
-                              className="h-8 w-8 rounded-full object-cover"
+                              className="h-7 w-7 rounded-full object-cover"
                             />
                           )}
                           <div className="flex-1 min-w-0">
@@ -537,20 +537,24 @@ const Brochures = () => {
                           </div>
                         </div>
                       )) ||
-                        [1, 2, 3].map((i) => <Skeleton key={i} className="h-12 bg-white/10" />)}
+                        [1, 2].map((i) => <Skeleton key={i} className="h-10 bg-white/10" />)}
                     </div>
                   </div>
 
                   {/* Footer */}
-                  <div className="flex items-end justify-between mt-4 pt-4 border-t border-white/20">
+                  <div className="flex items-end justify-between pt-3 border-t border-white/20">
                     <div className="text-xs">
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 mb-1">
                         <Phone className="h-3 w-3" />
                         <span>{contactPhone}</span>
                       </div>
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        <span>Kamonong, Kenya</span>
+                      </div>
                     </div>
                     <div className="bg-white p-1.5 rounded-lg">
-                      <QRCodeCanvas value={admissionsUrl} size={48} level="M" />
+                      <QRCodeCanvas value={admissionsUrl} size={56} level="M" />
                     </div>
                   </div>
                 </div>
@@ -590,9 +594,9 @@ const Brochures = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-br from-orange-600/95 via-red-600/85 to-amber-600/80" />
 
-                <div className="relative z-10 p-6 md:p-8 text-white h-full flex flex-col">
+                <div className="relative z-10 p-5 text-white h-full flex flex-col justify-between">
                   {/* Header */}
-                  <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-3 mb-3">
                     <img src={schoolLogo} alt="Elma School" className="h-10 w-10 rounded-full bg-white p-1" />
                     <div>
                       <h3 className="font-heading font-bold text-sm">Elma School, Kamonong</h3>
@@ -601,14 +605,14 @@ const Brochures = () => {
                   </div>
 
                   {/* Title */}
-                  <div className="mb-4">
+                  <div className="mb-3">
                     <Badge className="bg-white/20 text-white mb-2">🏆 Sports & Athletics</Badge>
-                    <h2 className="text-2xl font-heading font-bold">Champions in the Making</h2>
+                    <h2 className="text-xl md:text-2xl font-heading font-bold leading-tight">Champions in the Making</h2>
                     <p className="text-sm opacity-90">Competitive sports for holistic development</p>
                   </div>
 
                   {/* Sports Icons */}
-                  <div className="flex gap-2 mb-4">
+                  <div className="flex gap-2 mb-3">
                     <div className="bg-white/20 rounded-full p-2">
                       <Trophy className="h-5 w-5" />
                     </div>
@@ -621,36 +625,40 @@ const Brochures = () => {
                   </div>
 
                   {/* Sports Teams */}
-                  <div className="flex-1">
-                    <p className="text-xs font-medium mb-2 opacity-90">🏅 Our Sports Programs:</p>
-                    <div className="grid grid-cols-2 gap-2">
-                      {(sportsClubs?.length ? sportsClubs : clubs)?.slice(0, 4).map((club, idx) => (
-                        <div key={idx} className="bg-white/15 rounded-lg p-3 text-center">
-                          <div className="text-sm font-medium">{club.name}</div>
+                  <div className="space-y-2 mb-3">
+                    <p className="text-xs font-medium opacity-90">🏅 Our Sports Programs:</p>
+                    <div className="space-y-2">
+                      {(sportsClubs?.length ? sportsClubs : clubs)?.slice(0, 2).map((club, idx) => (
+                        <div key={idx} className="bg-white/15 rounded-lg px-3 py-2">
+                          <div className="text-sm font-bold">{club.name}</div>
                           {club.member_count && (
                             <div className="text-xs opacity-80">{club.member_count}+ athletes</div>
                           )}
                         </div>
                       )) ||
-                        [1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-14 bg-white/10" />)}
+                        [1, 2].map((i) => <Skeleton key={i} className="h-12 bg-white/10" />)}
                     </div>
 
-                    <div className="mt-4 bg-white/20 rounded-lg p-3">
-                      <p className="text-sm font-medium">🎯 Inter-School Competitions</p>
+                    <div className="bg-white/20 rounded-lg px-3 py-2">
+                      <p className="text-sm font-bold">🎯 Inter-School Competitions</p>
                       <p className="text-xs opacity-80">County & Regional championships participation</p>
                     </div>
                   </div>
 
                   {/* Footer */}
-                  <div className="flex items-end justify-between mt-4 pt-4 border-t border-white/20">
+                  <div className="flex items-end justify-between pt-3 border-t border-white/20">
                     <div className="text-xs">
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 mb-1">
                         <MapPin className="h-3 w-3" />
                         <span>Kamonong, Kenya</span>
                       </div>
+                      <div className="flex items-center gap-1">
+                        <Phone className="h-3 w-3" />
+                        <span>{contactPhone}</span>
+                      </div>
                     </div>
                     <div className="bg-white p-1.5 rounded-lg">
-                      <QRCodeCanvas value={admissionsUrl} size={48} level="M" />
+                      <QRCodeCanvas value={admissionsUrl} size={56} level="M" />
                     </div>
                   </div>
                 </div>
@@ -690,9 +698,9 @@ const Brochures = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-600/95 via-indigo-600/85 to-blue-600/80" />
 
-                <div className="relative z-10 p-6 md:p-8 text-white h-full flex flex-col">
+                <div className="relative z-10 p-5 text-white h-full flex flex-col justify-between">
                   {/* Header */}
-                  <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-3 mb-3">
                     <img src={schoolLogo} alt="Elma School" className="h-10 w-10 rounded-full bg-white p-1" />
                     <div>
                       <h3 className="font-heading font-bold text-sm">Elma School, Kamonong</h3>
@@ -701,14 +709,14 @@ const Brochures = () => {
                   </div>
 
                   {/* Title */}
-                  <div className="mb-4">
+                  <div className="mb-3">
                     <Badge className="bg-white/20 text-white mb-2">🎭 Clubs & Societies</Badge>
-                    <h2 className="text-2xl font-heading font-bold">Beyond the Classroom</h2>
+                    <h2 className="text-xl md:text-2xl font-heading font-bold leading-tight">Beyond the Classroom</h2>
                     <p className="text-sm opacity-90">Explore interests & develop talents</p>
                   </div>
 
                   {/* Club Icons */}
-                  <div className="flex gap-2 mb-4">
+                  <div className="flex gap-2 mb-3">
                     <div className="bg-white/20 rounded-full p-2">
                       <Microscope className="h-5 w-5" />
                     </div>
@@ -721,15 +729,15 @@ const Brochures = () => {
                   </div>
 
                   {/* Clubs List */}
-                  <div className="flex-1">
-                    <p className="text-xs font-medium mb-2 opacity-90">🌟 Active Clubs:</p>
-                    <div className="space-y-2">
-                      {(academicClubs?.length ? academicClubs : clubs)?.slice(0, 4).map((club, idx) => (
-                        <div key={idx} className="flex items-center gap-2 bg-white/15 rounded-lg px-3 py-2">
+                  <div className="space-y-1.5 mb-3">
+                    <p className="text-xs font-medium opacity-90">🌟 Active Clubs:</p>
+                    <div className="space-y-1.5">
+                      {(academicClubs?.length ? academicClubs : clubs)?.slice(0, 3).map((club, idx) => (
+                        <div key={idx} className="flex items-center gap-2 bg-white/15 rounded-lg px-3 py-1.5">
                           {club.image_url ? (
-                            <img src={club.image_url} alt={club.name} className="h-8 w-8 rounded-full object-cover" />
+                            <img src={club.image_url} alt={club.name} className="h-7 w-7 rounded-full object-cover" />
                           ) : (
-                            <div className="h-8 w-8 rounded-full bg-white/20 flex items-center justify-center">
+                            <div className="h-7 w-7 rounded-full bg-white/20 flex items-center justify-center">
                               <Star className="h-4 w-4" />
                             </div>
                           )}
@@ -739,20 +747,24 @@ const Brochures = () => {
                           </div>
                         </div>
                       )) ||
-                        [1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-12 bg-white/10" />)}
+                        [1, 2, 3].map((i) => <Skeleton key={i} className="h-10 bg-white/10" />)}
                     </div>
                   </div>
 
                   {/* Footer */}
-                  <div className="flex items-end justify-between mt-4 pt-4 border-t border-white/20">
+                  <div className="flex items-end justify-between pt-3 border-t border-white/20">
                     <div className="text-xs">
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 mb-1">
                         <Phone className="h-3 w-3" />
                         <span>{contactPhone}</span>
                       </div>
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        <span>Kamonong, Kenya</span>
+                      </div>
                     </div>
                     <div className="bg-white p-1.5 rounded-lg">
-                      <QRCodeCanvas value={admissionsUrl} size={48} level="M" />
+                      <QRCodeCanvas value={admissionsUrl} size={56} level="M" />
                     </div>
                   </div>
                 </div>
@@ -792,9 +804,9 @@ const Brochures = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-br from-teal-600/95 via-cyan-600/85 to-emerald-600/80" />
 
-                <div className="relative z-10 p-6 md:p-8 text-white h-full flex flex-col">
+                <div className="relative z-10 p-5 text-white h-full flex flex-col justify-between">
                   {/* Header */}
-                  <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-3 mb-3">
                     <img src={schoolLogo} alt="Elma School" className="h-10 w-10 rounded-full bg-white p-1" />
                     <div>
                       <h3 className="font-heading font-bold text-sm">Elma School, Kamonong</h3>
@@ -803,14 +815,14 @@ const Brochures = () => {
                   </div>
 
                   {/* Title */}
-                  <div className="mb-4">
+                  <div className="mb-3">
                     <Badge className="bg-white/20 text-white mb-2">🏫 Modern Facilities</Badge>
-                    <h2 className="text-2xl font-heading font-bold">Learn in Excellence</h2>
+                    <h2 className="text-xl md:text-2xl font-heading font-bold leading-tight">Learn in Excellence</h2>
                     <p className="text-sm opacity-90">State-of-the-art infrastructure</p>
                   </div>
 
                   {/* Facilities Grid */}
-                  <div className="flex-1">
+                  <div className="space-y-2 mb-3">
                     <div className="grid grid-cols-2 gap-2">
                       {facilities?.slice(0, 4).map((facility, idx) => (
                         <div key={idx} className="relative overflow-hidden rounded-lg aspect-square">
@@ -819,7 +831,7 @@ const Brochures = () => {
                             alt={facility.title}
                             className="w-full h-full object-cover"
                           />
-                          <div className="absolute inset-0 bg-black/40 flex items-end p-2">
+                          <div className="absolute inset-0 bg-black/40 flex items-end p-1.5">
                             <p className="text-xs font-medium">{facility.title}</p>
                           </div>
                         </div>
@@ -827,7 +839,7 @@ const Brochures = () => {
                         [1, 2, 3, 4].map((i) => <Skeleton key={i} className="aspect-square bg-white/10" />)}
                     </div>
 
-                    <div className="mt-3 bg-white/20 rounded-lg p-3">
+                    <div className="bg-white/20 rounded-lg px-3 py-2">
                       <div className="flex items-center gap-2">
                         <Building className="h-4 w-4" />
                         <span className="text-sm font-medium">Boarding & Day School</span>
@@ -836,15 +848,19 @@ const Brochures = () => {
                   </div>
 
                   {/* Footer */}
-                  <div className="flex items-end justify-between mt-4 pt-4 border-t border-white/20">
+                  <div className="flex items-end justify-between pt-3 border-t border-white/20">
                     <div className="text-xs">
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 mb-1">
                         <MapPin className="h-3 w-3" />
                         <span>Kamonong, Kenya</span>
                       </div>
+                      <div className="flex items-center gap-1">
+                        <Phone className="h-3 w-3" />
+                        <span>{contactPhone}</span>
+                      </div>
                     </div>
                     <div className="bg-white p-1.5 rounded-lg">
-                      <QRCodeCanvas value={admissionsUrl} size={48} level="M" />
+                      <QRCodeCanvas value={admissionsUrl} size={56} level="M" />
                     </div>
                   </div>
                 </div>
@@ -884,9 +900,9 @@ const Brochures = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-br from-rose-600/95 via-pink-600/85 to-fuchsia-600/80" />
 
-                <div className="relative z-10 p-6 md:p-8 text-white h-full flex flex-col">
+                <div className="relative z-10 p-5 text-white h-full flex flex-col justify-between">
                   {/* Header */}
-                  <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-3 mb-3">
                     <img src={schoolLogo} alt="Elma School" className="h-10 w-10 rounded-full bg-white p-1" />
                     <div>
                       <h3 className="font-heading font-bold text-sm">Elma School, Kamonong</h3>
@@ -895,22 +911,22 @@ const Brochures = () => {
                   </div>
 
                   {/* Title */}
-                  <div className="mb-4">
+                  <div className="mb-3">
                     <Badge className="bg-white/20 text-white mb-2">💬 Parent Reviews</Badge>
-                    <h2 className="text-2xl font-heading font-bold">What Parents Say</h2>
+                    <h2 className="text-xl md:text-2xl font-heading font-bold leading-tight">What Parents Say</h2>
                     <p className="text-sm opacity-90">Real experiences from our community</p>
                   </div>
 
                   {/* Testimonials */}
-                  <div className="flex-1 space-y-3">
+                  <div className="space-y-2 mb-3">
                     {testimonials?.slice(0, 2).map((testimonial, idx) => (
-                      <div key={idx} className="bg-white/15 rounded-lg p-3">
+                      <div key={idx} className="bg-white/15 rounded-lg px-3 py-2">
                         <div className="flex gap-1 mb-1">
                           {Array.from({ length: testimonial.stars || 5 }).map((_, i) => (
                             <Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
                           ))}
                         </div>
-                        <p className="text-xs italic mb-2 line-clamp-3">
+                        <p className="text-xs italic mb-1 line-clamp-2">
                           <Quote className="h-3 w-3 inline mr-1 opacity-70" />
                           {testimonial.message}
                         </p>
@@ -918,28 +934,32 @@ const Brochures = () => {
                       </div>
                     )) || (
                       <>
-                        <Skeleton className="h-24 bg-white/10" />
-                        <Skeleton className="h-24 bg-white/10" />
+                        <Skeleton className="h-16 bg-white/10" />
+                        <Skeleton className="h-16 bg-white/10" />
                       </>
                     )}
 
-                    <div className="bg-white/20 rounded-lg p-3 text-center">
-                      <Heart className="h-5 w-5 mx-auto mb-1" />
-                      <p className="text-sm font-medium">Join Our Family</p>
+                    <div className="bg-white/20 rounded-lg px-3 py-2 text-center">
+                      <Heart className="h-4 w-4 mx-auto mb-1" />
+                      <p className="text-sm font-bold">Join Our Family</p>
                       <p className="text-xs opacity-80">500+ happy families</p>
                     </div>
                   </div>
 
                   {/* Footer */}
-                  <div className="flex items-end justify-between mt-4 pt-4 border-t border-white/20">
+                  <div className="flex items-end justify-between pt-3 border-t border-white/20">
                     <div className="text-xs">
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-1 mb-1">
                         <Phone className="h-3 w-3" />
                         <span>{contactPhone}</span>
                       </div>
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        <span>Kamonong, Kenya</span>
+                      </div>
                     </div>
                     <div className="bg-white p-1.5 rounded-lg">
-                      <QRCodeCanvas value={admissionsUrl} size={48} level="M" />
+                      <QRCodeCanvas value={admissionsUrl} size={56} level="M" />
                     </div>
                   </div>
                 </div>
@@ -979,9 +999,9 @@ const Brochures = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/95 via-primary/85 to-secondary/80" />
 
-                <div className="relative z-10 p-6 md:p-8 text-white h-full flex flex-col">
+                <div className="relative z-10 p-5 text-white h-full flex flex-col justify-between">
                   {/* Header */}
-                  <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center gap-3 mb-3">
                     <img src={schoolLogo} alt="Elma School" className="h-10 w-10 rounded-full bg-white p-1" />
                     <div>
                       <h3 className="font-heading font-bold text-sm">Elma School, Kamonong</h3>
@@ -990,14 +1010,14 @@ const Brochures = () => {
                   </div>
 
                   {/* Title */}
-                  <div className="mb-4">
+                  <div className="mb-3">
                     <Badge className="bg-white/20 text-white mb-2 animate-pulse">🎓 NOW ENROLLING 2026</Badge>
-                    <h2 className="text-2xl font-heading font-bold">Form 3, Form 4 & Grade 10</h2>
+                    <h2 className="text-xl md:text-2xl font-heading font-bold leading-tight">Form 3, Form 4 & Grade 10</h2>
                     <p className="text-sm opacity-90">Secure your child's future today</p>
                   </div>
 
                   {/* Stats */}
-                  <div className="grid grid-cols-3 gap-2 mb-4">
+                  <div className="grid grid-cols-3 gap-2 mb-3">
                     <div className="bg-white/20 rounded-lg p-2 text-center">
                       <Users className="h-4 w-4 mx-auto mb-1" />
                       <div className="font-bold text-sm">{getStatValue("students", "500+")}</div>
@@ -1016,27 +1036,27 @@ const Brochures = () => {
                   </div>
 
                   {/* Features */}
-                  <div className="flex-1 space-y-2">
-                    <div className="flex items-center gap-2 bg-white/15 rounded-lg px-3 py-2">
+                  <div className="space-y-1.5 mb-3">
+                    <div className="flex items-center gap-2 bg-white/15 rounded-lg px-3 py-1.5">
                       <Check className="h-4 w-4" />
                       <span className="text-sm">Dual Curriculum (8-4-4 & CBC)</span>
                     </div>
-                    <div className="flex items-center gap-2 bg-white/15 rounded-lg px-3 py-2">
+                    <div className="flex items-center gap-2 bg-white/15 rounded-lg px-3 py-1.5">
                       <Check className="h-4 w-4" />
                       <span className="text-sm">Christ-Centered Education</span>
                     </div>
-                    <div className="flex items-center gap-2 bg-white/15 rounded-lg px-3 py-2">
+                    <div className="flex items-center gap-2 bg-white/15 rounded-lg px-3 py-1.5">
                       <Check className="h-4 w-4" />
                       <span className="text-sm">Qualified & Caring Teachers</span>
                     </div>
-                    <div className="flex items-center gap-2 bg-white/15 rounded-lg px-3 py-2">
+                    <div className="flex items-center gap-2 bg-white/15 rounded-lg px-3 py-1.5">
                       <Check className="h-4 w-4" />
                       <span className="text-sm">Modern Facilities & Boarding</span>
                     </div>
                   </div>
 
                   {/* Footer */}
-                  <div className="flex items-end justify-between mt-4 pt-4 border-t border-white/20">
+                  <div className="flex items-end justify-between pt-3 border-t border-white/20">
                     <div className="text-xs">
                       <div className="flex items-center gap-1 mb-1">
                         <Phone className="h-3 w-3" />
@@ -1048,7 +1068,7 @@ const Brochures = () => {
                       </div>
                     </div>
                     <div className="bg-white p-1.5 rounded-lg">
-                      <QRCodeCanvas value={admissionsUrl} size={48} level="M" />
+                      <QRCodeCanvas value={admissionsUrl} size={56} level="M" />
                     </div>
                   </div>
                 </div>
