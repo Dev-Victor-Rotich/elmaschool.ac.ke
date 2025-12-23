@@ -970,7 +970,7 @@ const Brochures = () => {
                     <div className="bg-white/20 rounded-lg px-3 py-2">
                       <div className="flex items-center gap-2">
                         <Building className="h-4 w-4" />
-                        <span className="text-sm font-medium">Boarding & Day School</span>
+                        <span className="text-sm font-medium">Boarding School</span>
                       </div>
                     </div>
                   </div>
