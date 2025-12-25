@@ -722,71 +722,80 @@ const Brochures = () => {
                 />
                 <div className="absolute inset-0 bg-gradient-to-br from-orange-600/95 via-red-600/85 to-amber-600/80" />
 
-                <div className="relative z-10 p-5 text-white h-full flex flex-col justify-between">
-                  {/* Header */}
-                  <div className="flex items-center gap-3 mb-3">
-                    <img src={schoolLogo} alt="Elma School" className="h-10 w-10 rounded-full bg-white p-1" />
-                    <div>
-                      <h3 className="font-heading font-bold text-sm">Elma School, Kamonong</h3>
-                      <p className="text-xs opacity-90">Building champions on & off the field</p>
+                <div className="relative z-10 p-5 text-white h-full flex flex-col">
+                  {/* Top Group: Header + Title + Icons */}
+                  <div>
+                    {/* Header */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <img src={schoolLogo} alt="Elma School" className="h-10 w-10 rounded-full bg-white p-1" />
+                      <div>
+                        <h3 className="font-heading font-bold text-sm">Elma School, Kamonong</h3>
+                        <p className="text-xs opacity-90">Building champions on & off the field</p>
+                      </div>
+                    </div>
+
+                    {/* Title */}
+                    <div className="mb-3">
+                      <Badge className="bg-white/20 text-white mb-2">🏆 Sports & Athletics</Badge>
+                      <h2 className="text-xl md:text-2xl font-heading font-bold leading-tight">Champions in the Making</h2>
+                      <p className="text-sm opacity-90">Competitive sports for holistic development</p>
+                    </div>
+
+                    {/* Sports Icons */}
+                    <div className="flex gap-2">
+                      <div className="bg-white/20 rounded-full p-2">
+                        <Trophy className="h-5 w-5" />
+                      </div>
+                      <div className="bg-white/20 rounded-full p-2">
+                        <Dumbbell className="h-5 w-5" />
+                      </div>
+                      <div className="bg-white/20 rounded-full p-2">
+                        <Users className="h-5 w-5" />
+                      </div>
                     </div>
                   </div>
 
-                  {/* Title */}
-                  <div className="mb-3">
-                    <Badge className="bg-white/20 text-white mb-2">🏆 Sports & Athletics</Badge>
-                    <h2 className="text-xl md:text-2xl font-heading font-bold leading-tight">Champions in the Making</h2>
-                    <p className="text-sm opacity-90">Competitive sports for holistic development</p>
-                  </div>
+                  {/* Spacer to push bottom content down */}
+                  <div className="flex-grow min-h-3" />
 
-                  {/* Sports Icons */}
-                  <div className="flex gap-2 mb-3">
-                    <div className="bg-white/20 rounded-full p-2">
-                      <Trophy className="h-5 w-5" />
-                    </div>
-                    <div className="bg-white/20 rounded-full p-2">
-                      <Dumbbell className="h-5 w-5" />
-                    </div>
-                    <div className="bg-white/20 rounded-full p-2">
-                      <Users className="h-5 w-5" />
-                    </div>
-                  </div>
+                  {/* Bottom Group: Sports Teams + Footer */}
+                  <div>
+                    {/* Sports Teams */}
+                    <div className="space-y-2 mb-3">
+                      <p className="text-xs font-medium opacity-90">🏅 Our Sports Programs:</p>
+                      <div className="space-y-2">
+                        {(sportsClubs?.length ? sportsClubs : clubs)?.slice(0, 2).map((club, idx) => (
+                          <div key={idx} className="bg-white/15 rounded-lg px-3 py-2">
+                            <div className="text-sm font-bold">{club.name}</div>
+                            {club.member_count && (
+                              <div className="text-xs opacity-80">{club.member_count}+ athletes</div>
+                            )}
+                          </div>
+                        )) ||
+                          [1, 2].map((i) => <Skeleton key={i} className="h-12 bg-white/10" />)}
+                      </div>
 
-                  {/* Sports Teams */}
-                  <div className="space-y-2 mb-3">
-                    <p className="text-xs font-medium opacity-90">🏅 Our Sports Programs:</p>
-                    <div className="space-y-2">
-                      {(sportsClubs?.length ? sportsClubs : clubs)?.slice(0, 2).map((club, idx) => (
-                        <div key={idx} className="bg-white/15 rounded-lg px-3 py-2">
-                          <div className="text-sm font-bold">{club.name}</div>
-                          {club.member_count && (
-                            <div className="text-xs opacity-80">{club.member_count}+ athletes</div>
-                          )}
+                      <div className="bg-white/20 rounded-lg px-3 py-2">
+                        <p className="text-sm font-bold">🎯 Inter-School Competitions</p>
+                        <p className="text-xs opacity-80">County & Regional championships participation</p>
+                      </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex items-end justify-between pt-3 border-t border-white/20">
+                      <div className="text-xs">
+                        <div className="flex items-center gap-1 mb-1">
+                          <MapPin className="h-3 w-3" />
+                          <span>Kamonong, Kenya</span>
                         </div>
-                      )) ||
-                        [1, 2].map((i) => <Skeleton key={i} className="h-12 bg-white/10" />)}
-                    </div>
-
-                    <div className="bg-white/20 rounded-lg px-3 py-2">
-                      <p className="text-sm font-bold">🎯 Inter-School Competitions</p>
-                      <p className="text-xs opacity-80">County & Regional championships participation</p>
-                    </div>
-                  </div>
-
-                  {/* Footer */}
-                  <div className="flex items-end justify-between pt-3 border-t border-white/20">
-                    <div className="text-xs">
-                      <div className="flex items-center gap-1 mb-1">
-                        <MapPin className="h-3 w-3" />
-                        <span>Kamonong, Kenya</span>
+                        <div className="flex items-center gap-1">
+                          <Phone className="h-3 w-3" />
+                          <span>{contactPhone}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Phone className="h-3 w-3" />
-                        <span>{contactPhone}</span>
+                      <div className="bg-white p-1.5 rounded-lg">
+                        <QRCodeCanvas value={admissionsUrl} size={56} level="M" />
                       </div>
-                    </div>
-                    <div className="bg-white p-1.5 rounded-lg">
-                      <QRCodeCanvas value={admissionsUrl} size={56} level="M" />
                     </div>
                   </div>
                 </div>
