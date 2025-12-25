@@ -180,12 +180,28 @@ const Brochures = () => {
 
     setDownloadingCard(cardId);
     try {
+      // Wait for fonts to be ready
+      await document.fonts.ready;
+      
+      // Add export mode attribute to fix animations
+      element.setAttribute("data-exporting", "true");
+      
       const canvas = await html2canvas(element, {
-        scale: 2,
+        scale: 3,
         backgroundColor: null,
         logging: false,
         useCORS: true,
+        allowTaint: true,
+        onclone: (clonedDoc, clonedElement) => {
+          // Remove animations in cloned element
+          clonedElement.querySelectorAll('.animate-pulse').forEach(el => {
+            el.classList.remove('animate-pulse');
+          });
+        }
       });
+      
+      // Remove export mode attribute
+      element.removeAttribute("data-exporting");
 
       const link = document.createElement("a");
       link.download = `elma-school-${cardId}.png`;
@@ -193,6 +209,7 @@ const Brochures = () => {
       link.click();
       toast.success("Brochure downloaded successfully!");
     } catch (error) {
+      element.removeAttribute("data-exporting");
       toast.error("Failed to download brochure");
     } finally {
       setDownloadingCard(null);
@@ -205,12 +222,27 @@ const Brochures = () => {
     if (!element) return false;
 
     try {
+      // Wait for fonts to be ready
+      await document.fonts.ready;
+      
+      // Add export mode attribute
+      element.setAttribute("data-exporting", "true");
+      
       const canvas = await html2canvas(element, {
-        scale: 2,
+        scale: 3,
         backgroundColor: null,
         logging: false,
         useCORS: true,
+        allowTaint: true,
+        onclone: (clonedDoc, clonedElement) => {
+          clonedElement.querySelectorAll('.animate-pulse').forEach(el => {
+            el.classList.remove('animate-pulse');
+          });
+        }
       });
+      
+      // Remove export mode attribute
+      element.removeAttribute("data-exporting");
 
       // Convert canvas to blob
       const blob = await new Promise<Blob | null>((resolve) => {
@@ -671,17 +703,17 @@ const Brochures = () => {
 
                   {/* Footer */}
                   <div className="flex items-end justify-between pt-3 border-t border-white/20">
-                    <div className="text-xs">
-                      <div className="flex items-center gap-1 mb-1">
-                        <Phone className="h-3 w-3" />
-                        <span>{contactPhone}</span>
+                    <div className="text-xs space-y-1">
+                      <div className="grid grid-cols-[14px_1fr] items-center gap-1.5">
+                        <Phone className="h-3 w-3 shrink-0" />
+                        <span className="whitespace-nowrap">{contactPhone}</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        <span>Kamonong, Kenya</span>
+                      <div className="grid grid-cols-[14px_1fr] items-center gap-1.5">
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        <span className="whitespace-nowrap">Kamonong, Kenya</span>
                       </div>
                     </div>
-                    <div className="bg-white p-1.5 rounded-lg">
+                    <div className="bg-white p-1.5 rounded-lg shrink-0">
                       <QRCodeCanvas value={admissionsUrl} size={56} level="M" />
                     </div>
                   </div>
@@ -783,17 +815,17 @@ const Brochures = () => {
 
                     {/* Footer */}
                     <div className="flex items-end justify-between pt-3 border-t border-white/20">
-                      <div className="text-xs">
-                        <div className="flex items-center gap-1 mb-1">
-                          <MapPin className="h-3 w-3" />
-                          <span>Kamonong, Kenya</span>
+                      <div className="text-xs space-y-1">
+                        <div className="grid grid-cols-[14px_1fr] items-center gap-1.5">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          <span className="whitespace-nowrap">Kamonong, Kenya</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Phone className="h-3 w-3" />
-                          <span>{contactPhone}</span>
+                        <div className="grid grid-cols-[14px_1fr] items-center gap-1.5">
+                          <Phone className="h-3 w-3 shrink-0" />
+                          <span className="whitespace-nowrap">{contactPhone}</span>
                         </div>
                       </div>
-                      <div className="bg-white p-1.5 rounded-lg">
+                      <div className="bg-white p-1.5 rounded-lg shrink-0">
                         <QRCodeCanvas value={admissionsUrl} size={56} level="M" />
                       </div>
                     </div>
@@ -897,17 +929,17 @@ const Brochures = () => {
 
                   {/* Footer */}
                   <div className="flex items-end justify-between pt-3 border-t border-white/20">
-                    <div className="text-xs">
-                      <div className="flex items-center gap-1 mb-1">
-                        <Phone className="h-3 w-3" />
-                        <span>{contactPhone}</span>
+                    <div className="text-xs space-y-1">
+                      <div className="grid grid-cols-[14px_1fr] items-center gap-1.5">
+                        <Phone className="h-3 w-3 shrink-0" />
+                        <span className="whitespace-nowrap">{contactPhone}</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        <span>Kamonong, Kenya</span>
+                      <div className="grid grid-cols-[14px_1fr] items-center gap-1.5">
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        <span className="whitespace-nowrap">Kamonong, Kenya</span>
                       </div>
                     </div>
-                    <div className="bg-white p-1.5 rounded-lg">
+                    <div className="bg-white p-1.5 rounded-lg shrink-0">
                       <QRCodeCanvas value={admissionsUrl} size={56} level="M" />
                     </div>
                   </div>
@@ -996,17 +1028,17 @@ const Brochures = () => {
 
                   {/* Footer */}
                   <div className="flex items-end justify-between pt-3 border-t border-white/20">
-                    <div className="text-xs">
-                      <div className="flex items-center gap-1 mb-1">
-                        <MapPin className="h-3 w-3" />
-                        <span>Kamonong, Kenya</span>
+                    <div className="text-xs space-y-1">
+                      <div className="grid grid-cols-[14px_1fr] items-center gap-1.5">
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        <span className="whitespace-nowrap">Kamonong, Kenya</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <Phone className="h-3 w-3" />
-                        <span>{contactPhone}</span>
+                      <div className="grid grid-cols-[14px_1fr] items-center gap-1.5">
+                        <Phone className="h-3 w-3 shrink-0" />
+                        <span className="whitespace-nowrap">{contactPhone}</span>
                       </div>
                     </div>
-                    <div className="bg-white p-1.5 rounded-lg">
+                    <div className="bg-white p-1.5 rounded-lg shrink-0">
                       <QRCodeCanvas value={admissionsUrl} size={56} level="M" />
                     </div>
                   </div>
@@ -1095,17 +1127,17 @@ const Brochures = () => {
 
                   {/* Footer */}
                   <div className="flex items-end justify-between pt-3 border-t border-white/20">
-                    <div className="text-xs">
-                      <div className="flex items-center gap-1 mb-1">
-                        <Phone className="h-3 w-3" />
-                        <span>{contactPhone}</span>
+                    <div className="text-xs space-y-1">
+                      <div className="grid grid-cols-[14px_1fr] items-center gap-1.5">
+                        <Phone className="h-3 w-3 shrink-0" />
+                        <span className="whitespace-nowrap">{contactPhone}</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        <span>Kamonong, Kenya</span>
+                      <div className="grid grid-cols-[14px_1fr] items-center gap-1.5">
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        <span className="whitespace-nowrap">Kamonong, Kenya</span>
                       </div>
                     </div>
-                    <div className="bg-white p-1.5 rounded-lg">
+                    <div className="bg-white p-1.5 rounded-lg shrink-0">
                       <QRCodeCanvas value={admissionsUrl} size={56} level="M" />
                     </div>
                   </div>
@@ -1204,17 +1236,17 @@ const Brochures = () => {
 
                   {/* Footer */}
                   <div className="flex items-end justify-between pt-3 border-t border-white/20">
-                    <div className="text-xs">
-                      <div className="flex items-center gap-1 mb-1">
-                        <Phone className="h-3 w-3" />
-                        <span>{contactPhone}</span>
+                    <div className="text-xs space-y-1">
+                      <div className="grid grid-cols-[14px_1fr] items-center gap-1.5">
+                        <Phone className="h-3 w-3 shrink-0" />
+                        <span className="whitespace-nowrap">{contactPhone}</span>
                       </div>
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-3 w-3" />
-                        <span>Kamonong, Kenya</span>
+                      <div className="grid grid-cols-[14px_1fr] items-center gap-1.5">
+                        <MapPin className="h-3 w-3 shrink-0" />
+                        <span className="whitespace-nowrap">Kamonong, Kenya</span>
                       </div>
                     </div>
-                    <div className="bg-white p-1.5 rounded-lg">
+                    <div className="bg-white p-1.5 rounded-lg shrink-0">
                       <QRCodeCanvas value={admissionsUrl} size={56} level="M" />
                     </div>
                   </div>
