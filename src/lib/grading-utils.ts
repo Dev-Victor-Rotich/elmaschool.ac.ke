@@ -12,9 +12,14 @@ export function is844Class(className: string): boolean {
   return /^Form\s*(3|4)$/i.test(className.trim());
 }
 
-// Check if class follows CBC system (Grade 10, 11, 12) - for future use
+// Check if class follows CBC system (Grade 10, 11, 12)
 export function isCBCClass(className: string): boolean {
   return /^Grade\s*(10|11|12)$/i.test(className.trim());
+}
+
+// Check if class uses 7-subject points calculation (Form 3, 4 and Grade 10, 11, 12)
+export function uses7SubjectCalculation(className: string): boolean {
+  return is844Class(className) || isCBCClass(className);
 }
 
 // Get subject category
