@@ -50,12 +50,19 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
     }
   });
 
-  const teacherId = staffRecord?.id || userId;
+  // teacherRegistryId = staff_registry.id (used for teaching assignments lookups)
+  // teacherAuthId = userId (auth.users.id - used for academic_results.teacher_id FK)
+  const teacherRegistryId = staffRecord?.id;
+  const teacherAuthId = userId;
 
-  // Fetch teacher's subject assignments
+  // Fetch teacher's subject assignments using registry ID (or both IDs for robustness)
   const { data: assignments, isLoading: assignmentsLoading } = useQuery({
-    queryKey: ['my-teaching-assignments', teacherId],
+    queryKey: ['my-teaching-assignments', teacherRegistryId, teacherAuthId],
     queryFn: async () => {
+      // Query with both IDs to handle any historical data inconsistencies
+      const idsToQuery = [teacherRegistryId, teacherAuthId].filter(Boolean) as string[];
+      if (idsToQuery.length === 0) return [];
+      
       const { data, error } = await supabase
         .from('teacher_subject_assignments')
         .select(`
@@ -68,12 +75,12 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
             title
           )
         `)
-        .eq('teacher_id', teacherId);
+        .in('teacher_id', idsToQuery);
 
       if (error) throw error;
       return data as unknown as TeacherAssignment[];
     },
-    enabled: !!teacherId && !staffLoading
+    enabled: (!!teacherRegistryId || !!teacherAuthId) && !staffLoading
   });
 
   // Get unique classes
@@ -98,9 +105,9 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
     enabled: !!selectedClass && !!selectedSubject
   });
 
-  // Fetch teacher's added results
+  // Fetch teacher's added results (using auth user id since that's what we insert with)
   const { data: myResults, isLoading: resultsLoading } = useQuery({
-    queryKey: ['my-added-results', teacherId],
+    queryKey: ['my-added-results', teacherAuthId],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('academic_results')
@@ -120,13 +127,13 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
             class
           )
         `)
-        .eq('teacher_id', teacherId)
+        .eq('teacher_id', teacherAuthId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
       return data;
     },
-    enabled: !!teacherId && !staffLoading
+    enabled: !!teacherAuthId && !staffLoading
   });
 
   // Delete result mutation
@@ -139,7 +146,7 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['my-added-results', teacherId] });
+      queryClient.invalidateQueries({ queryKey: ['my-added-results', teacherAuthId] });
       toast.success('Result deleted successfully');
       setDeleteResultId(null);
     },
@@ -195,7 +202,7 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
     );
   }
 
-  // Show Exam Results Matrix
+  // Show Exam Results Matrix - pass teacherAuthId for academic_results.teacher_id FK
   if (selectedExam && selectedSubject) {
     return (
       <TeacherExamResults
@@ -204,7 +211,7 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
         subjectTitle={selectedSubject.subject.title}
         subSubject={selectedSubject.sub_subject}
         subjectId={selectedSubject.subject_id}
-        teacherId={teacherId}
+        teacherId={teacherAuthId}
         onBack={handleBack}
       />
     );
