@@ -1,19 +1,20 @@
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, TrendingUp, TrendingDown, Minus, Trophy, Users, BarChart3, Save, Trash2, Download, BookOpen } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Trophy, Users, BarChart3, Save, Trash2, Download, BookOpen, Info } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import { is844Class, calculate844Points, buildSubjectKey, isSubjectDropped, type Calculate844PointsResult } from "@/lib/grading-utils";
 
 interface ExamResultsMatrixProps {
   exam: any;
@@ -185,6 +186,9 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
     return map;
   }, [previousResults]);
 
+  // Check if this is an 8-4-4 class (Form 3 or Form 4)
+  const is844 = is844Class(assignedClass);
+
   // Calculate student totals and positions
   const studentStats = useMemo(() => {
     const stats = students.map((student: any) => {
@@ -192,9 +196,15 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
       let totalMarks = 0;
       let subjectCount = 0;
       let previousTotalMarks = 0;
+      let sevenSubjectPoints = 0;
+      let droppedSubjects: { subjectTitle: string; subSubject: string; points: number; marks: number }[] = [];
+      let countingSubjects: { subjectTitle: string; subSubject: string; points: number; marks: number }[] = [];
+
+      // Collect all student results with grades
+      const studentResults: { subjectTitle: string; subSubject: string; points: number; marks: number }[] = [];
 
       subjects.forEach((subj) => {
-        const key = `${student.id}-${subj.title}${subj.subSubject ? ` - ${subj.subSubject}` : ""}`;
+        const key = buildSubjectKey(student.id, subj.title, subj.subSubject);
         const result = resultsMap[key];
         const prevResult = previousResultsMap[key];
 
@@ -203,11 +213,29 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
           totalPoints += points;
           totalMarks += result.marks;
           subjectCount++;
+          
+          studentResults.push({
+            subjectTitle: subj.title,
+            subSubject: subj.subSubject,
+            points,
+            marks: result.marks,
+          });
         }
         if (prevResult) {
           previousTotalMarks += prevResult.marks;
         }
       });
+
+      // Apply 7-subject calculation for 8-4-4 classes
+      if (is844 && studentResults.length > 0) {
+        const calculation = calculate844Points(studentResults);
+        sevenSubjectPoints = calculation.countingPoints;
+        droppedSubjects = calculation.droppedSubjects;
+        countingSubjects = calculation.countingSubjects;
+      } else {
+        sevenSubjectPoints = totalPoints;
+        countingSubjects = studentResults;
+      }
 
       const meanMarks = subjectCount > 0 ? totalMarks / subjectCount : 0;
       const meanGrade = calculateGrade(meanMarks);
@@ -216,22 +244,30 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
       return {
         ...student,
         totalPoints,
+        sevenSubjectPoints,
         totalMarks,
         subjectCount,
         meanMarks,
         meanGrade,
         marksDiff,
+        droppedSubjects,
+        countingSubjects,
       };
     });
 
-    // Sort by total points for positioning
-    stats.sort((a, b) => b.totalPoints - a.totalPoints);
+    // Sort by 7-subject points for 8-4-4 classes, otherwise by total points
+    if (is844) {
+      stats.sort((a, b) => b.sevenSubjectPoints - a.sevenSubjectPoints);
+    } else {
+      stats.sort((a, b) => b.totalPoints - a.totalPoints);
+    }
+    
     stats.forEach((s, idx) => {
       s.position = idx + 1;
     });
 
     return stats;
-  }, [students, subjects, resultsMap, previousResultsMap, calculateGrade]);
+  }, [students, subjects, resultsMap, previousResultsMap, calculateGrade, is844]);
 
   // Calculate subject statistics
   const subjectStats = useMemo(() => {
@@ -416,8 +452,12 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
   // Class averages
   const classAvgPoints = useMemo(() => {
     if (studentStats.length === 0) return 0;
+    // Use 7-subject points for 8-4-4, total points otherwise
+    if (is844) {
+      return studentStats.reduce((sum, s) => sum + s.sevenSubjectPoints, 0) / studentStats.length;
+    }
     return studentStats.reduce((sum, s) => sum + s.totalPoints, 0) / studentStats.length;
-  }, [studentStats]);
+  }, [studentStats, is844]);
 
   const classAvgMarks = useMemo(() => {
     if (studentStats.length === 0) return 0;
@@ -455,11 +495,25 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
         </TabsList>
 
         <TabsContent value="matrix" className="print:block">
+          {/* 8-4-4 Info Banner */}
+          {is844 && (
+            <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-950 rounded-lg border border-amber-200 dark:border-amber-800 print:hidden">
+              <p className="text-sm text-amber-800 dark:text-amber-200 flex items-center gap-2">
+                <Info className="h-4 w-4 flex-shrink-0" />
+                <span>
+                  <strong>8-4-4 Grading:</strong> Positions are based on 7-subject points. 
+                  Dropped subjects are shown with strikethrough and marked "dropped".
+                </span>
+              </p>
+            </div>
+          )}
+          
           <Card className="print-results-matrix">
             <CardHeader className="print:pb-2">
               <CardTitle className="print:text-lg">{exam.exam_name} - Results Matrix</CardTitle>
               <CardDescription className="print:hidden">
                 Click on any cell to enter or edit marks. {exam.term} {exam.year}
+                {is844 && " • Using 7-Subject Points calculation"}
               </CardDescription>
             </CardHeader>
             <CardContent className="print:p-2">
@@ -483,7 +537,23 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
                             </div>
                           </TableHead>
                         ))}
-                        <TableHead className="text-center min-w-[80px] bg-muted/50">Total Pts</TableHead>
+                        <TableHead className="text-center min-w-[80px] bg-muted/50">
+                          {is844 ? (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="flex items-center justify-center gap-1 cursor-help">
+                                    7-Subj Pts
+                                    <Info className="h-3 w-3" />
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <p>Best 7 subjects: Best 2 of 3 Sciences, Best 2 of 3+ Technical, Best 2 of 3 Humanities+Religious, plus core subjects.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : "Total Pts"}
+                        </TableHead>
                         <TableHead className="text-center min-w-[80px] bg-muted/50">Mean</TableHead>
                         <TableHead className="text-center min-w-[60px] bg-muted/50">Pos</TableHead>
                         <TableHead className="text-center min-w-[60px] bg-muted/50">+/-</TableHead>
@@ -498,24 +568,41 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
                             {student.admission_number}
                           </TableCell>
                           {subjects.map((subj, colIdx) => {
-                            const key = `${student.id}-${subj.title}${subj.subSubject ? ` - ${subj.subSubject}` : ""}`;
+                            const key = buildSubjectKey(student.id, subj.title, subj.subSubject);
                             const result = resultsMap[key];
                             const prevResult = previousResultsMap[key];
                             const diff = result && prevResult ? result.marks - prevResult.marks : 0;
+                            const isDropped = is844 && isSubjectDropped(subj.title, subj.subSubject, student.droppedSubjects);
 
                             return (
                               <TableCell
                                 key={colIdx}
-                                className="text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                                className={`text-center cursor-pointer hover:bg-muted/50 transition-colors ${
+                                  isDropped ? "bg-muted/30 opacity-60" : ""
+                                }`}
                                 onClick={() => openAddResultDialog(student.id, subj.title, subj.subSubject)}
                               >
                                 {result ? (
                                   <div className="space-y-0.5">
-                                    <div className="font-medium">{result.marks}</div>
-                                    <Badge variant="outline" className="text-xs">
+                                    <div className={`font-medium ${isDropped ? "line-through text-muted-foreground" : ""}`}>
+                                      {result.marks}
+                                    </div>
+                                    <Badge variant="outline" className={`text-xs ${isDropped ? "opacity-50" : ""}`}>
                                       {result.grade}
                                     </Badge>
                                     {prevResult && getDiffBadge(diff)}
+                                    {isDropped && (
+                                      <TooltipProvider>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <span className="text-[10px] text-muted-foreground block">dropped</span>
+                                          </TooltipTrigger>
+                                          <TooltipContent>
+                                            <p>Not counted in 7-subject total</p>
+                                          </TooltipContent>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    )}
                                   </div>
                                 ) : (
                                   <span className="text-muted-foreground text-xs">-</span>
@@ -523,7 +610,9 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
                               </TableCell>
                             );
                           })}
-                          <TableCell className="text-center bg-muted/30 font-bold">{student.totalPoints}</TableCell>
+                          <TableCell className="text-center bg-muted/30 font-bold">
+                            {is844 ? student.sevenSubjectPoints : student.totalPoints}
+                          </TableCell>
                           <TableCell className="text-center bg-muted/30">
                             <div>{student.meanMarks.toFixed(1)}</div>
                             <Badge variant="secondary" className="text-xs">
@@ -659,6 +748,11 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
             <Card className="md:col-span-2 lg:col-span-3">
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg">Class Overview</CardTitle>
+                {is844 && (
+                  <CardDescription>
+                    Using 7-Subject Points calculation (8-4-4 system)
+                  </CardDescription>
+                )}
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -668,7 +762,9 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
                   </div>
                   <div className="text-center p-4 bg-muted rounded-lg">
                     <div className="text-2xl font-bold">{classAvgPoints.toFixed(1)}</div>
-                    <div className="text-xs text-muted-foreground">Avg Points</div>
+                    <div className="text-xs text-muted-foreground">
+                      {is844 ? "Avg 7-Subj Points" : "Avg Points"}
+                    </div>
                   </div>
                   <div className="text-center p-4 bg-muted rounded-lg">
                     <div className="text-2xl font-bold">{classAvgMarks.toFixed(1)}%</div>
@@ -679,6 +775,23 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
                     <div className="text-xs text-muted-foreground">Subjects</div>
                   </div>
                 </div>
+                
+                {/* 8-4-4 Grading Rules Info */}
+                {is844 && (
+                  <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                    <h4 className="font-medium text-sm text-blue-800 dark:text-blue-200 mb-2 flex items-center gap-2">
+                      <Info className="h-4 w-4" />
+                      7-Subject Points Calculation Rules
+                    </h4>
+                    <ul className="text-xs text-blue-700 dark:text-blue-300 space-y-1">
+                      <li>• <strong>Sciences (Bio, Chem, Phys):</strong> Best 2 out of 3 count</li>
+                      <li>• <strong>Technical (Agri, Home Sci, Comp, Bus):</strong> Best 2 out of 3+ count</li>
+                      <li>• <strong>Humanities + Religious (Hist, Geo, CRE/IRE/HRE):</strong> Best 2 out of 3 count</li>
+                      <li>• <strong>Core subjects:</strong> All count (Eng, Kis, Math)</li>
+                      <li>• <strong>Final:</strong> Top 7 subjects by points are summed</li>
+                    </ul>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
