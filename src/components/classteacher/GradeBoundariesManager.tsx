@@ -89,9 +89,12 @@ export function GradeBoundariesManager({ assignedClass }: GradeBoundariesManager
   // Add/Edit boundary mutation
   const saveBoundaryMutation = useMutation({
     mutationFn: async (data: any) => {
+      // Map "points" UI type to "overall" DB type (constraint only allows: standard, subject_specific, subject, overall)
+      const dbBoundaryType = boundaryType === "points" ? "overall" : boundaryType;
+      
       const boundaryData: any = {
         class_name: assignedClass,
-        boundary_type: boundaryType,
+        boundary_type: dbBoundaryType,
         grade: data.grade,
         points: GRADE_POINTS[data.grade],
         subject_id: boundaryType === "subject" ? data.subject_id : null,
