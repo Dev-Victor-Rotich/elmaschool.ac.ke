@@ -108,18 +108,14 @@ export function calculate844Points(
   // Add all core subjects (English, Kiswahili, Mathematics)
   countingSubjects.push(...core);
 
-  // Calculate total counting points (capped at 7 subjects for the final sum)
-  // Sort by points and take best 7
-  const sortedCounting = [...countingSubjects].sort((a, b) => b.points - a.points);
-  const finalCounting = sortedCounting.slice(0, 7);
-  const additionalDropped = sortedCounting.slice(7);
-  
-  const countingPoints = finalCounting.reduce((sum, r) => sum + r.points, 0);
+  // Sum ALL counting subjects - the "7" comes naturally from category rules
+  // (3 core + best 2 sciences + best 2 technical/humanities)
+  const countingPoints = countingSubjects.reduce((sum, r) => sum + r.points, 0);
 
   return {
     countingPoints,
-    countingSubjects: finalCounting,
-    droppedSubjects: [...droppedSubjects, ...additionalDropped],
+    countingSubjects,
+    droppedSubjects,
     totalSubjectsWithResults: studentResults.length,
   };
 }
