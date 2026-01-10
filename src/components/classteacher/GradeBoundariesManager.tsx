@@ -10,8 +10,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Pencil, Trash2, GraduationCap, BookOpen } from "lucide-react";
+import { Plus, Pencil, Trash2, GraduationCap, BookOpen, Target, Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import { DEFAULT_POINT_BOUNDARIES, uses7SubjectCalculation } from "@/lib/grading-utils";
 
 interface GradeBoundariesManagerProps {
   assignedClass: string;
@@ -31,15 +33,20 @@ export function GradeBoundariesManager({ assignedClass }: GradeBoundariesManager
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBoundary, setEditingBoundary] = useState<any>(null);
-  const [boundaryType, setBoundaryType] = useState<"overall" | "subject">("overall");
+  const [boundaryType, setBoundaryType] = useState<"overall" | "subject" | "points">("overall");
   
   const [formData, setFormData] = useState({
     grade: "A",
     min_marks: 0,
     max_marks: 100,
+    min_points: 0,
+    max_points: 84,
     subject_id: "",
     sub_subject: "",
   });
+
+  // Check if this class uses 7-subject calculation
+  const uses7Subject = uses7SubjectCalculation(assignedClass);
 
   // Fetch grade boundaries for this class
   const { data: boundaries = [] } = useQuery({
@@ -82,16 +89,28 @@ export function GradeBoundariesManager({ assignedClass }: GradeBoundariesManager
   // Add/Edit boundary mutation
   const saveBoundaryMutation = useMutation({
     mutationFn: async (data: any) => {
-      const boundaryData = {
+      const boundaryData: any = {
         class_name: assignedClass,
         boundary_type: boundaryType,
         grade: data.grade,
-        min_marks: data.min_marks,
-        max_marks: data.max_marks,
         points: GRADE_POINTS[data.grade],
         subject_id: boundaryType === "subject" ? data.subject_id : null,
         sub_subject: boundaryType === "subject" ? data.sub_subject : null,
+        boundary_for: boundaryType === "points" ? "points" : "marks",
       };
+
+      // Set marks or points based on boundary type
+      if (boundaryType === "points") {
+        boundaryData.min_points = data.min_points;
+        boundaryData.max_points = data.max_points;
+        boundaryData.min_marks = 0;
+        boundaryData.max_marks = 0;
+      } else {
+        boundaryData.min_marks = data.min_marks;
+        boundaryData.max_marks = data.max_marks;
+        boundaryData.min_points = null;
+        boundaryData.max_points = null;
+      }
 
       if (editingBoundary) {
         const { error } = await supabase
@@ -133,17 +152,19 @@ export function GradeBoundariesManager({ assignedClass }: GradeBoundariesManager
   });
 
   const resetForm = () => {
-    setFormData({ grade: "A", min_marks: 0, max_marks: 100, subject_id: "", sub_subject: "" });
+    setFormData({ grade: "A", min_marks: 0, max_marks: 100, min_points: 0, max_points: 84, subject_id: "", sub_subject: "" });
     setEditingBoundary(null);
   };
 
   const openEditDialog = (boundary: any) => {
     setEditingBoundary(boundary);
-    setBoundaryType(boundary.boundary_type);
+    setBoundaryType(boundary.boundary_for === "points" ? "points" : boundary.boundary_type);
     setFormData({
       grade: boundary.grade,
-      min_marks: boundary.min_marks,
-      max_marks: boundary.max_marks,
+      min_marks: boundary.min_marks || 0,
+      max_marks: boundary.max_marks || 100,
+      min_points: boundary.min_points || 0,
+      max_points: boundary.max_points || 84,
       subject_id: boundary.subject_id || "",
       sub_subject: boundary.sub_subject || "",
     });
@@ -152,9 +173,16 @@ export function GradeBoundariesManager({ assignedClass }: GradeBoundariesManager
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.min_marks >= formData.max_marks) {
-      toast.error("Min marks must be less than max marks");
-      return;
+    if (boundaryType === "points") {
+      if (formData.min_points >= formData.max_points) {
+        toast.error("Min points must be less than max points");
+        return;
+      }
+    } else {
+      if (formData.min_marks >= formData.max_marks) {
+        toast.error("Min marks must be less than max marks");
+        return;
+      }
     }
     if (boundaryType === "subject" && (!formData.subject_id || !formData.sub_subject)) {
       toast.error("Please select a subject and sub-subject");
@@ -164,8 +192,41 @@ export function GradeBoundariesManager({ assignedClass }: GradeBoundariesManager
   };
 
   // Filter boundaries by type
-  const overallBoundaries = boundaries.filter((b: any) => b.boundary_type === "overall");
-  const subjectBoundaries = boundaries.filter((b: any) => b.boundary_type === "subject");
+  const overallBoundaries = boundaries.filter((b: any) => b.boundary_type === "overall" && b.boundary_for !== "points");
+  const subjectBoundaries = boundaries.filter((b: any) => b.boundary_type === "subject" && b.boundary_for !== "points");
+  const pointsBoundaries = boundaries.filter((b: any) => b.boundary_for === "points");
+
+  // Quick setup for default point-based boundaries (for 7-subject grading)
+  const setupDefaultPointsBoundaries = async () => {
+    try {
+      // Delete existing point boundaries
+      await supabase
+        .from("grade_boundaries")
+        .delete()
+        .eq("class_name", assignedClass)
+        .eq("boundary_for", "points");
+
+      // Insert default point boundaries
+      const { error } = await supabase.from("grade_boundaries").insert(
+        DEFAULT_POINT_BOUNDARIES.map(b => ({
+          class_name: assignedClass,
+          boundary_type: "overall",
+          boundary_for: "points",
+          grade: b.grade,
+          min_points: b.min_points,
+          max_points: b.max_points,
+          points: GRADE_POINTS[b.grade],
+          min_marks: 0,
+          max_marks: 0,
+        }))
+      );
+      if (error) throw error;
+      toast.success("Default point-based boundaries set up");
+      queryClient.invalidateQueries({ queryKey: ["grade-boundaries"] });
+    } catch (error: any) {
+      toast.error(error.message || "Failed to set up point boundaries");
+    }
+  };
 
   // Auto-calculate grade from marks
   const calculateGrade = (marks: number, type: "overall" | "subject" = "overall", subjectId?: string, subSubject?: string) => {
@@ -252,17 +313,156 @@ export function GradeBoundariesManager({ assignedClass }: GradeBoundariesManager
           </div>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="overall" className="space-y-4">
+          <Tabs defaultValue={uses7Subject ? "points" : "overall"} className="space-y-4">
             <TabsList>
+              {uses7Subject && (
+                <TabsTrigger value="points">
+                  <Target className="w-4 h-4 mr-2" />
+                  Points Grade (Overall)
+                </TabsTrigger>
+              )}
               <TabsTrigger value="overall">
                 <GraduationCap className="w-4 h-4 mr-2" />
-                Overall Mean Grade
+                Marks Grade (Subject)
               </TabsTrigger>
               <TabsTrigger value="subject">
                 <BookOpen className="w-4 h-4 mr-2" />
                 Subject-Specific
               </TabsTrigger>
             </TabsList>
+
+            {/* Points-based Grade Tab (for 7-subject classes) */}
+            {uses7Subject && (
+              <TabsContent value="points" className="space-y-4">
+                <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <p className="text-sm text-blue-800 dark:text-blue-200 flex items-center gap-2">
+                    <Info className="h-4 w-4 flex-shrink-0" />
+                    <span>
+                      <strong>Point-Based Overall Grade:</strong> For {assignedClass}, the overall grade is based on 7-subject points (max 84). 
+                      Mean marks are only used as a tie-breaker when students have the same points.
+                    </span>
+                  </p>
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <p className="text-sm text-muted-foreground">
+                    Configure grade boundaries based on total points (0-84 for 7 subjects × 12 points each).
+                  </p>
+                  <div className="flex gap-2">
+                    {pointsBoundaries.length === 0 && (
+                      <Button onClick={setupDefaultPointsBoundaries} variant="secondary">
+                        Setup Default Scale
+                      </Button>
+                    )}
+                    <Dialog open={dialogOpen && boundaryType === "points"} onOpenChange={(open) => {
+                      setDialogOpen(open);
+                      if (open) {
+                        setBoundaryType("points");
+                        resetForm();
+                      }
+                    }}>
+                      <DialogTrigger asChild>
+                        <Button size="sm">
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Boundary
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>{editingBoundary ? "Edit" : "Add"} Point Boundary</DialogTitle>
+                          <DialogDescription>Set points range for an overall grade (max 84 points)</DialogDescription>
+                        </DialogHeader>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                          <div className="space-y-2">
+                            <Label>Grade</Label>
+                            <Select value={formData.grade} onValueChange={(v) => setFormData({ ...formData, grade: v })}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {GRADES.map(g => (
+                                  <SelectItem key={g} value={g}>{g}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <Label>Min Points</Label>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={84}
+                                value={formData.min_points}
+                                onChange={(e) => setFormData({ ...formData, min_points: parseInt(e.target.value) || 0 })}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Max Points</Label>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={84}
+                                value={formData.max_points}
+                                onChange={(e) => setFormData({ ...formData, max_points: parseInt(e.target.value) || 0 })}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex justify-end gap-2">
+                            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
+                            <Button type="submit" disabled={saveBoundaryMutation.isPending}>
+                              {saveBoundaryMutation.isPending ? "Saving..." : "Save"}
+                            </Button>
+                          </div>
+                        </form>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </div>
+
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Grade</TableHead>
+                      <TableHead>Min Points</TableHead>
+                      <TableHead>Max Points</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {pointsBoundaries.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground">
+                          No point boundaries configured. Click "Setup Default Scale" to use standard grading.
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      pointsBoundaries
+                        .sort((a: any, b: any) => b.max_points - a.max_points)
+                        .map((b: any) => (
+                          <TableRow key={b.id}>
+                            <TableCell>
+                              <Badge variant="outline" className="font-bold">{b.grade}</Badge>
+                            </TableCell>
+                            <TableCell>{b.min_points}</TableCell>
+                            <TableCell>{b.max_points}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <Button size="sm" variant="outline" onClick={() => openEditDialog(b)}>
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                                <Button size="sm" variant="destructive" onClick={() => deleteBoundaryMutation.mutate(b.id)}>
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))
+                    )}
+                  </TableBody>
+                </Table>
+              </TabsContent>
+            )}
 
             <TabsContent value="overall" className="space-y-4">
               <div className="flex justify-between items-center">

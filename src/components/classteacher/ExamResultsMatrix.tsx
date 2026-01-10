@@ -14,7 +14,7 @@ import { TrendingUp, TrendingDown, Minus, Trophy, Users, BarChart3, Save, Trash2
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
-import { uses7SubjectCalculation, calculate844Points, buildSubjectKey, isSubjectDropped, type Calculate844PointsResult } from "@/lib/grading-utils";
+import { uses7SubjectCalculation, calculate844Points, buildSubjectKey, isSubjectDropped, calculateOverallGradeByPoints, DEFAULT_POINT_BOUNDARIES, type Calculate844PointsResult, type PointBoundary } from "@/lib/grading-utils";
 
 interface ExamResultsMatrixProps {
   exam: any;
@@ -62,16 +62,36 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
     },
   });
 
-  // Fetch grade boundaries
+  // Fetch grade boundaries (marks-based)
   const { data: boundaries = [] } = useQuery({
     queryKey: ["grade-boundaries", assignedClass],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("grade_boundaries")
         .select("*")
-        .eq("class_name", assignedClass);
+        .eq("class_name", assignedClass)
+        .neq("boundary_for", "points");
       if (error) throw error;
       return data || [];
+    },
+  });
+
+  // Fetch point-based boundaries for overall grade
+  const { data: pointBoundaries = [] } = useQuery({
+    queryKey: ["point-boundaries", assignedClass],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("grade_boundaries")
+        .select("*")
+        .eq("class_name", assignedClass)
+        .eq("boundary_for", "points");
+      if (error) throw error;
+      // Transform to PointBoundary format
+      return (data || []).map((b: any) => ({
+        grade: b.grade,
+        min_points: b.min_points,
+        max_points: b.max_points,
+      })) as PointBoundary[];
     },
   });
 
@@ -189,6 +209,9 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
   // Check if this class uses 7-subject calculation (Form 3, 4, Grade 10, 11, 12)
   const uses7Subject = uses7SubjectCalculation(assignedClass);
 
+  // Get effective point boundaries (use configured or default)
+  const effectivePointBoundaries = pointBoundaries.length > 0 ? pointBoundaries : DEFAULT_POINT_BOUNDARIES;
+
   // Calculate student totals and positions
   const studentStats = useMemo(() => {
     const stats = students.map((student: any) => {
@@ -241,6 +264,11 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
       const meanGrade = calculateGrade(meanMarks);
       const marksDiff = totalMarks - previousTotalMarks;
 
+      // Calculate overall grade based on points (for 7-subject classes)
+      const overallGrade = uses7Subject 
+        ? calculateOverallGradeByPoints(sevenSubjectPoints, effectivePointBoundaries)
+        : meanGrade;
+
       return {
         ...student,
         totalPoints,
@@ -249,15 +277,23 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
         subjectCount,
         meanMarks,
         meanGrade,
+        overallGrade, // New: point-based overall grade
         marksDiff,
         droppedSubjects,
         countingSubjects,
       };
     });
 
-    // Sort by 7-subject points for 8-4-4 classes, otherwise by total points
+    // Sort by 7-subject points for 8-4-4 classes, with mean as tie-breaker
     if (uses7Subject) {
-      stats.sort((a, b) => b.sevenSubjectPoints - a.sevenSubjectPoints);
+      stats.sort((a, b) => {
+        // Primary sort: by 7-subject points (descending)
+        if (b.sevenSubjectPoints !== a.sevenSubjectPoints) {
+          return b.sevenSubjectPoints - a.sevenSubjectPoints;
+        }
+        // Tie-breaker: by mean marks (descending)
+        return b.meanMarks - a.meanMarks;
+      });
     } else {
       stats.sort((a, b) => b.totalPoints - a.totalPoints);
     }
@@ -267,7 +303,7 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
     });
 
     return stats;
-  }, [students, subjects, resultsMap, previousResultsMap, calculateGrade, uses7Subject]);
+  }, [students, subjects, resultsMap, previousResultsMap, calculateGrade, uses7Subject, effectivePointBoundaries]);
 
   // Calculate subject statistics
   const subjectStats = useMemo(() => {
@@ -554,7 +590,26 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
                             </TooltipProvider>
                           ) : "Total Pts"}
                         </TableHead>
-                        <TableHead className="text-center min-w-[80px] bg-muted/50">Mean</TableHead>
+                        <TableHead className="text-center min-w-[80px] bg-muted/50">
+                          {uses7Subject ? "Overall Grade" : "Mean Grade"}
+                        </TableHead>
+                        <TableHead className="text-center min-w-[80px] bg-muted/50">
+                          {uses7Subject ? (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className="flex items-center justify-center gap-1 cursor-help">
+                                    Mean
+                                    <Info className="h-3 w-3" />
+                                  </span>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Used as tie-breaker when points are equal</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : "Mean"}
+                        </TableHead>
                         <TableHead className="text-center min-w-[60px] bg-muted/50">Pos</TableHead>
                         <TableHead className="text-center min-w-[60px] bg-muted/50">+/-</TableHead>
                       </TableRow>
@@ -614,10 +669,17 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
                             {uses7Subject ? student.sevenSubjectPoints : student.totalPoints}
                           </TableCell>
                           <TableCell className="text-center bg-muted/30">
-                            <div>{student.meanMarks.toFixed(1)}</div>
-                            <Badge variant="secondary" className="text-xs">
-                              {student.meanGrade.grade}
+                            <Badge variant="secondary" className="text-xs font-bold">
+                              {uses7Subject ? student.overallGrade.grade : student.meanGrade.grade}
                             </Badge>
+                          </TableCell>
+                          <TableCell className="text-center bg-muted/30">
+                            <div className="text-sm">{student.meanMarks.toFixed(1)}</div>
+                            {!uses7Subject && (
+                              <Badge variant="outline" className="text-xs">
+                                {student.meanGrade.grade}
+                              </Badge>
+                            )}
                           </TableCell>
                           <TableCell className="text-center bg-muted/30">
                             <Badge variant={student.position <= 3 ? "default" : "outline"}>
@@ -642,6 +704,7 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
                           </TableCell>
                         ))}
                         <TableCell className="text-center bg-muted">{classAvgPoints.toFixed(1)}</TableCell>
+                        <TableCell className="text-center bg-muted">-</TableCell>
                         <TableCell className="text-center bg-muted">{classAvgMarks.toFixed(1)}</TableCell>
                         <TableCell colSpan={2}></TableCell>
                       </TableRow>

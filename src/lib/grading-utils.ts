@@ -77,6 +77,46 @@ export interface Calculate844PointsResult {
   totalSubjectsWithResults: number;
 }
 
+// Point-based grade boundaries interface
+export interface PointBoundary {
+  grade: string;
+  min_points: number;
+  max_points: number;
+}
+
+// Calculate overall grade based on total points (not marks)
+export function calculateOverallGradeByPoints(
+  totalPoints: number,
+  pointBoundaries: PointBoundary[]
+): { grade: string; points: number } {
+  // Sort boundaries by max_points descending for proper matching
+  const sorted = [...pointBoundaries].sort((a, b) => b.max_points - a.max_points);
+  
+  for (const boundary of sorted) {
+    if (totalPoints >= boundary.min_points && totalPoints <= boundary.max_points) {
+      return { grade: boundary.grade, points: totalPoints };
+    }
+  }
+  // Default to E if no boundary matches
+  return { grade: "E", points: totalPoints };
+}
+
+// Default point boundaries for 7-subject calculation (max 84 points = 7 subjects × 12 points)
+export const DEFAULT_POINT_BOUNDARIES: PointBoundary[] = [
+  { grade: "A", min_points: 78, max_points: 84 },
+  { grade: "A-", min_points: 72, max_points: 77 },
+  { grade: "B+", min_points: 66, max_points: 71 },
+  { grade: "B", min_points: 60, max_points: 65 },
+  { grade: "B-", min_points: 54, max_points: 59 },
+  { grade: "C+", min_points: 48, max_points: 53 },
+  { grade: "C", min_points: 42, max_points: 47 },
+  { grade: "C-", min_points: 36, max_points: 41 },
+  { grade: "D+", min_points: 30, max_points: 35 },
+  { grade: "D", min_points: 24, max_points: 29 },
+  { grade: "D-", min_points: 18, max_points: 23 },
+  { grade: "E", min_points: 0, max_points: 17 },
+];
+
 export function calculate844Points(
   studentResults: { subjectTitle: string; subSubject: string; points: number; marks: number }[]
 ): Calculate844PointsResult {

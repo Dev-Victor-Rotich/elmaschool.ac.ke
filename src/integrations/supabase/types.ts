@@ -988,6 +988,7 @@ export type Database = {
       }
       grade_boundaries: {
         Row: {
+          boundary_for: string | null
           boundary_type: string
           class_name: string
           created_at: string | null
@@ -995,13 +996,16 @@ export type Database = {
           grade: string
           id: string
           max_marks: number
+          max_points: number | null
           min_marks: number
+          min_points: number | null
           points: number
           sub_subject: string | null
           subject_id: string | null
           updated_at: string | null
         }
         Insert: {
+          boundary_for?: string | null
           boundary_type: string
           class_name: string
           created_at?: string | null
@@ -1009,13 +1013,16 @@ export type Database = {
           grade: string
           id?: string
           max_marks: number
+          max_points?: number | null
           min_marks: number
+          min_points?: number | null
           points: number
           sub_subject?: string | null
           subject_id?: string | null
           updated_at?: string | null
         }
         Update: {
+          boundary_for?: string | null
           boundary_type?: string
           class_name?: string
           created_at?: string | null
@@ -1023,7 +1030,9 @@ export type Database = {
           grade?: string
           id?: string
           max_marks?: number
+          max_points?: number | null
           min_marks?: number
+          min_points?: number | null
           points?: number
           sub_subject?: string | null
           subject_id?: string | null
