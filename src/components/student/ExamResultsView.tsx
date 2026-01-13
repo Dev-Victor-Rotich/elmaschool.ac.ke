@@ -179,32 +179,44 @@ const ExamResultsView = ({ exam, studentId, studentClass, onBack }: ExamResultsV
     enabled: !!previousExam?.id,
   });
 
-  // Fetch all students' results for class position (anonymized)
-  const { data: classResults = [] } = useQuery({
-    queryKey: ["class-results-position", exam.id],
+  // Fetch class position stats using SECURITY DEFINER function (bypasses RLS)
+  const { data: classPositionData } = useQuery({
+    queryKey: ["class-position-stats", exam.id, studentId],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("academic_results")
-        .select("student_id, marks")
-        .eq("exam_id", exam.id);
+      const { data, error } = await supabase.rpc("get_class_position_stats", {
+        p_exam_id: exam.id,
+        p_student_id: studentId,
+      });
       if (error) throw error;
-      return data || [];
+      return data as { position: number; totalStudents: number; classAverage: number; studentTotal: number } | null;
     },
   });
 
-  // Fetch previous exam's class results for position comparison
-  const { data: previousClassResults = [] } = useQuery({
-    queryKey: ["previous-class-results-position", previousExam?.id],
+  // Fetch previous exam position using SECURITY DEFINER function
+  const { data: previousPositionData } = useQuery({
+    queryKey: ["previous-exam-position", exam.id, studentId, studentClass],
     queryFn: async () => {
-      if (!previousExam?.id) return [];
-      const { data, error } = await supabase
-        .from("academic_results")
-        .select("student_id, marks")
-        .eq("exam_id", previousExam.id);
+      const { data, error } = await supabase.rpc("get_previous_exam_position", {
+        p_current_exam_id: exam.id,
+        p_student_id: studentId,
+        p_class_name: studentClass,
+      });
       if (error) throw error;
-      return data || [];
+      return data as { previousPosition: number | null; previousExamId: string | null } | null;
     },
-    enabled: !!previousExam?.id,
+  });
+
+  // Fetch class improvement rankings using SECURITY DEFINER function
+  const { data: improvementRankings = [] } = useQuery({
+    queryKey: ["class-improvement-rankings", exam.id, studentClass],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_class_improvement_rankings", {
+        p_exam_id: exam.id,
+        p_class_name: studentClass,
+      });
+      if (error) throw error;
+      return (data || []) as Array<{ student_id: string; diff: number }>;
+    },
   });
 
   // Check if this class uses 7-subject calculation
@@ -302,78 +314,37 @@ const ExamResultsView = ({ exam, studentId, studentClass, onBack }: ExamResultsV
     };
   }, [processedResults, uses7Subject, calculationResult, effectivePointBoundaries]);
 
-  // Calculate class position
+  // Get class position from database function (bypasses RLS)
   const classPosition = useMemo(() => {
-    const studentTotals: Record<string, number> = {};
-    classResults.forEach((r: any) => {
-      studentTotals[r.student_id] = (studentTotals[r.student_id] || 0) + r.marks;
-    });
+    if (!classPositionData) {
+      return { position: 0, totalStudents: 0, classAverage: 0 };
+    }
+    const subjectCount = processedResults.length || 1;
+    return {
+      position: classPositionData.position || 0,
+      totalStudents: classPositionData.totalStudents || 0,
+      classAverage: (classPositionData.classAverage || 0) / subjectCount,
+    };
+  }, [classPositionData, processedResults.length]);
 
-    const sortedStudents = Object.entries(studentTotals)
-      .sort(([, a], [, b]) => b - a);
-    
-    const position = sortedStudents.findIndex(([id]) => id === studentId) + 1;
-    const totalStudents = sortedStudents.length;
-    const classAverage = totalStudents > 0 
-      ? Object.values(studentTotals).reduce((a, b) => a + b, 0) / totalStudents / (processedResults.length || 1)
-      : 0;
-
-    return { position, totalStudents, classAverage };
-  }, [classResults, studentId, processedResults.length]);
-
-  // Calculate previous position for comparison
+  // Get previous position comparison from database function
   const positionComparison = useMemo(() => {
-    if (previousClassResults.length === 0) {
+    if (!previousPositionData || !previousPositionData.previousPosition) {
       return { previousPosition: null, positionDiff: null };
     }
-
-    const prevStudentTotals: Record<string, number> = {};
-    previousClassResults.forEach((r: any) => {
-      prevStudentTotals[r.student_id] = (prevStudentTotals[r.student_id] || 0) + r.marks;
-    });
-
-    const sortedPrev = Object.entries(prevStudentTotals)
-      .sort(([, a], [, b]) => b - a);
-    
-    const previousPosition = sortedPrev.findIndex(([id]) => id === studentId) + 1;
-    
     // Position diff: positive means improved (moved up in rank), negative means dropped
-    const positionDiff = previousPosition > 0 && classPosition.position > 0
-      ? previousPosition - classPosition.position
+    const positionDiff = classPosition.position > 0
+      ? previousPositionData.previousPosition - classPosition.position
       : null;
+    return { previousPosition: previousPositionData.previousPosition, positionDiff };
+  }, [previousPositionData, classPosition.position]);
 
-    return { previousPosition: previousPosition || null, positionDiff };
-  }, [previousClassResults, studentId, classPosition.position]);
-
-  // Calculate improvement rankings for "Most Improved" / "Needs Support" badge
+  // Calculate improvement badge from database function rankings
   const improvementBadge = useMemo(() => {
-    if (previousClassResults.length === 0 || classResults.length === 0) return null;
+    if (!improvementRankings || improvementRankings.length === 0) return null;
 
-    // Calculate current totals for all students
-    const currentTotals: Record<string, number> = {};
-    classResults.forEach((r: any) => {
-      currentTotals[r.student_id] = (currentTotals[r.student_id] || 0) + r.marks;
-    });
-
-    // Calculate previous totals for all students
-    const previousTotals: Record<string, number> = {};
-    previousClassResults.forEach((r: any) => {
-      previousTotals[r.student_id] = (previousTotals[r.student_id] || 0) + r.marks;
-    });
-
-    // Calculate differences for students who have both exams
-    const improvements = Object.entries(currentTotals)
-      .filter(([id]) => previousTotals[id] !== undefined)
-      .map(([id, current]) => ({
-        studentId: id,
-        diff: current - previousTotals[id],
-      }))
-      .sort((a, b) => b.diff - a.diff);
-
-    if (improvements.length === 0) return null;
-
-    const studentRankIndex = improvements.findIndex((s) => s.studentId === studentId);
-    const studentData = improvements[studentRankIndex];
+    const studentRankIndex = improvementRankings.findIndex((s: any) => s.student_id === studentId);
+    const studentData = improvementRankings[studentRankIndex];
 
     if (studentRankIndex === -1 || !studentData) return null;
 
@@ -389,7 +360,7 @@ const ExamResultsView = ({ exam, studentId, studentClass, onBack }: ExamResultsV
     }
 
     // Bottom 3 (most dropped) - only if they actually dropped
-    const totalStudents = improvements.length;
+    const totalStudents = improvementRankings.length;
     const droppedRankFromBottom = totalStudents - studentRankIndex;
     if (droppedRankFromBottom <= 3 && studentData.diff < 0) {
       return {
@@ -401,7 +372,7 @@ const ExamResultsView = ({ exam, studentId, studentClass, onBack }: ExamResultsV
     }
 
     return null;
-  }, [classResults, previousClassResults, studentId]);
+  }, [improvementRankings, studentId]);
 
   // Previous exam comparison totals
   const comparisonTotals = useMemo(() => {
