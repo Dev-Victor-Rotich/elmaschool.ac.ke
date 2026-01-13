@@ -8,12 +8,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { GraduationCap, DollarSign, Calendar, BookOpen, MessageSquare, Mail, CheckCircle, Receipt, FileText, TrendingUp, TrendingDown } from "lucide-react";
+import { GraduationCap, DollarSign, Calendar, MessageSquare, Mail, CheckCircle, Receipt, FileText, TrendingUp, TrendingDown } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
 import { calculateYearlyTotals, calculateYearlyBalance, formatBalance } from "@/lib/fee-utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import AcademicAnalytics from "@/components/student/AcademicAnalytics";
 
 const StudentPortal = () => {
   const navigate = useNavigate();
@@ -735,38 +736,8 @@ const StudentPortal = () => {
           </CardContent>
         </Card>
 
-        {/* Academic Results */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <BookOpen className="w-5 h-5 mr-2" />
-              Academic Results
-            </CardTitle>
-            <CardDescription>Your recent performance</CardDescription>
-          </CardHeader>
-          <CardContent>
-            {results.length > 0 ? (
-              <div className="space-y-4">
-                {results.map((result) => (
-                  <div key={result.id} className="flex justify-between items-center border-b pb-2">
-                    <div>
-                      <p className="font-medium">{result.subject}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {result.term} {result.year}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold">{result.marks}%</p>
-                      <Badge>{result.grade}</Badge>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">No results available yet</p>
-            )}
-          </CardContent>
-        </Card>
+        {/* Academic Analytics */}
+        <AcademicAnalytics studentId={studentId} studentClass={studentData?.class || ""} />
 
         {/* All Messages Section */}
         {messages.length > 0 && (
