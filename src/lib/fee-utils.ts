@@ -102,6 +102,68 @@ export function calculateYearlyBalance(
 }
 
 /**
+ * Calculate the cumulative running balance for a student up to a specific term
+ * This gives the TOTAL balance across all terms (not just current term)
+ * Positive = owes money, Negative = has credit
+ */
+export function calculateCumulativeBalance(
+  studentClass: string,
+  year: number,
+  upToTerm: number,
+  feeStructures: FeeStructure[],
+  payments: Payment[]
+): {
+  totalFeesUpToTerm: number;
+  totalPaidUpToTerm: number;
+  cumulativeBalance: number;
+  status: 'credit' | 'due' | 'cleared';
+} {
+  let totalFees = 0;
+  let totalPaid = 0;
+
+  for (let term = 1; term <= upToTerm; term++) {
+    // Get fee structure for this term
+    const feeStructure = feeStructures.find(
+      (f) => f.class_name === studentClass && 
+             f.year === year && 
+             f.term === term.toString()
+    );
+
+    const termFee = feeStructure 
+      ? (Number(feeStructure.total_fee) || 
+         (Number(feeStructure.tuition_fee) + Number(feeStructure.boarding_fee) + 
+          Number(feeStructure.activity_fee) + Number(feeStructure.other_fees)))
+      : 0;
+
+    // Get payments for this term
+    const termPayments = payments
+      .filter((p) => p.term === term.toString() && p.year === year)
+      .reduce((sum, p) => sum + Number(p.amount_paid), 0);
+
+    totalFees += termFee;
+    totalPaid += termPayments;
+  }
+
+  const cumulativeBalance = totalFees - totalPaid;
+
+  let status: 'credit' | 'due' | 'cleared';
+  if (cumulativeBalance < 0) {
+    status = 'credit';
+  } else if (cumulativeBalance > 0) {
+    status = 'due';
+  } else {
+    status = 'cleared';
+  }
+
+  return {
+    totalFeesUpToTerm: totalFees,
+    totalPaidUpToTerm: totalPaid,
+    cumulativeBalance,
+    status,
+  };
+}
+
+/**
  * Calculate the amount due for a specific term, considering carry-forward from previous terms
  * Returns the net amount due (can be negative if credit exists)
  */

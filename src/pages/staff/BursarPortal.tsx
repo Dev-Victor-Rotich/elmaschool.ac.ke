@@ -43,6 +43,13 @@ const BursarPortal = () => {
     debtFromPreviousTerms?: number;
   } | null>(null);
 
+  // Running balance state for receipt
+  const [runningBalanceData, setRunningBalanceData] = useState<{
+    totalFeesYear: number;
+    totalPaidYear: number;
+    cumulativeBalance: number;
+  } | null>(null);
+
   // Selected student info
   const [selectedStudentInfo, setSelectedStudentInfo] = useState<{
     fullName: string;
@@ -288,6 +295,7 @@ const BursarPortal = () => {
       year: parseInt(year),
       amount_due: dueAmount,
       amount_paid: paidAmount,
+      balance: balance,
       receipt_number: receiptNumber,
       payment_date: new Date().toISOString(),
       recorded_by: session?.user.id,
@@ -298,6 +306,54 @@ const BursarPortal = () => {
       setLoading(false);
       return;
     }
+
+    // Calculate cumulative running balance AFTER this payment (for all terms up to current)
+    const currentTerm = parseInt(term);
+    const currentYear = parseInt(year);
+    const studentClass = selectedStudentInfo?.class || "";
+
+    // Fetch all fee structures for this class and year
+    const { data: allFeeStructures } = await supabase
+      .from("fee_structures")
+      .select("term, total_fee, tuition_fee, boarding_fee, activity_fee, other_fees")
+      .eq("class_name", studentClass)
+      .eq("year", currentYear);
+
+    // Fetch ALL payments for this student for this year (including the one just made)
+    const { data: allPayments } = await supabase
+      .from("fee_payments")
+      .select("term, amount_paid")
+      .eq("student_id", selectedStudent)
+      .eq("year", currentYear);
+
+    // Calculate cumulative totals up to current term
+    let totalFeesYear = 0;
+    let totalPaidYear = 0;
+
+    for (let t = 1; t <= currentTerm; t++) {
+      const termFeeStructure = allFeeStructures?.find(fs => fs.term === t.toString());
+      const termFee = termFeeStructure
+        ? (Number(termFeeStructure.total_fee) || 
+           (Number(termFeeStructure.tuition_fee) + Number(termFeeStructure.boarding_fee) + 
+            Number(termFeeStructure.activity_fee) + Number(termFeeStructure.other_fees)))
+        : 0;
+      
+      const termPayments = allPayments
+        ?.filter(p => p.term === t.toString())
+        .reduce((sum, p) => sum + Number(p.amount_paid), 0) || 0;
+
+      totalFeesYear += termFee;
+      totalPaidYear += termPayments;
+    }
+
+    const cumulativeBalance = totalFeesYear - totalPaidYear;
+
+    // Store running balance for receipt
+    setRunningBalanceData({
+      totalFeesYear,
+      totalPaidYear,
+      cumulativeBalance,
+    });
 
     // Prepare receipt data
     setReceiptPayment({
@@ -645,6 +701,7 @@ const BursarPortal = () => {
           activityFee: feeBreakdown.activityFee,
           otherFees: feeBreakdown.otherFees
         } : undefined}
+        runningBalance={runningBalanceData}
       />
     </div>
   );
