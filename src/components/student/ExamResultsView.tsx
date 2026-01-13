@@ -345,6 +345,64 @@ const ExamResultsView = ({ exam, studentId, studentClass, onBack }: ExamResultsV
     return { previousPosition: previousPosition || null, positionDiff };
   }, [previousClassResults, studentId, classPosition.position]);
 
+  // Calculate improvement rankings for "Most Improved" / "Needs Support" badge
+  const improvementBadge = useMemo(() => {
+    if (previousClassResults.length === 0 || classResults.length === 0) return null;
+
+    // Calculate current totals for all students
+    const currentTotals: Record<string, number> = {};
+    classResults.forEach((r: any) => {
+      currentTotals[r.student_id] = (currentTotals[r.student_id] || 0) + r.marks;
+    });
+
+    // Calculate previous totals for all students
+    const previousTotals: Record<string, number> = {};
+    previousClassResults.forEach((r: any) => {
+      previousTotals[r.student_id] = (previousTotals[r.student_id] || 0) + r.marks;
+    });
+
+    // Calculate differences for students who have both exams
+    const improvements = Object.entries(currentTotals)
+      .filter(([id]) => previousTotals[id] !== undefined)
+      .map(([id, current]) => ({
+        studentId: id,
+        diff: current - previousTotals[id],
+      }))
+      .sort((a, b) => b.diff - a.diff);
+
+    if (improvements.length === 0) return null;
+
+    const studentRankIndex = improvements.findIndex((s) => s.studentId === studentId);
+    const studentData = improvements[studentRankIndex];
+
+    if (studentRankIndex === -1 || !studentData) return null;
+
+    // Top 3 most improved
+    if (studentRankIndex < 3 && studentData.diff > 0) {
+      const rank = studentRankIndex + 1;
+      return {
+        type: "improved" as const,
+        rank,
+        label: rank === 1 ? "Most Improved" : rank === 2 ? "2nd Most Improved" : "3rd Most Improved",
+        diff: studentData.diff,
+      };
+    }
+
+    // Bottom 3 (most dropped) - only if they actually dropped
+    const totalStudents = improvements.length;
+    const droppedRankFromBottom = totalStudents - studentRankIndex;
+    if (droppedRankFromBottom <= 3 && studentData.diff < 0) {
+      return {
+        type: "dropped" as const,
+        rank: droppedRankFromBottom,
+        label: droppedRankFromBottom === 1 ? "Needs Most Support" : droppedRankFromBottom === 2 ? "Needs Support" : "Needs Attention",
+        diff: studentData.diff,
+      };
+    }
+
+    return null;
+  }, [classResults, previousClassResults, studentId]);
+
   // Previous exam comparison totals
   const comparisonTotals = useMemo(() => {
     if (previousResults.length === 0) return null;
@@ -577,6 +635,58 @@ const ExamResultsView = ({ exam, studentId, studentClass, onBack }: ExamResultsV
           </CardContent>
         </Card>
       </div>
+
+      {/* Improvement Badge (Most Improved / Needs Support) */}
+      {improvementBadge && (
+        <Card className={improvementBadge.type === "improved" 
+          ? "border-green-500/50 bg-gradient-to-r from-green-500/10 to-emerald-500/10" 
+          : "border-amber-500/50 bg-gradient-to-r from-amber-500/10 to-orange-500/10"
+        }>
+          <CardContent className="py-4">
+            <div className="flex items-center gap-4">
+              {improvementBadge.type === "improved" ? (
+                <div className={`p-3 rounded-full ${
+                  improvementBadge.rank === 1 
+                    ? "bg-yellow-100" 
+                    : improvementBadge.rank === 2 
+                      ? "bg-gray-100" 
+                      : "bg-amber-100"
+                }`}>
+                  <Trophy className={`w-8 h-8 ${
+                    improvementBadge.rank === 1 
+                      ? "text-yellow-500" 
+                      : improvementBadge.rank === 2 
+                        ? "text-gray-400" 
+                        : "text-amber-600"
+                  }`} />
+                </div>
+              ) : (
+                <div className="p-3 rounded-full bg-amber-100">
+                  <AlertTriangle className="w-8 h-8 text-amber-500" />
+                </div>
+              )}
+              <div className="flex-1">
+                <p className="font-bold text-lg">{improvementBadge.label}</p>
+                <p className="text-sm text-muted-foreground">
+                  {improvementBadge.type === "improved" 
+                    ? "Congratulations! You showed exceptional growth this term." 
+                    : "Let's work together to improve your performance next time."
+                  }
+                </p>
+              </div>
+              <Badge 
+                variant="secondary"
+                className={improvementBadge.type === "improved" 
+                  ? "bg-green-100 text-green-700 text-lg px-3 py-1" 
+                  : "bg-amber-100 text-amber-700 text-lg px-3 py-1"
+                }
+              >
+                {improvementBadge.diff > 0 ? "+" : ""}{improvementBadge.diff} marks
+              </Badge>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Comparison Banner */}
       {comparisonTotals && (
