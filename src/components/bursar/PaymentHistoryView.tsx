@@ -124,6 +124,13 @@ const PaymentHistoryView = () => {
     debtFromPreviousTerms?: number;
   } | null>(null);
 
+  // Running balance state for receipt
+  const [runningBalanceData, setRunningBalanceData] = useState<{
+    totalFeesYear: number;
+    totalPaidYear: number;
+    cumulativeBalance: number;
+  } | null>(null);
+
   const handleViewReceipt = async (payment: any) => {
     const currentTerm = parseInt(payment.term);
     const currentYear = payment.year;
@@ -133,33 +140,56 @@ const PaymentHistoryView = () => {
     // Fetch fee structure for breakdown
     const { data: feeStructure } = await supabase
       .from("fee_structures")
-      .select("tuition_fee, boarding_fee, activity_fee, other_fees")
+      .select("tuition_fee, boarding_fee, activity_fee, other_fees, total_fee")
       .eq("class_name", studentClass)
       .eq("term", payment.term)
       .eq("year", currentYear)
       .maybeSingle();
 
+    // Fetch all fee structures for this class and year (for cumulative calculation)
+    const { data: allFeeStructures } = await supabase
+      .from("fee_structures")
+      .select("term, total_fee, tuition_fee, boarding_fee, activity_fee, other_fees")
+      .eq("class_name", studentClass)
+      .eq("year", currentYear);
+
+    // Fetch ALL payments for this student for this year up to this payment
+    const { data: allPayments } = await supabase
+      .from("fee_payments")
+      .select("term, amount_paid, payment_date")
+      .eq("student_id", studentId)
+      .eq("year", currentYear)
+      .lte("payment_date", payment.payment_date || new Date().toISOString());
+
+    // Calculate cumulative totals up to current term
+    let totalFeesYear = 0;
+    let totalPaidYear = 0;
+
+    for (let t = 1; t <= currentTerm; t++) {
+      const termFeeStructure = allFeeStructures?.find(fs => fs.term === t.toString());
+      const termFee = termFeeStructure
+        ? (Number(termFeeStructure.total_fee) || 
+           (Number(termFeeStructure.tuition_fee) + Number(termFeeStructure.boarding_fee) + 
+            Number(termFeeStructure.activity_fee) + Number(termFeeStructure.other_fees)))
+        : 0;
+      
+      const termPayments = allPayments
+        ?.filter(p => p.term === t.toString())
+        .reduce((sum, p) => sum + Number(p.amount_paid), 0) || 0;
+
+      totalFeesYear += termFee;
+      totalPaidYear += termPayments;
+    }
+
+    const cumulativeBalance = totalFeesYear - totalPaidYear;
+
     // Calculate balance from all previous terms (positive = debt, negative = credit)
     let previousTermsBalance = 0;
 
     if (currentTerm > 1) {
-      // Get all previous terms' fee structures
-      const { data: previousFeeStructures } = await supabase
-        .from("fee_structures")
-        .select("term, total_fee, tuition_fee, boarding_fee, activity_fee, other_fees")
-        .eq("class_name", studentClass)
-        .eq("year", currentYear)
-        .lt("term", payment.term);
+      const previousFeeStructures = allFeeStructures?.filter(fs => parseInt(fs.term) < currentTerm);
+      const previousPayments = allPayments?.filter(p => parseInt(p.term) < currentTerm);
 
-      // Get all previous terms' payments
-      const { data: previousTermPayments } = await supabase
-        .from("fee_payments")
-        .select("term, amount_paid")
-        .eq("student_id", studentId)
-        .eq("year", currentYear)
-        .lt("term", payment.term);
-
-      // Calculate total fees due for previous terms
       const totalPreviousFeesDue = previousFeeStructures?.reduce((sum, fs) => {
         const termTotal = Number(fs.total_fee) || 
           (Number(fs.tuition_fee) + Number(fs.boarding_fee) + 
@@ -167,17 +197,14 @@ const PaymentHistoryView = () => {
         return sum + termTotal;
       }, 0) || 0;
 
-      // Calculate total payments made for previous terms
-      const totalPreviousPaymentsMade = previousTermPayments?.reduce(
+      const totalPreviousPaymentsMade = previousPayments?.reduce(
         (sum, p) => sum + Number(p.amount_paid), 
         0
       ) || 0;
 
-      // Previous terms balance: positive = debt, negative = credit
       previousTermsBalance = totalPreviousFeesDue - totalPreviousPaymentsMade;
     }
 
-    // Credit from previous terms (negative balance means credit)
     const creditFromPreviousTerms = previousTermsBalance < 0 ? Math.abs(previousTermsBalance) : 0;
     const debtFromPreviousTerms = previousTermsBalance > 0 ? previousTermsBalance : 0;
 
@@ -189,6 +216,12 @@ const PaymentHistoryView = () => {
       creditFromPreviousTerms,
       debtFromPreviousTerms,
     } : null);
+
+    setRunningBalanceData({
+      totalFeesYear,
+      totalPaidYear,
+      cumulativeBalance,
+    });
 
     setSelectedPayment({
       receiptNumber: payment.receipt_number || "N/A",
@@ -364,6 +397,7 @@ const PaymentHistoryView = () => {
         onClose={() => setShowReceipt(false)}
         payment={selectedPayment}
         feeBreakdown={feeBreakdown}
+        runningBalance={runningBalanceData}
       />
     </>
   );

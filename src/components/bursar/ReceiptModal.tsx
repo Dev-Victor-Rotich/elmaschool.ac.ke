@@ -27,9 +27,14 @@ interface ReceiptModalProps {
     creditFromPreviousTerms?: number;
     debtFromPreviousTerms?: number;
   };
+  runningBalance?: {
+    totalFeesYear: number;
+    totalPaidYear: number;
+    cumulativeBalance: number;
+  } | null;
 }
 
-const ReceiptModal = ({ open, onClose, payment, feeBreakdown }: ReceiptModalProps) => {
+const ReceiptModal = ({ open, onClose, payment, feeBreakdown, runningBalance }: ReceiptModalProps) => {
   if (!payment) return null;
 
   const handlePrint = () => {
@@ -137,11 +142,12 @@ const ReceiptModal = ({ open, onClose, payment, feeBreakdown }: ReceiptModalProp
               </div>
             )}
 
-            {/* Payment Summary */}
+            {/* This Payment Summary */}
             <div className="border-t border-b py-3 mb-4">
+              <h3 className="font-semibold mb-2 text-sm">This Payment</h3>
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total Amount Due:</span>
+                  <span className="text-muted-foreground">Amount Due This Term:</span>
                   <span className="font-medium">KES {payment.amountDue.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-sm">
@@ -149,7 +155,7 @@ const ReceiptModal = ({ open, onClose, payment, feeBreakdown }: ReceiptModalProp
                   <span className="font-semibold text-green-600">KES {payment.amountPaid.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-sm font-bold">
-                  <span>{payment.balance < 0 ? "Credit Balance:" : "Balance Due:"}</span>
+                  <span>{payment.balance < 0 ? "Credit This Transaction:" : "Balance This Transaction:"}</span>
                   <span className={payment.balance < 0 ? "text-green-600" : payment.balance > 0 ? "text-destructive" : "text-green-600"}>
                     {payment.balance < 0 
                       ? `KES ${Math.abs(payment.balance).toLocaleString()} (Credit)`
@@ -159,13 +165,62 @@ const ReceiptModal = ({ open, onClose, payment, feeBreakdown }: ReceiptModalProp
                     }
                   </span>
                 </div>
-                {payment.balance < 0 && (
-                  <p className="text-xs text-green-600 text-center mt-1">
-                    This credit will be applied to the next term's fees
-                  </p>
-                )}
               </div>
             </div>
+
+            {/* Running Balance Summary - The cumulative balance */}
+            {runningBalance && (
+              <div className={`p-4 rounded-lg mb-4 ${
+                runningBalance.cumulativeBalance < 0 
+                  ? 'bg-green-500/10 border border-green-500/30' 
+                  : runningBalance.cumulativeBalance > 0 
+                    ? 'bg-amber-500/10 border border-amber-500/30' 
+                    : 'bg-primary/10 border border-primary/30'
+              }`}>
+                <h3 className="font-bold text-center mb-3">CUMULATIVE BALANCE STATUS</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total Fees (Year to Term {payment.term}):</span>
+                    <span className="font-medium">KES {runningBalance.totalFeesYear.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total Paid (Year to Term {payment.term}):</span>
+                    <span className="font-semibold text-green-600">KES {runningBalance.totalPaidYear.toLocaleString()}</span>
+                  </div>
+                  <div className="border-t pt-2 mt-2">
+                    <div className="flex justify-between items-center">
+                      <span className="font-bold text-base">
+                        {runningBalance.cumulativeBalance < 0 ? "TOTAL CREDIT:" : "TOTAL BALANCE DUE:"}
+                      </span>
+                      <span className={`font-bold text-lg ${
+                        runningBalance.cumulativeBalance < 0 
+                          ? 'text-green-600' 
+                          : runningBalance.cumulativeBalance > 0 
+                            ? 'text-destructive' 
+                            : 'text-green-600'
+                      }`}>
+                        {runningBalance.cumulativeBalance < 0 
+                          ? `KES ${Math.abs(runningBalance.cumulativeBalance).toLocaleString()}`
+                          : runningBalance.cumulativeBalance > 0 
+                            ? `KES ${runningBalance.cumulativeBalance.toLocaleString()}`
+                            : "FULLY CLEARED"
+                        }
+                      </span>
+                    </div>
+                    {runningBalance.cumulativeBalance < 0 && (
+                      <p className="text-xs text-green-600 text-center mt-2">
+                        ✓ This credit will automatically apply to future fees
+                      </p>
+                    )}
+                    {runningBalance.cumulativeBalance > 0 && (
+                      <p className="text-xs text-amber-600 text-center mt-2">
+                        Outstanding balance to be cleared
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Footer */}
             <div className="text-center text-xs text-muted-foreground">
