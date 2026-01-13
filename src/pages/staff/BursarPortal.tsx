@@ -40,6 +40,7 @@ const BursarPortal = () => {
     totalFee: number;
     previousPayments: number;
     creditFromPreviousTerms: number;
+    debtFromPreviousTerms?: number;
   } | null>(null);
 
   // Selected student info
@@ -186,8 +187,9 @@ const BursarPortal = () => {
       return;
     }
 
-    // Calculate credit from previous terms in the same year
-    let creditFromPreviousTerms = 0;
+    // Calculate balance from all previous terms in the same year
+    // Positive = still owed, Negative = credit available
+    let previousTermsBalance = 0;
 
     if (currentTerm > 1) {
       // Get all previous terms' fee structures
@@ -220,8 +222,8 @@ const BursarPortal = () => {
         0
       ) || 0;
 
-      // Credit is positive if paid more than due
-      creditFromPreviousTerms = Math.max(0, totalPreviousPaymentsMade - totalPreviousFeesDue);
+      // Previous terms balance: positive = still owed, negative = overpaid (credit)
+      previousTermsBalance = totalPreviousFeesDue - totalPreviousPaymentsMade;
     }
 
     // Fetch current term payments for this student
@@ -241,9 +243,16 @@ const BursarPortal = () => {
       (Number(feeStructure.tuition_fee) + Number(feeStructure.boarding_fee) + 
        Number(feeStructure.activity_fee) + Number(feeStructure.other_fees));
 
-    // Apply credit from previous terms to current term
-    const effectiveAmountDue = totalFee - creditFromPreviousTerms - totalCurrentTermPayments;
-    const remainingDue = Math.max(0, effectiveAmountDue);
+    // Net amount due for this term:
+    // = Term fee + any debt from previous terms - any credit from previous terms - current term payments
+    // If previousTermsBalance is negative (credit), it reduces the amount due
+    // If previousTermsBalance is positive (debt), it increases the amount due
+    const effectiveAmountDue = totalFee + previousTermsBalance - totalCurrentTermPayments;
+
+    // Credit from previous terms (for display) - only if there's a credit
+    const creditFromPreviousTerms = previousTermsBalance < 0 ? Math.abs(previousTermsBalance) : 0;
+    // Debt from previous terms (for display) - only if there's a debt
+    const debtFromPreviousTerms = previousTermsBalance > 0 ? previousTermsBalance : 0;
 
     setFeeBreakdown({
       tuitionFee: Number(feeStructure.tuition_fee),
@@ -252,10 +261,12 @@ const BursarPortal = () => {
       otherFees: Number(feeStructure.other_fees),
       totalFee,
       previousPayments: totalCurrentTermPayments,
-      creditFromPreviousTerms
+      creditFromPreviousTerms,
+      debtFromPreviousTerms,
     });
 
-    setAmountDue(remainingDue.toString());
+    // Store the actual amount due (can be negative if student has credit)
+    setAmountDue(effectiveAmountDue.toString());
     setCalculatingFee(false);
   };
 
@@ -435,11 +446,17 @@ const BursarPortal = () => {
                         </div>
                         <div className="border-t pt-2 mt-2 space-y-1">
                           <div className="flex justify-between font-medium">
-                            <span>Total Fee:</span>
+                            <span>Term {term} Fee:</span>
                             <span>KES {feeBreakdown.totalFee.toLocaleString()}</span>
                           </div>
+                          {feeBreakdown.debtFromPreviousTerms && feeBreakdown.debtFromPreviousTerms > 0 && (
+                            <div className="flex justify-between text-destructive font-medium">
+                              <span>Balance from Previous Terms:</span>
+                              <span>+ KES {feeBreakdown.debtFromPreviousTerms.toLocaleString()}</span>
+                            </div>
+                          )}
                           {feeBreakdown.creditFromPreviousTerms > 0 && (
-                            <div className="flex justify-between text-blue-600 font-medium">
+                            <div className="flex justify-between text-green-600 font-medium">
                               <span>Credit from Previous Terms:</span>
                               <span>- KES {feeBreakdown.creditFromPreviousTerms.toLocaleString()}</span>
                             </div>
@@ -455,15 +472,26 @@ const BursarPortal = () => {
                     )}
 
                     <div className="space-y-2">
-                      <Label>Amount Due (KES)</Label>
-                      <Input
-                        type="number"
-                        value={amountDue}
-                        readOnly
-                        className="bg-muted"
-                        placeholder={calculatingFee ? "Calculating..." : "Select student, term & year"}
-                      />
-                      <p className="text-xs text-muted-foreground">Auto-calculated from fee structure</p>
+                      <Label>Net Amount Due (KES)</Label>
+                      <div className="relative">
+                        <Input
+                          type="number"
+                          value={amountDue}
+                          readOnly
+                          className={`bg-muted ${parseFloat(amountDue) < 0 ? 'text-green-600 font-semibold' : ''}`}
+                          placeholder={calculatingFee ? "Calculating..." : "Select student, term & year"}
+                        />
+                        {amountDue && parseFloat(amountDue) < 0 && (
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-green-600 font-medium">
+                            (Credit)
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {parseFloat(amountDue) < 0 
+                          ? "Student has a credit balance - excess will carry forward" 
+                          : "Auto-calculated from fee structure with carry-forward"}
+                      </p>
                     </div>
 
                     <div className="space-y-2">
@@ -479,11 +507,32 @@ const BursarPortal = () => {
                     </div>
 
                     {amountDue && amountPaid && (
-                      <div className="p-3 bg-primary/10 rounded-lg">
+                      <div className={`p-3 rounded-lg ${
+                        (parseFloat(amountDue) - parseFloat(amountPaid)) < 0 
+                          ? 'bg-green-500/10 border border-green-500/20' 
+                          : (parseFloat(amountDue) - parseFloat(amountPaid)) > 0 
+                            ? 'bg-destructive/10 border border-destructive/20' 
+                            : 'bg-primary/10'
+                      }`}>
                         <p className="text-sm font-medium">
-                          Remaining Balance: <span className={parseFloat(amountDue) - parseFloat(amountPaid) > 0 ? "text-destructive" : "text-green-600"}>
-                            KES {(parseFloat(amountDue) - parseFloat(amountPaid)).toLocaleString()}
-                          </span>
+                          {(parseFloat(amountDue) - parseFloat(amountPaid)) < 0 ? (
+                            <>
+                              Credit After Payment: <span className="text-green-600">
+                                KES {Math.abs(parseFloat(amountDue) - parseFloat(amountPaid)).toLocaleString()}
+                              </span>
+                              <span className="block text-xs text-green-600/80 mt-1">
+                                This credit will carry forward to the next term
+                              </span>
+                            </>
+                          ) : (parseFloat(amountDue) - parseFloat(amountPaid)) > 0 ? (
+                            <>
+                              Remaining Balance: <span className="text-destructive">
+                                KES {(parseFloat(amountDue) - parseFloat(amountPaid)).toLocaleString()}
+                              </span>
+                            </>
+                          ) : (
+                            <span className="text-green-600">Fully Cleared</span>
+                          )}
                         </p>
                       </div>
                     )}

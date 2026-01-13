@@ -25,6 +25,7 @@ interface ReceiptModalProps {
     activityFee: number;
     otherFees: number;
     creditFromPreviousTerms?: number;
+    debtFromPreviousTerms?: number;
   };
 }
 
@@ -120,8 +121,14 @@ const ReceiptModal = ({ open, onClose, payment, feeBreakdown }: ReceiptModalProp
                     <span className="text-muted-foreground">Other Fees:</span>
                     <span>KES {feeBreakdown.otherFees.toLocaleString()}</span>
                   </div>
+                  {feeBreakdown.debtFromPreviousTerms && feeBreakdown.debtFromPreviousTerms > 0 && (
+                    <div className="flex justify-between text-destructive font-medium border-t pt-1 mt-1">
+                      <span>Balance from Previous Terms:</span>
+                      <span>+ KES {feeBreakdown.debtFromPreviousTerms.toLocaleString()}</span>
+                    </div>
+                  )}
                   {feeBreakdown.creditFromPreviousTerms && feeBreakdown.creditFromPreviousTerms > 0 && (
-                    <div className="flex justify-between text-blue-600 font-medium border-t pt-1 mt-1">
+                    <div className="flex justify-between text-green-600 font-medium border-t pt-1 mt-1">
                       <span>Credit from Previous Terms:</span>
                       <span>- KES {feeBreakdown.creditFromPreviousTerms.toLocaleString()}</span>
                     </div>
@@ -142,11 +149,21 @@ const ReceiptModal = ({ open, onClose, payment, feeBreakdown }: ReceiptModalProp
                   <span className="font-semibold text-green-600">KES {payment.amountPaid.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between text-sm font-bold">
-                  <span>Balance:</span>
-                  <span className={payment.balance > 0 ? "text-destructive" : "text-green-600"}>
-                    KES {payment.balance.toLocaleString()}
+                  <span>{payment.balance < 0 ? "Credit Balance:" : "Balance Due:"}</span>
+                  <span className={payment.balance < 0 ? "text-green-600" : payment.balance > 0 ? "text-destructive" : "text-green-600"}>
+                    {payment.balance < 0 
+                      ? `KES ${Math.abs(payment.balance).toLocaleString()} (Credit)`
+                      : payment.balance > 0 
+                        ? `KES ${payment.balance.toLocaleString()}`
+                        : "Cleared"
+                    }
                   </span>
                 </div>
+                {payment.balance < 0 && (
+                  <p className="text-xs text-green-600 text-center mt-1">
+                    This credit will be applied to the next term's fees
+                  </p>
+                )}
               </div>
             </div>
 

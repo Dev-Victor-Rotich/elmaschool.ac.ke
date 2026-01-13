@@ -96,8 +96,22 @@ const PaymentHistoryView = () => {
     0
   ) || 0;
 
+  // Calculate totals - handle negative balances (credits)
   const totalOutstanding = filteredPayments?.reduce(
-    (sum, p) => sum + Number(p.balance),
+    (sum, p) => {
+      const balance = Number(p.balance);
+      // Only count positive balances (debts) in outstanding
+      return sum + (balance > 0 ? balance : 0);
+    },
+    0
+  ) || 0;
+
+  const totalCredits = filteredPayments?.reduce(
+    (sum, p) => {
+      const balance = Number(p.balance);
+      // Count negative balances (credits)
+      return sum + (balance < 0 ? Math.abs(balance) : 0);
+    },
     0
   ) || 0;
 
@@ -107,6 +121,7 @@ const PaymentHistoryView = () => {
     activityFee: number;
     otherFees: number;
     creditFromPreviousTerms?: number;
+    debtFromPreviousTerms?: number;
   } | null>(null);
 
   const handleViewReceipt = async (payment: any) => {
@@ -124,8 +139,8 @@ const PaymentHistoryView = () => {
       .eq("year", currentYear)
       .maybeSingle();
 
-    // Calculate credit from previous terms
-    let creditFromPreviousTerms = 0;
+    // Calculate balance from all previous terms (positive = debt, negative = credit)
+    let previousTermsBalance = 0;
 
     if (currentTerm > 1) {
       // Get all previous terms' fee structures
@@ -158,8 +173,13 @@ const PaymentHistoryView = () => {
         0
       ) || 0;
 
-      creditFromPreviousTerms = Math.max(0, totalPreviousPaymentsMade - totalPreviousFeesDue);
+      // Previous terms balance: positive = debt, negative = credit
+      previousTermsBalance = totalPreviousFeesDue - totalPreviousPaymentsMade;
     }
+
+    // Credit from previous terms (negative balance means credit)
+    const creditFromPreviousTerms = previousTermsBalance < 0 ? Math.abs(previousTermsBalance) : 0;
+    const debtFromPreviousTerms = previousTermsBalance > 0 ? previousTermsBalance : 0;
 
     setFeeBreakdown(feeStructure ? {
       tuitionFee: Number(feeStructure.tuition_fee),
@@ -167,6 +187,7 @@ const PaymentHistoryView = () => {
       activityFee: Number(feeStructure.activity_fee),
       otherFees: Number(feeStructure.other_fees),
       creditFromPreviousTerms,
+      debtFromPreviousTerms,
     } : null);
 
     setSelectedPayment({
@@ -234,7 +255,7 @@ const PaymentHistoryView = () => {
           </div>
 
           {/* Summary stats */}
-          <div className="grid grid-cols-2 gap-4 mt-4">
+          <div className="grid grid-cols-3 gap-4 mt-4">
             <div className="p-3 bg-green-500/10 rounded-lg">
               <p className="text-xs text-muted-foreground">Total Collected</p>
               <p className="text-lg font-bold text-green-600">
@@ -245,6 +266,12 @@ const PaymentHistoryView = () => {
               <p className="text-xs text-muted-foreground">Outstanding Balance</p>
               <p className="text-lg font-bold text-amber-600">
                 KES {totalOutstanding.toLocaleString()}
+              </p>
+            </div>
+            <div className="p-3 bg-blue-500/10 rounded-lg">
+              <p className="text-xs text-muted-foreground">Total Credits</p>
+              <p className="text-lg font-bold text-blue-600">
+                KES {totalCredits.toLocaleString()}
               </p>
             </div>
           </div>
@@ -302,9 +329,13 @@ const PaymentHistoryView = () => {
                         {Number(payment.amount_paid).toLocaleString()}
                       </TableCell>
                       <TableCell className="text-right">
-                        {Number(payment.balance) > 0 ? (
+                        {Number(payment.balance) < 0 ? (
+                          <Badge className="bg-green-500 hover:bg-green-600">
+                            Credit {Math.abs(Number(payment.balance)).toLocaleString()}
+                          </Badge>
+                        ) : Number(payment.balance) > 0 ? (
                           <Badge variant="destructive">
-                            {Number(payment.balance).toLocaleString()}
+                            Due {Number(payment.balance).toLocaleString()}
                           </Badge>
                         ) : (
                           <Badge variant="secondary">Cleared</Badge>
