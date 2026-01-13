@@ -192,6 +192,21 @@ const ExamResultsView = ({ exam, studentId, studentClass, onBack }: ExamResultsV
     },
   });
 
+  // Fetch previous exam's class results for position comparison
+  const { data: previousClassResults = [] } = useQuery({
+    queryKey: ["previous-class-results-position", previousExam?.id],
+    queryFn: async () => {
+      if (!previousExam?.id) return [];
+      const { data, error } = await supabase
+        .from("academic_results")
+        .select("student_id, marks")
+        .eq("exam_id", previousExam.id);
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!previousExam?.id,
+  });
+
   // Check if this class uses 7-subject calculation
   const uses7Subject = uses7SubjectCalculation(studentClass);
   const effectivePointBoundaries = pointBoundaries.length > 0 ? pointBoundaries : DEFAULT_POINT_BOUNDARIES;
@@ -305,6 +320,30 @@ const ExamResultsView = ({ exam, studentId, studentClass, onBack }: ExamResultsV
 
     return { position, totalStudents, classAverage };
   }, [classResults, studentId, processedResults.length]);
+
+  // Calculate previous position for comparison
+  const positionComparison = useMemo(() => {
+    if (previousClassResults.length === 0) {
+      return { previousPosition: null, positionDiff: null };
+    }
+
+    const prevStudentTotals: Record<string, number> = {};
+    previousClassResults.forEach((r: any) => {
+      prevStudentTotals[r.student_id] = (prevStudentTotals[r.student_id] || 0) + r.marks;
+    });
+
+    const sortedPrev = Object.entries(prevStudentTotals)
+      .sort(([, a], [, b]) => b - a);
+    
+    const previousPosition = sortedPrev.findIndex(([id]) => id === studentId) + 1;
+    
+    // Position diff: positive means improved (moved up in rank), negative means dropped
+    const positionDiff = previousPosition > 0 && classPosition.position > 0
+      ? previousPosition - classPosition.position
+      : null;
+
+    return { previousPosition: previousPosition || null, positionDiff };
+  }, [previousClassResults, studentId, classPosition.position]);
 
   // Previous exam comparison totals
   const comparisonTotals = useMemo(() => {
@@ -437,7 +476,26 @@ const ExamResultsView = ({ exam, studentId, studentClass, onBack }: ExamResultsV
       </Card>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-5">
+        {/* Overall Grade */}
+        <Card>
+          <CardContent className="pt-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground">Overall Grade</p>
+                <p 
+                  className="text-3xl font-bold"
+                  style={{ color: GRADE_COLORS[totals.overallGrade.grade] || "hsl(var(--foreground))" }}
+                >
+                  {totals.overallGrade.grade}
+                </p>
+              </div>
+              <Award className="w-8 h-8 text-primary/50" />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Total Marks */}
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
@@ -450,6 +508,7 @@ const ExamResultsView = ({ exam, studentId, studentClass, onBack }: ExamResultsV
           </CardContent>
         </Card>
 
+        {/* Mean Score */}
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
@@ -462,6 +521,7 @@ const ExamResultsView = ({ exam, studentId, studentClass, onBack }: ExamResultsV
           </CardContent>
         </Card>
 
+        {/* Points */}
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
@@ -471,11 +531,12 @@ const ExamResultsView = ({ exam, studentId, studentClass, onBack }: ExamResultsV
                 </p>
                 <p className="text-2xl font-bold">{totals.totalPoints}</p>
               </div>
-              <Award className="w-8 h-8 text-amber-500/50" />
+              <BarChart3 className="w-8 h-8 text-amber-500/50" />
             </div>
           </CardContent>
         </Card>
 
+        {/* Position with +/- */}
         <Card>
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
@@ -484,6 +545,32 @@ const ExamResultsView = ({ exam, studentId, studentClass, onBack }: ExamResultsV
                 <p className="text-2xl font-bold">
                   {classPosition.position}/{classPosition.totalStudents}
                 </p>
+                {positionComparison.positionDiff !== null && (
+                  <div className={`flex items-center text-sm font-medium ${
+                    positionComparison.positionDiff > 0 
+                      ? "text-green-600" 
+                      : positionComparison.positionDiff < 0 
+                        ? "text-red-600" 
+                        : "text-muted-foreground"
+                  }`}>
+                    {positionComparison.positionDiff > 0 ? (
+                      <>
+                        <ChevronUp className="w-4 h-4" />
+                        +{positionComparison.positionDiff}
+                      </>
+                    ) : positionComparison.positionDiff < 0 ? (
+                      <>
+                        <ChevronDown className="w-4 h-4" />
+                        {positionComparison.positionDiff}
+                      </>
+                    ) : (
+                      <>
+                        <Minus className="w-3 h-3 mr-1" />
+                        0
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
               <Trophy className="w-8 h-8 text-yellow-500/50" />
             </div>
