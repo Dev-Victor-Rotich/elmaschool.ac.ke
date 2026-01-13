@@ -1916,7 +1916,23 @@ export type Database = {
     Functions: {
       cleanup_expired_magic_links: { Args: never; Returns: undefined }
       count_super_admins: { Args: never; Returns: number }
+      get_class_improvement_rankings: {
+        Args: { p_class_name: string; p_exam_id: string }
+        Returns: Json
+      }
+      get_class_position_stats: {
+        Args: { p_exam_id: string; p_student_id: string }
+        Returns: Json
+      }
       get_message_class: { Args: { _message_id: string }; Returns: string }
+      get_previous_exam_position: {
+        Args: {
+          p_class_name: string
+          p_current_exam_id: string
+          p_student_id: string
+        }
+        Returns: Json
+      }
       get_staff_role_by_email: { Args: { _email: string }; Returns: string }
       has_role: {
         Args: {
