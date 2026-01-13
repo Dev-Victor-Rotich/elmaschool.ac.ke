@@ -7,12 +7,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Users, Search, AlertTriangle, CheckCircle } from "lucide-react";
+import { Users, Search, AlertTriangle, CheckCircle, TrendingDown, Minus } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { calculateYearlyBalance, formatBalance, type TermBalance } from "@/lib/fee-utils";
 
 const StudentFeeStatus = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
   const [filterClass, setFilterClass] = useState("all");
+  const [filterTerm, setFilterTerm] = useState("all");
+  const [viewMode, setViewMode] = useState<"annual" | "termly">("annual");
 
   // Get all students
   const { data: students } = useQuery({
@@ -30,7 +34,7 @@ const StudentFeeStatus = () => {
     },
   });
 
-  // Get fee structures
+  // Get fee structures for the year
   const { data: feeStructures } = useQuery({
     queryKey: ["fee-structures-for-status", filterYear],
     queryFn: async () => {
@@ -58,26 +62,57 @@ const StudentFeeStatus = () => {
     },
   });
 
-  // Calculate student fee status
+  // Calculate student fee status with rolling balance
   const studentStatuses = students?.map((student) => {
-    // Get fee structure for this student's class
-    const classFees = feeStructures?.filter((f) => f.class_name === student.class) || [];
-    const totalDue = classFees.reduce((sum, f) => sum + Number(f.total_fee), 0);
-
-    // Get payments made by this student
+    // Get student payments
     const studentPayments = payments?.filter((p) => p.student_id === student.id) || [];
-    const totalPaid = studentPayments.reduce((sum, p) => sum + Number(p.amount_paid), 0);
+    
+    // Calculate term-by-term balances with carry-forward
+    const termBalances = calculateYearlyBalance(
+      student.class,
+      parseInt(filterYear),
+      feeStructures?.map(f => ({
+        ...f,
+        total_fee: Number(f.total_fee) || 
+          (Number(f.tuition_fee) + Number(f.boarding_fee) + Number(f.activity_fee) + Number(f.other_fees)),
+      })) || [],
+      studentPayments.map(p => ({
+        term: p.term,
+        year: parseInt(filterYear),
+        amount_paid: Number(p.amount_paid),
+        student_id: p.student_id,
+      }))
+    );
 
-    const balance = totalDue - totalPaid;
+    // Get final balance (from last term with fee structure)
+    const lastTermWithFee = termBalances.filter(t => t.termFee > 0).pop();
+    const finalBalance = lastTermWithFee?.netBalance || 0;
+
+    // Calculate totals
+    const totalDue = termBalances.reduce((sum, t) => sum + t.termFee, 0);
+    const totalPaid = termBalances.reduce((sum, t) => sum + t.termPayments, 0);
     const percentPaid = totalDue > 0 ? Math.min((totalPaid / totalDue) * 100, 100) : 0;
+
+    // Determine status
+    let status: 'credit' | 'partial' | 'cleared' | 'defaulter';
+    if (finalBalance < 0) {
+      status = 'credit';
+    } else if (finalBalance === 0) {
+      status = 'cleared';
+    } else if (totalPaid > 0) {
+      status = 'partial';
+    } else {
+      status = 'defaulter';
+    }
 
     return {
       ...student,
       totalDue,
       totalPaid,
-      balance,
+      balance: finalBalance,
       percentPaid,
-      status: balance <= 0 ? "cleared" : balance < totalDue * 0.5 ? "partial" : "defaulter",
+      status,
+      termBalances,
     };
   });
 
@@ -96,9 +131,45 @@ const StudentFeeStatus = () => {
   });
 
   // Stats
-  const clearedCount = filteredStudents?.filter((s) => s.status === "cleared").length || 0;
+  const clearedCount = filteredStudents?.filter((s) => s.status === "cleared" || s.status === "credit").length || 0;
+  const creditCount = filteredStudents?.filter((s) => s.status === "credit").length || 0;
   const defaulterCount = filteredStudents?.filter((s) => s.status === "defaulter").length || 0;
-  const totalBalance = filteredStudents?.reduce((sum, s) => sum + Math.max(0, s.balance), 0) || 0;
+  const totalOutstanding = filteredStudents?.reduce((sum, s) => sum + Math.max(0, s.balance), 0) || 0;
+  const totalCredit = filteredStudents?.reduce((sum, s) => sum + Math.abs(Math.min(0, s.balance)), 0) || 0;
+
+  const renderBalanceCell = (balance: number) => {
+    const formatted = formatBalance(balance);
+    if (formatted.isCredit) {
+      return (
+        <span className="text-green-600 font-medium flex items-center gap-1">
+          <TrendingDown className="h-3 w-3" />
+          KES {Math.abs(balance).toLocaleString()}
+        </span>
+      );
+    } else if (formatted.isDue) {
+      return (
+        <span className="text-destructive font-medium">
+          KES {balance.toLocaleString()}
+        </span>
+      );
+    }
+    return <span className="text-muted-foreground"><Minus className="h-3 w-3" /></span>;
+  };
+
+  const renderStatusBadge = (status: string) => {
+    switch (status) {
+      case 'credit':
+        return <Badge className="bg-green-500 hover:bg-green-600">Credit</Badge>;
+      case 'cleared':
+        return <Badge className="bg-green-500 hover:bg-green-600">Cleared</Badge>;
+      case 'partial':
+        return <Badge variant="secondary">Partial</Badge>;
+      case 'defaulter':
+        return <Badge variant="destructive">Defaulter</Badge>;
+      default:
+        return <Badge variant="outline">Unknown</Badge>;
+    }
+  };
 
   return (
     <Card>
@@ -109,7 +180,7 @@ const StudentFeeStatus = () => {
               <Users className="h-5 w-5" />
               Student Fee Status
             </CardTitle>
-            <CardDescription>Track student balances and payment status</CardDescription>
+            <CardDescription>Track student balances with term-by-term carry-forward</CardDescription>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
@@ -150,44 +221,58 @@ const StudentFeeStatus = () => {
         </div>
 
         {/* Summary stats */}
-        <div className="grid grid-cols-3 gap-4 mt-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-4">
           <div className="p-3 bg-green-500/10 rounded-lg flex items-center gap-2">
             <CheckCircle className="h-5 w-5 text-green-600" />
             <div>
-              <p className="text-xs text-muted-foreground">Cleared</p>
+              <p className="text-xs text-muted-foreground">Cleared/Credit</p>
               <p className="text-lg font-bold text-green-600">{clearedCount}</p>
             </div>
           </div>
+          <div className="p-3 bg-green-500/10 rounded-lg">
+            <p className="text-xs text-muted-foreground">Total Credits</p>
+            <p className="text-lg font-bold text-green-600">
+              KES {totalCredit.toLocaleString()}
+            </p>
+            <p className="text-xs text-green-600/70">{creditCount} students</p>
+          </div>
           <div className="p-3 bg-red-500/10 rounded-lg flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-red-600" />
+            <AlertTriangle className="h-5 w-5 text-destructive" />
             <div>
               <p className="text-xs text-muted-foreground">Defaulters</p>
-              <p className="text-lg font-bold text-red-600">{defaulterCount}</p>
+              <p className="text-lg font-bold text-destructive">{defaulterCount}</p>
             </div>
           </div>
           <div className="p-3 bg-amber-500/10 rounded-lg">
             <p className="text-xs text-muted-foreground">Total Outstanding</p>
             <p className="text-lg font-bold text-amber-600">
-              KES {totalBalance.toLocaleString()}
+              KES {totalOutstanding.toLocaleString()}
             </p>
           </div>
         </div>
       </CardHeader>
       <CardContent>
+        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as "annual" | "termly")} className="mb-4">
+          <TabsList>
+            <TabsTrigger value="annual">Annual View</TabsTrigger>
+            <TabsTrigger value="termly">Term-by-Term</TabsTrigger>
+          </TabsList>
+        </Tabs>
+
         {!filteredStudents?.length ? (
           <p className="text-center text-muted-foreground py-8">
             No students found. Make sure fee structures are set up for {filterYear}.
           </p>
-        ) : (
+        ) : viewMode === "annual" ? (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead>Student</TableHead>
                   <TableHead>Class</TableHead>
-                  <TableHead className="text-right">Total Due</TableHead>
-                  <TableHead className="text-right">Paid</TableHead>
-                  <TableHead className="text-right">Balance</TableHead>
+                  <TableHead className="text-right">Annual Fees</TableHead>
+                  <TableHead className="text-right">Total Paid</TableHead>
+                  <TableHead className="text-right">Net Balance</TableHead>
                   <TableHead className="w-[150px]">Progress</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
@@ -215,13 +300,7 @@ const StudentFeeStatus = () => {
                       KES {student.totalPaid.toLocaleString()}
                     </TableCell>
                     <TableCell className="text-right">
-                      {student.balance > 0 ? (
-                        <span className="text-red-600 font-medium">
-                          KES {student.balance.toLocaleString()}
-                        </span>
-                      ) : (
-                        <span className="text-green-600">-</span>
-                      )}
+                      {renderBalanceCell(student.balance)}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -232,13 +311,74 @@ const StudentFeeStatus = () => {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {student.status === "cleared" ? (
-                        <Badge className="bg-green-500">Cleared</Badge>
-                      ) : student.status === "partial" ? (
-                        <Badge variant="secondary">Partial</Badge>
-                      ) : (
-                        <Badge variant="destructive">Defaulter</Badge>
-                      )}
+                      {renderStatusBadge(student.status)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Student</TableHead>
+                  <TableHead>Class</TableHead>
+                  <TableHead className="text-center">Term 1</TableHead>
+                  <TableHead className="text-center">Term 2</TableHead>
+                  <TableHead className="text-center">Term 3</TableHead>
+                  <TableHead className="text-right">Net Balance</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredStudents?.map((student) => (
+                  <TableRow key={student.id}>
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{student.full_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {student.admission_number}
+                        </p>
+                      </div>
+                    </TableCell>
+                    <TableCell>{student.class}</TableCell>
+                    {[1, 2, 3].map((term) => {
+                      const termData = student.termBalances.find((t: TermBalance) => t.term === term);
+                      if (!termData || termData.termFee === 0) {
+                        return (
+                          <TableCell key={term} className="text-center text-muted-foreground">
+                            -
+                          </TableCell>
+                        );
+                      }
+                      return (
+                        <TableCell key={term} className="text-center">
+                          <div className="text-xs space-y-1">
+                            <div className="text-muted-foreground">
+                              Fee: {termData.termFee.toLocaleString()}
+                            </div>
+                            <div className="text-green-600">
+                              Paid: {termData.termPayments.toLocaleString()}
+                            </div>
+                            {termData.carryForward !== 0 && (
+                              <div className={termData.carryForward < 0 ? "text-green-600" : "text-destructive"}>
+                                C/F: {termData.carryForward < 0 ? `-${Math.abs(termData.carryForward).toLocaleString()}` : `+${termData.carryForward.toLocaleString()}`}
+                              </div>
+                            )}
+                            <div className={`font-medium ${termData.netBalance < 0 ? 'text-green-600' : termData.netBalance > 0 ? 'text-destructive' : ''}`}>
+                              Net: {termData.netBalance < 0 ? `-${Math.abs(termData.netBalance).toLocaleString()}` : termData.netBalance.toLocaleString()}
+                            </div>
+                          </div>
+                        </TableCell>
+                      );
+                    })}
+                    <TableCell className="text-right">
+                      {renderBalanceCell(student.balance)}
+                    </TableCell>
+                    <TableCell>
+                      {renderStatusBadge(student.status)}
                     </TableCell>
                   </TableRow>
                 ))}

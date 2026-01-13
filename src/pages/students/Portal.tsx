@@ -234,14 +234,28 @@ const StudentPortal = () => {
             <CardContent>
               {feeData.length > 0 ? (
                 <div className="space-y-2">
-                  {feeData.slice(0, 3).map((fee) => (
-                    <div key={fee.id} className="flex justify-between items-center">
-                      <span className="text-sm">{fee.term} {fee.year}</span>
-                      <Badge variant={fee.balance > 0 ? "destructive" : "default"}>
-                        Balance: KES {fee.balance}
-                      </Badge>
-                    </div>
-                  ))}
+                  {feeData.slice(0, 3).map((fee) => {
+                    const balance = Number(fee.balance);
+                    const isCredit = balance < 0;
+                    const isDue = balance > 0;
+                    
+                    return (
+                      <div key={fee.id} className="flex justify-between items-center">
+                        <span className="text-sm">Term {fee.term} {fee.year}</span>
+                        {isCredit ? (
+                          <Badge className="bg-green-500 hover:bg-green-600">
+                            Credit: KES {Math.abs(balance).toLocaleString()}
+                          </Badge>
+                        ) : isDue ? (
+                          <Badge variant="destructive">
+                            Due: KES {balance.toLocaleString()}
+                          </Badge>
+                        ) : (
+                          <Badge variant="secondary">Cleared</Badge>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-sm text-muted-foreground">No fee records yet</p>
