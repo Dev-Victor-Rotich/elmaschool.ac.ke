@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { History, Search, Printer } from "lucide-react";
+import { History, Search, Printer, TrendingUp, TrendingDown, Scale } from "lucide-react";
 import { format } from "date-fns";
 import ReceiptModal from "./ReceiptModal";
 
@@ -23,6 +23,14 @@ interface PaymentData {
   balance: number;
   paymentDate: Date;
   recordedBy: string;
+}
+
+interface RunningBalanceMap {
+  [paymentId: string]: {
+    cumulativeBalance: number;
+    totalFees: number;
+    totalPaid: number;
+  };
 }
 
 const PaymentHistoryView = () => {
@@ -43,7 +51,6 @@ const PaymentHistoryView = () => {
       
       if (error) throw error;
       
-      // Get unique years
       const uniqueYears = [...new Set(data?.map(p => p.year) || [])];
       return uniqueYears.length > 0 ? uniqueYears : [new Date().getFullYear()];
     },
@@ -56,64 +63,171 @@ const PaymentHistoryView = () => {
     }
   }, [availableYears, filterYear]);
 
-  const { data: payments, isLoading } = useQuery({
-    queryKey: ["payment-history", filterYear, filterTerm],
+  // Fetch ALL payments for the year (for cumulative calculation)
+  const { data: allYearPayments } = useQuery({
+    queryKey: ["all-year-payments", filterYear],
     queryFn: async () => {
       if (!filterYear) return [];
       
-      let query = supabase
+      const { data, error } = await supabase
         .from("fee_payments")
         .select(`
           *,
           student:students_data(full_name, admission_number, class)
         `)
         .eq("year", parseInt(filterYear))
-        .order("payment_date", { ascending: false });
+        .order("payment_date", { ascending: true });
 
-      if (filterTerm !== "all") {
-        query = query.eq("term", filterTerm);
-      }
-
-      const { data, error } = await query;
       if (error) throw error;
-      return data;
+      return data || [];
     },
     enabled: !!filterYear,
   });
 
-  const filteredPayments = payments?.filter((payment) => {
-    if (!searchTerm) return true;
-    const search = searchTerm.toLowerCase();
-    return (
-      payment.student?.full_name?.toLowerCase().includes(search) ||
-      payment.student?.admission_number?.toLowerCase().includes(search) ||
-      payment.receipt_number?.toLowerCase().includes(search)
-    );
+  // Fetch fee structures for the year
+  const { data: feeStructures } = useQuery({
+    queryKey: ["fee-structures-year", filterYear],
+    queryFn: async () => {
+      if (!filterYear) return [];
+      
+      const { data, error } = await supabase
+        .from("fee_structures")
+        .select("*")
+        .eq("year", parseInt(filterYear));
+
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!filterYear,
   });
 
-  const totalCollected = filteredPayments?.reduce(
-    (sum, p) => sum + Number(p.amount_paid),
-    0
-  ) || 0;
+  // Calculate running balances for each payment
+  const runningBalances = useMemo<RunningBalanceMap>(() => {
+    if (!allYearPayments || !feeStructures) return {};
 
-  // Calculate totals - handle negative balances (credits)
-  const totalOutstanding = filteredPayments?.reduce(
-    (sum, p) => {
-      const balance = Number(p.balance);
-      // Only count positive balances (debts) in outstanding
-      return sum + (balance > 0 ? balance : 0);
-    },
-    0
-  ) || 0;
+    const balanceMap: RunningBalanceMap = {};
+    
+    // Group payments by student
+    const paymentsByStudent: { [studentId: string]: typeof allYearPayments } = {};
+    
+    allYearPayments.forEach(payment => {
+      const studentId = payment.student_id;
+      if (!paymentsByStudent[studentId]) {
+        paymentsByStudent[studentId] = [];
+      }
+      paymentsByStudent[studentId].push(payment);
+    });
 
-  const totalCredits = filteredPayments?.reduce(
-    (sum, p) => {
-      const balance = Number(p.balance);
-      // Count negative balances (credits)
-      return sum + (balance < 0 ? Math.abs(balance) : 0);
-    },
-    0
-  ) || 0;
+    // Calculate running balance for each student's payments
+    Object.entries(paymentsByStudent).forEach(([studentId, studentPayments]) => {
+      // Sort by date ascending
+      const sortedPayments = [...studentPayments].sort((a, b) => 
+        new Date(a.payment_date || 0).getTime() - new Date(b.payment_date || 0).getTime()
+      );
+
+      sortedPayments.forEach((payment, index) => {
+        const studentClass = payment.student?.class || "";
+        const currentTerm = parseInt(payment.term);
+
+        // Calculate total fees up to current term
+        let totalFeesUpToTerm = 0;
+        for (let t = 1; t <= currentTerm; t++) {
+          const termFee = feeStructures.find(
+            fs => fs.class_name === studentClass && fs.term === t.toString()
+          );
+          if (termFee) {
+            totalFeesUpToTerm += Number(termFee.total_fee) || 
+              (Number(termFee.tuition_fee) + Number(termFee.boarding_fee) + 
+               Number(termFee.activity_fee) + Number(termFee.other_fees));
+          }
+        }
+
+        // Calculate total paid up to and including this payment
+        const paymentsUpToThis = sortedPayments.slice(0, index + 1);
+        const totalPaidUpToThis = paymentsUpToThis.reduce(
+          (sum, p) => sum + Number(p.amount_paid), 0
+        );
+
+        // Cumulative balance = fees - paid (positive = owes, negative = credit)
+        const cumulativeBalance = totalFeesUpToTerm - totalPaidUpToThis;
+
+        balanceMap[payment.id] = {
+          cumulativeBalance,
+          totalFees: totalFeesUpToTerm,
+          totalPaid: totalPaidUpToThis,
+        };
+      });
+    });
+
+    return balanceMap;
+  }, [allYearPayments, feeStructures]);
+
+  // Filter payments for display
+  const filteredPayments = useMemo(() => {
+    let payments = allYearPayments || [];
+    
+    // Filter by term
+    if (filterTerm !== "all") {
+      payments = payments.filter(p => p.term === filterTerm);
+    }
+
+    // Filter by search
+    if (searchTerm) {
+      const search = searchTerm.toLowerCase();
+      payments = payments.filter(payment =>
+        payment.student?.full_name?.toLowerCase().includes(search) ||
+        payment.student?.admission_number?.toLowerCase().includes(search) ||
+        payment.receipt_number?.toLowerCase().includes(search)
+      );
+    }
+
+    // Sort by date descending for display
+    return [...payments].sort((a, b) => 
+      new Date(b.payment_date || 0).getTime() - new Date(a.payment_date || 0).getTime()
+    );
+  }, [allYearPayments, filterTerm, searchTerm]);
+
+  // Calculate summary totals from running balances (latest balance per student)
+  const summaryTotals = useMemo(() => {
+    if (!allYearPayments || !runningBalances) {
+      return { totalCollected: 0, totalOutstanding: 0, totalCredits: 0, netBalance: 0 };
+    }
+
+    // Get latest payment per student
+    const latestByStudent: { [studentId: string]: typeof allYearPayments[0] } = {};
+    
+    allYearPayments.forEach(payment => {
+      const studentId = payment.student_id;
+      const existing = latestByStudent[studentId];
+      
+      if (!existing || new Date(payment.payment_date || 0) > new Date(existing.payment_date || 0)) {
+        latestByStudent[studentId] = payment;
+      }
+    });
+
+    let totalCollected = 0;
+    let totalOutstanding = 0;
+    let totalCredits = 0;
+
+    // Total collected is sum of all payments
+    totalCollected = allYearPayments.reduce((sum, p) => sum + Number(p.amount_paid), 0);
+
+    // Outstanding and credits from latest cumulative balance per student
+    Object.values(latestByStudent).forEach(payment => {
+      const balance = runningBalances[payment.id]?.cumulativeBalance || 0;
+      if (balance > 0) {
+        totalOutstanding += balance;
+      } else if (balance < 0) {
+        totalCredits += Math.abs(balance);
+      }
+    });
+
+    const netBalance = totalOutstanding - totalCredits;
+
+    return { totalCollected, totalOutstanding, totalCredits, netBalance };
+  }, [allYearPayments, runningBalances]);
+
+  const isLoading = !allYearPayments;
 
   const [feeBreakdown, setFeeBreakdown] = useState<{
     tuitionFee: number;
@@ -124,7 +238,6 @@ const PaymentHistoryView = () => {
     debtFromPreviousTerms?: number;
   } | null>(null);
 
-  // Running balance state for receipt
   const [runningBalanceData, setRunningBalanceData] = useState<{
     totalFeesYear: number;
     totalPaidYear: number;
@@ -137,7 +250,6 @@ const PaymentHistoryView = () => {
     const studentClass = payment.student?.class || "";
     const studentId = payment.student_id;
 
-    // Fetch fee structure for breakdown
     const { data: feeStructure } = await supabase
       .from("fee_structures")
       .select("tuition_fee, boarding_fee, activity_fee, other_fees, total_fee")
@@ -146,14 +258,12 @@ const PaymentHistoryView = () => {
       .eq("year", currentYear)
       .maybeSingle();
 
-    // Fetch all fee structures for this class and year (for cumulative calculation)
     const { data: allFeeStructures } = await supabase
       .from("fee_structures")
       .select("term, total_fee, tuition_fee, boarding_fee, activity_fee, other_fees")
       .eq("class_name", studentClass)
       .eq("year", currentYear);
 
-    // Fetch ALL payments for this student for this year up to this payment
     const { data: allPayments } = await supabase
       .from("fee_payments")
       .select("term, amount_paid, payment_date")
@@ -161,7 +271,6 @@ const PaymentHistoryView = () => {
       .eq("year", currentYear)
       .lte("payment_date", payment.payment_date || new Date().toISOString());
 
-    // Calculate cumulative totals up to current term
     let totalFeesYear = 0;
     let totalPaidYear = 0;
 
@@ -183,7 +292,6 @@ const PaymentHistoryView = () => {
 
     const cumulativeBalance = totalFeesYear - totalPaidYear;
 
-    // Calculate balance from all previous terms (positive = debt, negative = credit)
     let previousTermsBalance = 0;
 
     if (currentTerm > 1) {
@@ -249,7 +357,7 @@ const PaymentHistoryView = () => {
                 <History className="h-5 w-5" />
                 Payment History
               </CardTitle>
-              <CardDescription>View all recorded fee payments</CardDescription>
+              <CardDescription>View all recorded fee payments with cumulative balances</CardDescription>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <div className="relative">
@@ -287,25 +395,60 @@ const PaymentHistoryView = () => {
             </div>
           </div>
 
-          {/* Summary stats */}
-          <div className="grid grid-cols-3 gap-4 mt-4">
-            <div className="p-3 bg-green-500/10 rounded-lg">
-              <p className="text-xs text-muted-foreground">Total Collected</p>
-              <p className="text-lg font-bold text-green-600">
-                KES {totalCollected.toLocaleString()}
-              </p>
+          {/* Net Balance Summary - Prominent Display */}
+          <div className="mt-4 p-4 rounded-lg border-2 border-primary/20 bg-primary/5">
+            <div className="flex items-center gap-2 mb-3">
+              <Scale className="h-5 w-5 text-primary" />
+              <h3 className="font-semibold text-lg">Net Balance Summary</h3>
             </div>
-            <div className="p-3 bg-amber-500/10 rounded-lg">
-              <p className="text-xs text-muted-foreground">Outstanding Balance</p>
-              <p className="text-lg font-bold text-amber-600">
-                KES {totalOutstanding.toLocaleString()}
-              </p>
-            </div>
-            <div className="p-3 bg-blue-500/10 rounded-lg">
-              <p className="text-xs text-muted-foreground">Total Credits</p>
-              <p className="text-lg font-bold text-blue-600">
-                KES {totalCredits.toLocaleString()}
-              </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">Total Collected</p>
+                <p className="text-lg font-bold text-green-600">
+                  KES {summaryTotals.totalCollected.toLocaleString()}
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">Total Outstanding</p>
+                <p className="text-lg font-bold text-amber-600">
+                  KES {summaryTotals.totalOutstanding.toLocaleString()}
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">Total Credits</p>
+                <p className="text-lg font-bold text-blue-600">
+                  KES {summaryTotals.totalCredits.toLocaleString()}
+                </p>
+              </div>
+              <div className="text-center p-2 rounded-lg bg-background border">
+                <p className="text-xs text-muted-foreground">Net Position</p>
+                <div className="flex items-center justify-center gap-1">
+                  {summaryTotals.netBalance > 0 ? (
+                    <>
+                      <TrendingUp className="h-4 w-4 text-amber-600" />
+                      <p className="text-lg font-bold text-amber-600">
+                        KES {summaryTotals.netBalance.toLocaleString()}
+                      </p>
+                    </>
+                  ) : summaryTotals.netBalance < 0 ? (
+                    <>
+                      <TrendingDown className="h-4 w-4 text-green-600" />
+                      <p className="text-lg font-bold text-green-600">
+                        KES {Math.abs(summaryTotals.netBalance).toLocaleString()}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-lg font-bold text-muted-foreground">KES 0</p>
+                  )}
+                </div>
+                <p className="text-xs mt-1">
+                  {summaryTotals.netBalance > 0 
+                    ? "School is owed" 
+                    : summaryTotals.netBalance < 0 
+                    ? "Credit surplus" 
+                    : "Balanced"}
+                </p>
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -326,65 +469,66 @@ const PaymentHistoryView = () => {
                     <TableHead>Student</TableHead>
                     <TableHead>Class</TableHead>
                     <TableHead>Term</TableHead>
-                    <TableHead className="text-right">Amount Due</TableHead>
                     <TableHead className="text-right">Paid</TableHead>
-                    <TableHead className="text-right">Balance</TableHead>
+                    <TableHead className="text-right">Cumulative Balance</TableHead>
                     <TableHead className="text-center">Action</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredPayments?.map((payment) => (
-                    <TableRow key={payment.id}>
-                      <TableCell className="text-sm">
-                        {payment.payment_date
-                          ? format(new Date(payment.payment_date), "dd/MM/yyyy")
-                          : "-"}
-                      </TableCell>
-                      <TableCell>
-                        <code className="text-xs bg-muted px-1 rounded">
-                          {payment.receipt_number || "-"}
-                        </code>
-                      </TableCell>
-                      <TableCell>
-                        <div>
-                          <p className="font-medium">{payment.student?.full_name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {payment.student?.admission_number}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>{payment.student?.class}</TableCell>
-                      <TableCell>Term {payment.term}</TableCell>
-                      <TableCell className="text-right">
-                        {Number(payment.amount_due).toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-right text-green-600 font-medium">
-                        {Number(payment.amount_paid).toLocaleString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {Number(payment.balance) < 0 ? (
-                          <Badge className="bg-green-500 hover:bg-green-600">
-                            Credit {Math.abs(Number(payment.balance)).toLocaleString()}
-                          </Badge>
-                        ) : Number(payment.balance) > 0 ? (
-                          <Badge variant="destructive">
-                            Due {Number(payment.balance).toLocaleString()}
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary">Cleared</Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleViewReceipt(payment)}
-                        >
-                          <Printer className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {filteredPayments?.map((payment) => {
+                    const balanceData = runningBalances[payment.id];
+                    const cumulativeBalance = balanceData?.cumulativeBalance || 0;
+                    
+                    return (
+                      <TableRow key={payment.id}>
+                        <TableCell className="text-sm">
+                          {payment.payment_date
+                            ? format(new Date(payment.payment_date), "dd/MM/yyyy")
+                            : "-"}
+                        </TableCell>
+                        <TableCell>
+                          <code className="text-xs bg-muted px-1 rounded">
+                            {payment.receipt_number || "-"}
+                          </code>
+                        </TableCell>
+                        <TableCell>
+                          <div>
+                            <p className="font-medium">{payment.student?.full_name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {payment.student?.admission_number}
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell>{payment.student?.class}</TableCell>
+                        <TableCell>Term {payment.term}</TableCell>
+                        <TableCell className="text-right text-green-600 font-medium">
+                          +{Number(payment.amount_paid).toLocaleString()}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {cumulativeBalance < 0 ? (
+                            <Badge className="bg-green-500 hover:bg-green-600">
+                              Credit {Math.abs(cumulativeBalance).toLocaleString()}
+                            </Badge>
+                          ) : cumulativeBalance > 0 ? (
+                            <Badge variant="destructive">
+                              Due {cumulativeBalance.toLocaleString()}
+                            </Badge>
+                          ) : (
+                            <Badge variant="secondary">Cleared</Badge>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleViewReceipt(payment)}
+                          >
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
