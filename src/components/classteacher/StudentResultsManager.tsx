@@ -72,12 +72,11 @@ export const StudentResultsManager = ({ assignedClass }: StudentResultsManagerPr
 
       if (error) throw error;
 
-      // Get teacher names for the results - check both profiles and staff_registry
+      // Get teacher names from profiles table
       const teacherIds = [...new Set((data || []).filter(r => r.teacher_id).map(r => r.teacher_id))];
       
       let teacherMap: Record<string, string> = {};
       if (teacherIds.length > 0) {
-        // First try profiles table (for users who have logged in)
         const { data: profiles } = await supabase
           .from('profiles')
           .select('id, full_name')
@@ -90,41 +89,6 @@ export const StudentResultsManager = ({ assignedClass }: StudentResultsManagerPr
             }
           });
         }
-
-        // For any IDs not found in profiles, try to look up via staff_registry using auth.users email
-        const missingIds = teacherIds.filter(id => !teacherMap[id]);
-        if (missingIds.length > 0) {
-          // Get staff registry entries that match these user emails
-          const { data: staffEntries } = await supabase
-            .from('staff_registry')
-            .select('email, full_name');
-
-          if (staffEntries) {
-            // Create a lookup by email
-            const staffByEmail: Record<string, string> = {};
-            staffEntries.forEach(s => {
-              if (s.full_name) {
-                staffByEmail[s.email.toLowerCase()] = s.full_name;
-              }
-            });
-
-            // For missing IDs, we need to check if they correspond to staff
-            // Since we can't query auth.users directly, we'll use profiles email or fallback
-            const { data: profileEmails } = await supabase
-              .from('profiles')
-              .select('id, full_name')
-              .in('id', missingIds);
-
-            // If profile exists but full_name is empty, try staff_registry
-            if (profileEmails) {
-              profileEmails.forEach(p => {
-                if (!p.full_name || p.full_name.trim() === '') {
-                  // Mark as needing staff lookup - handled below
-                }
-              });
-            }
-          }
-        }
       }
 
       // Map student and teacher data
@@ -136,7 +100,7 @@ export const StudentResultsManager = ({ assignedClass }: StudentResultsManagerPr
       return (data || []).map(result => ({
         ...result,
         student: studentMap[result.student_id],
-        teacher: result.teacher_id ? { full_name: teacherMap[result.teacher_id] || 'Not recorded' } : { full_name: 'Not recorded' }
+        teacher: result.teacher_id ? { full_name: teacherMap[result.teacher_id] || 'Unknown Teacher' } : { full_name: 'Not recorded' }
       })) as AcademicResult[];
     },
     enabled: students.length > 0
