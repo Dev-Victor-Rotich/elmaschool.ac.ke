@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,10 +10,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { TrendingUp, TrendingDown, Minus, Trophy, Users, BarChart3, Save, Trash2, Download, BookOpen, Info } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Trophy, Users, BarChart3, Save, Trash2, Download, BookOpen, Info, Loader2, AlertCircle } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { uses7SubjectCalculation, calculate844Points, buildSubjectKey, isSubjectDropped, calculateOverallGradeByPoints, DEFAULT_POINT_BOUNDARIES, type Calculate844PointsResult, type PointBoundary } from "@/lib/grading-utils";
 
 interface ExamResultsMatrixProps {
@@ -35,7 +36,7 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
   const [resultForm, setResultForm] = useState({ marks: 0, remarks: "" });
 
   // Fetch students in class
-  const { data: students = [] } = useQuery({
+  const { data: students = [], isLoading: studentsLoading, error: studentsError } = useQuery({
     queryKey: ["class-students", assignedClass],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -49,7 +50,7 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
   });
 
   // Fetch subject offerings for this class
-  const { data: subjectOfferings = [] } = useQuery({
+  const { data: subjectOfferings = [], isLoading: subjectsLoading, error: subjectsError } = useQuery({
     queryKey: ["class-subject-offerings", assignedClass],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -96,7 +97,7 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
   });
 
   // Fetch current exam results
-  const { data: currentResults = [] } = useQuery({
+  const { data: currentResults = [], isLoading: resultsLoading, error: resultsError } = useQuery({
     queryKey: ["exam-results", exam.id],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -104,8 +105,11 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
         .select("*")
         .eq("exam_id", exam.id);
       if (error) throw error;
+      console.log("Fetched exam results for exam:", exam.id, "Count:", data?.length || 0, "Data:", data);
       return data || [];
     },
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   // Fetch previous exam for comparison
@@ -195,6 +199,7 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
     currentResults.forEach((r: any) => {
       map[`${r.student_id}-${r.subject}`] = r;
     });
+    console.log("Results Map built:", Object.keys(map).length, "entries. Sample keys:", Object.keys(map).slice(0, 5));
     return map;
   }, [currentResults]);
 
@@ -499,6 +504,51 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
     if (studentStats.length === 0) return 0;
     return studentStats.reduce((sum, s) => sum + s.meanMarks, 0) / studentStats.length;
   }, [studentStats]);
+
+  // Loading state
+  const isLoading = studentsLoading || subjectsLoading || resultsLoading;
+  const hasError = studentsError || subjectsError || resultsError;
+
+  // Debug effect
+  useEffect(() => {
+    console.log("ExamResultsMatrix Debug:", {
+      examId: exam.id,
+      studentsCount: students.length,
+      subjectsCount: subjects.length,
+      resultsCount: currentResults.length,
+      isLoading,
+      hasError: hasError ? String(hasError) : null,
+    });
+  }, [exam.id, students.length, subjects.length, currentResults.length, isLoading, hasError]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center p-12 space-y-4">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <p className="text-muted-foreground">Loading exam results...</p>
+      </div>
+    );
+  }
+
+  if (hasError) {
+    return (
+      <div className="space-y-4">
+        <Button variant="ghost" onClick={onBack}>
+          ← Back to Exam Details
+        </Button>
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error loading data</AlertTitle>
+          <AlertDescription>
+            Failed to load exam results. Please try again.
+            {studentsError && <div className="text-xs mt-1">Students: {String(studentsError)}</div>}
+            {subjectsError && <div className="text-xs mt-1">Subjects: {String(subjectsError)}</div>}
+            {resultsError && <div className="text-xs mt-1">Results: {String(resultsError)}</div>}
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 print:space-y-4">
