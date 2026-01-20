@@ -36,7 +36,7 @@ const About = () => {
       const { data, error } = await supabase
         .from("academic_excellence")
         .select("*")
-        .order("display_order");
+        .order("year", { ascending: true });
       if (error) throw error;
       return data;
     },
