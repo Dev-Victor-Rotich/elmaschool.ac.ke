@@ -531,6 +531,14 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
   }
 
   if (hasError) {
+    const getErrorMessage = (err: unknown): string => {
+      if (!err) return '';
+      if (typeof err === 'string') return err;
+      if (err instanceof Error) return err.message;
+      if (typeof err === 'object' && 'message' in err) return String((err as any).message);
+      return JSON.stringify(err);
+    };
+
     return (
       <div className="space-y-4">
         <Button variant="ghost" onClick={onBack}>
@@ -541,9 +549,9 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
           <AlertTitle>Error loading data</AlertTitle>
           <AlertDescription>
             Failed to load exam results. Please try again.
-            {studentsError && <div className="text-xs mt-1">Students: {String(studentsError)}</div>}
-            {subjectsError && <div className="text-xs mt-1">Subjects: {String(subjectsError)}</div>}
-            {resultsError && <div className="text-xs mt-1">Results: {String(resultsError)}</div>}
+            {studentsError && <div className="text-xs mt-1">Students: {getErrorMessage(studentsError)}</div>}
+            {subjectsError && <div className="text-xs mt-1">Subjects: {getErrorMessage(subjectsError)}</div>}
+            {resultsError && <div className="text-xs mt-1">Results: {getErrorMessage(resultsError)}</div>}
           </AlertDescription>
         </Alert>
       </div>
