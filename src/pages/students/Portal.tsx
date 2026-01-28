@@ -8,7 +8,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { GraduationCap, DollarSign, Calendar, MessageSquare, Mail, CheckCircle, Receipt, FileText, TrendingUp, TrendingDown, Edit } from "lucide-react";
+import { GraduationCap, DollarSign, Calendar, MessageSquare, Mail, CheckCircle, Receipt, FileText, TrendingUp, TrendingDown, Edit, MoreVertical } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -27,6 +28,7 @@ const StudentPortal = () => {
   const [selectedMessage, setSelectedMessage] = useState<any>(null);
   const [messageDialogOpen, setMessageDialogOpen] = useState(false);
   const [selectedTerm, setSelectedTerm] = useState<string>("all");
+  const [feeTab, setFeeTab] = useState<string>("overview");
 
   const currentYear = new Date().getFullYear();
 
@@ -495,14 +497,40 @@ const StudentPortal = () => {
         {/* Fee Details Section */}
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <DollarSign className="w-5 h-5 mr-2" />
-              Fee Details - {currentYear}
-            </CardTitle>
-            <CardDescription>View your payment history, fee structure, and status</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center">
+                  <DollarSign className="w-5 h-5 mr-2" />
+                  Fee Details - {currentYear}
+                </CardTitle>
+                <CardDescription>View your payment history, fee structure, and status</CardDescription>
+              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                    <MoreVertical className="h-4 w-4" />
+                    <span className="sr-only">Open menu</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setFeeTab("overview")}>
+                    <TrendingUp className="w-4 h-4 mr-2" />
+                    Overview
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFeeTab("history")}>
+                    <Receipt className="w-4 h-4 mr-2" />
+                    Payment History
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFeeTab("structure")}>
+                    <FileText className="w-4 h-4 mr-2" />
+                    Fee Structure
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="overview" className="space-y-4">
+            <Tabs value={feeTab} onValueChange={setFeeTab} className="space-y-4">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="overview">
                   <TrendingUp className="w-4 h-4 mr-2" />
