@@ -72,21 +72,36 @@ serve(async (req) => {
     const expectedPassword = lastName + student.admission_number
 
     // Compare password (case-insensitive for flexibility)
-    if (password.toUpperCase() === expectedPassword) {
-      return new Response(
-        JSON.stringify({ 
-          valid: true, 
-          email: student.email,
-          userId: student.user_id 
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
-    } else {
+    if (password.toUpperCase() !== expectedPassword) {
       return new Response(
         JSON.stringify({ valid: false, message: 'Wrong password' }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
+
+    // Generate magic link token for direct authentication
+    const { data: linkData, error: linkError } = await supabaseClient.auth.admin.generateLink({
+      type: 'magiclink',
+      email: student.email,
+    })
+
+    if (linkError || !linkData) {
+      console.error('Error generating magic link:', linkError)
+      return new Response(
+        JSON.stringify({ valid: false, message: 'Login failed. Please try again.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
+    return new Response(
+      JSON.stringify({ 
+        valid: true, 
+        email: student.email,
+        token_hash: linkData.properties.hashed_token,
+        userId: student.user_id 
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    )
 
   } catch (error) {
     console.error('Error in student-quick-login:', error)
