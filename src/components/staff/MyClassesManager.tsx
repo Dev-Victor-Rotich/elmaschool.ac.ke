@@ -8,7 +8,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { BookOpen, GraduationCap, ChevronRight, ArrowLeft, Trash2, FileText, Calendar } from "lucide-react";
+import { BookOpen, GraduationCap, ChevronRight, ArrowLeft, Trash2, FileText, Calendar, History } from "lucide-react";
+import AcademicYearSelector from "@/components/shared/AcademicYearSelector";
 import TeacherExamResults from "@/components/teacher/TeacherExamResults";
 
 interface TeacherAssignment {
@@ -33,6 +34,7 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
   const [selectedExam, setSelectedExam] = useState<any | null>(null);
   const [showMyResults, setShowMyResults] = useState(false);
   const [deleteResultId, setDeleteResultId] = useState<string | null>(null);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   // Get staff_registry.id using email
   const { data: staffRecord, isLoading: staffLoading } = useQuery({
@@ -89,18 +91,56 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
   // Get subjects for selected class
   const classSubjects = assignments?.filter(a => a.class_name === selectedClass) || [];
 
-  // Fetch exams for selected class
+  // Fetch exams for selected class and year - includes historical exams with results
   const { data: exams = [], isLoading: examsLoading } = useQuery({
-    queryKey: ['class-exams', selectedClass],
+    queryKey: ['class-exams-teacher', selectedClass, selectedYear],
     queryFn: async () => {
       if (!selectedClass) return [];
-      const { data, error } = await supabase
+      
+      // Get current class exams for selected year
+      const { data: currentExams } = await supabase
         .from('exams')
         .select('*')
         .eq('class_name', selectedClass)
+        .eq('year', selectedYear)
         .order('start_date', { ascending: false });
-      if (error) throw error;
-      return data || [];
+      
+      // Also get historical exams from other classes for this year where results exist
+      const { data: students } = await supabase
+        .from('students_data')
+        .select('id')
+        .eq('class', selectedClass);
+      
+      let historicalExams: any[] = [];
+      if (students && students.length > 0) {
+        const studentIds = students.map(s => s.id);
+        const { data: resultExamIds } = await supabase
+          .from('academic_results')
+          .select('exam_id')
+          .in('student_id', studentIds)
+          .eq('year', selectedYear);
+        
+        const uniqueExamIds = [...new Set(resultExamIds?.map(r => r.exam_id).filter(Boolean) || [])] as string[];
+        
+        if (uniqueExamIds.length > 0) {
+          const { data } = await supabase
+            .from('exams')
+            .select('*')
+            .in('id', uniqueExamIds);
+          historicalExams = data || [];
+        }
+      }
+      
+      // Merge and deduplicate
+      const allExams = [...(currentExams || []), ...historicalExams];
+      const uniqueExams = allExams.reduce((acc: any[], exam) => {
+        if (!acc.find(e => e.id === exam.id)) acc.push(exam);
+        return acc;
+      }, []);
+      
+      return uniqueExams.sort((a, b) => 
+        new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
+      );
     },
     enabled: !!selectedClass && !!selectedSubject
   });
@@ -381,10 +421,16 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
         {/* Exam Selector for Selected Subject */}
         {!showMyResults && selectedClass && selectedSubject && !selectedExam && (
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Calendar className="h-4 w-4" />
-              Select an exam to enter results for {selectedSubject.subject.title}
-              {selectedSubject.sub_subject && ` (${selectedSubject.sub_subject})`}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Calendar className="h-4 w-4" />
+                Select an exam to enter results for {selectedSubject.subject.title}
+                {selectedSubject.sub_subject && ` (${selectedSubject.sub_subject})`}
+              </div>
+              <AcademicYearSelector
+                selectedYear={selectedYear}
+                onYearChange={setSelectedYear}
+              />
             </div>
             
             {examsLoading ? (
@@ -404,7 +450,15 @@ const MyClassesManager = ({ userId }: MyClassesManagerProps) => {
                         <Calendar className="h-5 w-5 text-primary" />
                       </div>
                       <div>
-                        <p className="font-medium">{exam.exam_name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{exam.exam_name}</p>
+                          {exam.class_name !== selectedClass && (
+                            <Badge variant="outline" className="text-xs">
+                              <History className="w-3 h-3 mr-1" />
+                              {exam.class_name}
+                            </Badge>
+                          )}
+                        </div>
                         <div className="flex items-center gap-2 mt-1">
                           <Badge variant="outline">{exam.term} {exam.year}</Badge>
                           <span className="text-xs text-muted-foreground">

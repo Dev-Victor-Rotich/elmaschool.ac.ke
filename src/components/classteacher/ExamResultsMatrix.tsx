@@ -35,17 +35,47 @@ export function ExamResultsMatrix({ exam, assignedClass, onBack }: ExamResultsMa
   const [selectedCell, setSelectedCell] = useState<{ studentId: string; subject: string; subSubject: string } | null>(null);
   const [resultForm, setResultForm] = useState({ marks: 0, remarks: "" });
 
-  // Fetch students in class
+  // Check if this is a historical exam (different class than currently assigned)
+  const isHistoricalExam = exam.class_name !== assignedClass;
+
+  // Fetch students - for current class exams, get all students; for historical, get students with results
   const { data: students = [], isLoading: studentsLoading, error: studentsError } = useQuery({
-    queryKey: ["class-students", assignedClass],
+    queryKey: ["exam-students", exam.id, exam.class_name, assignedClass],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // For exams matching current class, use normal query
+      if (!isHistoricalExam) {
+        const { data, error } = await supabase
+          .from("students_data")
+          .select("id, full_name, admission_number")
+          .eq("class", assignedClass)
+          .order("full_name");
+        if (error) throw error;
+        return data || [];
+      }
+      
+      // For historical exams, get current students who have results for this exam
+      const { data: currentStudents, error: currentError } = await supabase
         .from("students_data")
         .select("id, full_name, admission_number")
-        .eq("class", assignedClass)
-        .order("full_name");
-      if (error) throw error;
-      return data || [];
+        .eq("class", assignedClass);
+      
+      if (currentError) throw currentError;
+      if (!currentStudents || currentStudents.length === 0) return [];
+      
+      const studentIds = currentStudents.map(s => s.id);
+      
+      // Check which of these students have results for this exam
+      const { data: resultsCheck } = await supabase
+        .from("academic_results")
+        .select("student_id")
+        .eq("exam_id", exam.id)
+        .in("student_id", studentIds);
+      
+      const studentsWithResults = new Set(resultsCheck?.map(r => r.student_id) || []);
+      
+      return currentStudents.filter(s => studentsWithResults.has(s.id)).sort((a, b) => 
+        a.full_name.localeCompare(b.full_name)
+      );
     },
   });
 

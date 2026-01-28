@@ -10,11 +10,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Pencil, Trash2, Calendar, Clock, FileText, ChevronRight, BarChart3 } from "lucide-react";
+import { Plus, Pencil, Trash2, Calendar, Clock, FileText, ChevronRight, BarChart3, History } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import type { Json } from "@/integrations/supabase/types";
 import { ExamResultsMatrix } from "./ExamResultsMatrix";
+import AcademicYearSelector from "@/components/shared/AcademicYearSelector";
 
 interface ExamsManagerProps {
   assignedClass: string;
@@ -38,6 +39,7 @@ export function ExamsManager({ assignedClass }: ExamsManagerProps) {
   const [timetableDialogOpen, setTimetableDialogOpen] = useState(false);
   const [selectedExam, setSelectedExam] = useState<any>(null);
   const [viewMode, setViewMode] = useState<"list" | "details" | "results">("list");
+  const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
   
   const [formData, setFormData] = useState({
     exam_name: "",
@@ -55,21 +57,68 @@ export function ExamsManager({ assignedClass }: ExamsManagerProps) {
     end_time: "",
   });
 
-  // Fetch exams for this class
-  const { data: exams = [] } = useQuery({
-    queryKey: ["class-exams", assignedClass],
+  // Fetch current students in the class
+  const { data: currentStudents = [] } = useQuery({
+    queryKey: ["class-students-ids", assignedClass],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("exams")
-        .select("*")
-        .eq("class_name", assignedClass)
-        .order("start_date", { ascending: false });
+        .from("students_data")
+        .select("id")
+        .eq("class", assignedClass);
       if (error) throw error;
       return data || [];
     },
     enabled: !!assignedClass,
   });
 
+  // Fetch exams - includes current class exams AND historical exams where students have results
+  const { data: exams = [] } = useQuery({
+    queryKey: ["class-exams-all", assignedClass, selectedYear, currentStudents.length],
+    queryFn: async () => {
+      const studentIds = currentStudents.map(s => s.id);
+      
+      // Step 1: Get exam IDs from students' results for selected year
+      let historicalExamIds: string[] = [];
+      if (studentIds.length > 0) {
+        const { data: resultExamIds } = await supabase
+          .from("academic_results")
+          .select("exam_id")
+          .in("student_id", studentIds)
+          .eq("year", selectedYear);
+        
+        historicalExamIds = [...new Set(resultExamIds?.map(r => r.exam_id).filter(Boolean) || [])] as string[];
+      }
+      
+      // Step 2: Fetch current class exams for selected year
+      const { data: currentClassExams } = await supabase
+        .from("exams")
+        .select("*")
+        .eq("class_name", assignedClass)
+        .eq("year", selectedYear);
+      
+      // Step 3: Fetch historical exams by IDs (if any)
+      let historicalExams: any[] = [];
+      if (historicalExamIds.length > 0) {
+        const { data } = await supabase
+          .from("exams")
+          .select("*")
+          .in("id", historicalExamIds);
+        historicalExams = data || [];
+      }
+      
+      // Merge and deduplicate
+      const allExams = [...(currentClassExams || []), ...historicalExams];
+      const uniqueExams = allExams.reduce((acc: any[], exam) => {
+        if (!acc.find(e => e.id === exam.id)) acc.push(exam);
+        return acc;
+      }, []);
+      
+      return uniqueExams.sort((a, b) => 
+        new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
+      );
+    },
+    enabled: !!assignedClass,
+  });
   // Fetch subject offerings for timetable
   const { data: subjectOfferings = [] } = useQuery({
     queryKey: ["class-subject-offerings", assignedClass],
@@ -418,7 +467,7 @@ export function ExamsManager({ assignedClass }: ExamsManagerProps) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
             <CardTitle className="flex items-center gap-2">
               <Calendar className="h-5 w-5" />
@@ -428,7 +477,12 @@ export function ExamsManager({ assignedClass }: ExamsManagerProps) {
               Manage exams and timetables for {assignedClass}
             </CardDescription>
           </div>
-          <Dialog open={dialogOpen} onOpenChange={(open) => {
+          <div className="flex items-center gap-3">
+            <AcademicYearSelector
+              selectedYear={selectedYear}
+              onYearChange={setSelectedYear}
+            />
+            <Dialog open={dialogOpen} onOpenChange={(open) => {
             setDialogOpen(open);
             if (!open) resetForm();
           }}>
@@ -515,6 +569,7 @@ export function ExamsManager({ assignedClass }: ExamsManagerProps) {
               </form>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -542,6 +597,12 @@ export function ExamsManager({ assignedClass }: ExamsManagerProps) {
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       {exam.exam_name}
+                      {exam.class_name !== assignedClass && (
+                        <Badge variant="outline" className="text-xs">
+                          <History className="w-3 h-3 mr-1" />
+                          {exam.class_name}
+                        </Badge>
+                      )}
                       <ChevronRight className="w-4 h-4 text-muted-foreground" />
                     </div>
                   </TableCell>
