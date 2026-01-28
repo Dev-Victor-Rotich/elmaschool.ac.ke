@@ -95,11 +95,11 @@ const MagicLinkLogin = () => {
         return;
       }
 
-      // Use the token to verify OTP and establish session directly
+      // Verify the generated magic-link token hash and establish session directly.
+      // For admin-generated links, Supabase expects `token_hash` + `type`.
       const { error: verifyError } = await supabase.auth.verifyOtp({
-        email: data.email,
-        token: data.token,
-        type: 'magiclink',
+        token_hash: data.token,
+        type: "magiclink",
       });
 
       if (verifyError) {
