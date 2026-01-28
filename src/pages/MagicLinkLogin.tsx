@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Mail, School, CheckCircle2, Info } from "lucide-react";
+import { Mail, School, CheckCircle2, Info, User, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -13,6 +13,12 @@ const MagicLinkLogin = () => {
   const [loginType, setLoginType] = useState<"student" | "staff">("student");
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  
+  // Quick login state
+  const [quickLoginName, setQuickLoginName] = useState("");
+  const [quickLoginPassword, setQuickLoginPassword] = useState("");
+  const [quickLoginLoading, setQuickLoginLoading] = useState(false);
+  
   const navigate = useNavigate();
 
   const handleMagicLink = async (e: React.FormEvent) => {
@@ -69,6 +75,48 @@ const MagicLinkLogin = () => {
     }
   };
 
+  const handleQuickLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setQuickLoginLoading(true);
+
+    try {
+      // Call edge function to validate credentials
+      const { data, error } = await supabase.functions.invoke("student-quick-login", {
+        body: { fullName: quickLoginName, password: quickLoginPassword }
+      });
+
+      if (error) {
+        throw new Error("Login failed. Please try again.");
+      }
+
+      if (!data?.valid) {
+        toast.error(data?.message || "Wrong password", { duration: 3000 });
+        return;
+      }
+
+      // Sign in using magic link for the validated email
+      const { error: otpError } = await supabase.auth.signInWithOtp({
+        email: data.email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback?type=student`,
+        },
+      });
+
+      if (otpError) {
+        throw otpError;
+      }
+
+      setEmailSent(true);
+      setEmail(data.email);
+      toast.success("Login link sent to your email!");
+    } catch (error: any) {
+      console.error("Error with quick login:", error);
+      toast.error(error.message || "Login failed. Please try again.", { duration: 3000 });
+    } finally {
+      setQuickLoginLoading(false);
+    }
+  };
+
   if (emailSent) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-primary/5 via-background to-accent/5 flex items-center justify-center p-4">
@@ -114,6 +162,8 @@ const MagicLinkLogin = () => {
                 onClick={() => {
                   setEmailSent(false);
                   setEmail("");
+                  setQuickLoginName("");
+                  setQuickLoginPassword("");
                 }}
               >
                 Try Different Email
@@ -140,48 +190,48 @@ const MagicLinkLogin = () => {
           </CardTitle>
           <CardDescription className="text-base">Secure Portal Access</CardDescription>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={handleMagicLink} className="space-y-6">
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  type="button"
-                  variant={loginType === "student" ? "default" : "outline"}
-                  className="w-full h-10 text-sm"
-                  onClick={() => setLoginType("student")}
-                  disabled={loading}
-                >
-                  Student
-                </Button>
-                <Button
-                  type="button"
-                  variant={loginType === "staff" ? "default" : "outline"}
-                  className="w-full h-10 text-sm"
-                  onClick={() => setLoginType("staff")}
-                  disabled={loading}
-                >
-                  Staff
-                </Button>
-              </div>
+        <CardContent className="space-y-6">
+          {/* Login Type Toggle */}
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              type="button"
+              variant={loginType === "student" ? "default" : "outline"}
+              className="w-full h-10 text-sm"
+              onClick={() => setLoginType("student")}
+              disabled={loading || quickLoginLoading}
+            >
+              Student
+            </Button>
+            <Button
+              type="button"
+              variant={loginType === "staff" ? "default" : "outline"}
+              className="w-full h-10 text-sm"
+              onClick={() => setLoginType("staff")}
+              disabled={loading || quickLoginLoading}
+            >
+              Staff
+            </Button>
+          </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Email Address</label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                  <Input
-                    type="email"
-                    placeholder={loginType === "student" ? "Enter your registered student email" : "Enter your registered staff email"}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                    disabled={loading}
-                    className="pl-10 h-12"
-                  />
-                </div>
+          {/* Magic Link Form */}
+          <form onSubmit={handleMagicLink} className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Email Address</label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                <Input
+                  type="email"
+                  placeholder={loginType === "student" ? "Enter your registered student email" : "Enter your registered staff email"}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={loading || quickLoginLoading}
+                  className="pl-10 h-12"
+                />
               </div>
             </div>
 
-            <Button type="submit" className="w-full h-12 text-base font-semibold shadow-lg" disabled={loading}>
+            <Button type="submit" className="w-full h-12 text-base font-semibold shadow-lg" disabled={loading || quickLoginLoading}>
               {loading ? (
                 <>
                   <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
@@ -194,22 +244,110 @@ const MagicLinkLogin = () => {
                 </>
               )}
             </Button>
-
-            <Alert className="border-primary/20 bg-primary/5">
-              <Info className="h-4 w-4 text-primary" />
-              <AlertDescription className="text-sm">
-                Only registered users can access the portal. If you haven't been registered by the administrator, please
-                contact the school office.
-              </AlertDescription>
-            </Alert>
-
-            <div className="text-center space-y-2">
-              <p className="text-xs text-muted-foreground">By logging in, you agree to our Terms of Service</p>
-              <Button type="button" variant="link" className="text-primary" onClick={() => navigate("/")}>
-                Return to Homepage
-              </Button>
-            </div>
           </form>
+
+          {/* Student Quick Login Section - Only visible for students */}
+          {loginType === "student" && (
+            <>
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">Or</span>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="text-center">
+                  <h3 className="text-sm font-semibold flex items-center justify-center gap-2">
+                    <User className="h-4 w-4" />
+                    Student Quick Login
+                  </h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Login with your name and password
+                  </p>
+                </div>
+
+                <form onSubmit={handleQuickLogin} className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Full Name</label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                      <Input
+                        type="text"
+                        placeholder="e.g., Elizabeth Keen"
+                        value={quickLoginName}
+                        onChange={(e) => setQuickLoginName(e.target.value)}
+                        required
+                        disabled={loading || quickLoginLoading}
+                        className="pl-10 h-12"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Password</label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                      <Input
+                        type="password"
+                        placeholder="e.g., KEEN314"
+                        value={quickLoginPassword}
+                        onChange={(e) => setQuickLoginPassword(e.target.value)}
+                        required
+                        disabled={loading || quickLoginLoading}
+                        className="pl-10 h-12"
+                      />
+                    </div>
+                  </div>
+
+                  <Button 
+                    type="submit" 
+                    variant="secondary"
+                    className="w-full h-12 text-base font-semibold" 
+                    disabled={loading || quickLoginLoading}
+                  >
+                    {quickLoginLoading ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
+                        Logging in...
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="mr-2 h-5 w-5" />
+                        Login
+                      </>
+                    )}
+                  </Button>
+
+                  <Alert className="border-muted bg-muted/50">
+                    <Info className="h-4 w-4" />
+                    <AlertDescription className="text-xs">
+                      <strong>Password format:</strong> Last Name (CAPS) + Admission Number
+                      <br />
+                      Example: Elizabeth Keen with admission 314 → <strong>KEEN314</strong>
+                    </AlertDescription>
+                  </Alert>
+                </form>
+              </div>
+            </>
+          )}
+
+          <Alert className="border-primary/20 bg-primary/5">
+            <Info className="h-4 w-4 text-primary" />
+            <AlertDescription className="text-sm">
+              Only registered users can access the portal. If you haven't been registered by the administrator, please
+              contact the school office.
+            </AlertDescription>
+          </Alert>
+
+          <div className="text-center space-y-2">
+            <p className="text-xs text-muted-foreground">By logging in, you agree to our Terms of Service</p>
+            <Button type="button" variant="link" className="text-primary" onClick={() => navigate("/")}>
+              Return to Homepage
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
