@@ -80,7 +80,7 @@ const MagicLinkLogin = () => {
     setQuickLoginLoading(true);
 
     try {
-      // Call edge function to validate credentials
+      // Call edge function to validate credentials and get auth token
       const { data, error } = await supabase.functions.invoke("student-quick-login", {
         body: { fullName: quickLoginName, password: quickLoginPassword }
       });
@@ -94,21 +94,21 @@ const MagicLinkLogin = () => {
         return;
       }
 
-      // Sign in using magic link for the validated email
-      const { error: otpError } = await supabase.auth.signInWithOtp({
+      // Use the token to verify OTP and establish session directly
+      const { error: verifyError } = await supabase.auth.verifyOtp({
         email: data.email,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback?type=student`,
-        },
+        token: data.token_hash,
+        type: 'email',
       });
 
-      if (otpError) {
-        throw otpError;
+      if (verifyError) {
+        console.error("OTP verification error:", verifyError);
+        throw new Error("Login failed. Please try again.");
       }
 
-      setEmailSent(true);
-      setEmail(data.email);
-      toast.success("Login link sent to your email!");
+      // Redirect to student portal
+      toast.success("Welcome back!");
+      navigate("/students/portal", { replace: true });
     } catch (error: any) {
       console.error("Error with quick login:", error);
       toast.error(error.message || "Login failed. Please try again.", { duration: 3000 });

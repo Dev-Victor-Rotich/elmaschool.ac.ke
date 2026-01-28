@@ -29,7 +29,7 @@ export const StudentContentSidebar = ({ activeSection, onSectionChange }: Studen
   const isCollapsed = state === "collapsed";
 
   return (
-    <Sidebar collapsible="icon" className="border-r">
+    <Sidebar collapsible="icon" className="border-r !bg-card">
       <SidebarContent>
         <SidebarGroup>
           {!isCollapsed && (
