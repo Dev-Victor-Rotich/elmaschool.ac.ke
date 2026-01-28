@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     if (authError) throw authError
     if (!authData.user) throw new Error('Failed to create user')
 
-    // Create profile
+    // Create profile (including email for direct lookup)
     const { error: profileError } = await supabaseAdmin
       .from('profiles')
       .insert({
@@ -72,6 +72,7 @@ Deno.serve(async (req) => {
         full_name,
         phone_number,
         id_number,
+        email,
         status: 'pending'
       })
 
