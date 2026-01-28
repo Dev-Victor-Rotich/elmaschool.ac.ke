@@ -495,7 +495,7 @@ const ExamResultsView = ({ exam, studentId, studentClass, onBack }: ExamResultsV
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-xl">{exam.exam_name}</CardTitle>
-              <CardDescription>Term {exam.term}, {exam.year} | {studentClass}</CardDescription>
+              <CardDescription>Term {exam.term}, {exam.year} | {exam.class_name}</CardDescription>
             </div>
             <Badge variant="secondary" className="text-lg px-4 py-2">
               {totals.overallGrade.grade}
