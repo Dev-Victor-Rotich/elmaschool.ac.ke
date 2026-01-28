@@ -1,4 +1,4 @@
-import { Home, Users, Mic2, Image, ChevronDown } from "lucide-react";
+import { Home, Users, Mic2, Image } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   Sidebar,
@@ -9,7 +9,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
 
@@ -33,20 +32,20 @@ export const StudentContentSidebar = ({ activeSection, onSectionChange }: Studen
     <Sidebar collapsible="icon" className="border-r">
       <SidebarContent>
         <SidebarGroup>
-          <div className="flex items-center justify-between px-4 py-3">
-            {!isCollapsed && (
+          {!isCollapsed && (
+            <div className="px-4 py-3">
               <SidebarGroupLabel className="text-lg font-semibold">
                 Website Content
               </SidebarGroupLabel>
-            )}
-            <SidebarTrigger />
-          </div>
+            </div>
+          )}
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.id}>
                   <SidebarMenuButton
                     onClick={() => onSectionChange(item.id)}
+                    tooltip={item.label}
                     className={cn(
                       "w-full justify-start",
                       activeSection === item.id && "bg-primary/10 text-primary font-medium"
