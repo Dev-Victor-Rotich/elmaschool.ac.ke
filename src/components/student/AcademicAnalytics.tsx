@@ -30,20 +30,44 @@ const AcademicAnalytics = ({ studentId, studentClass }: AcademicAnalyticsProps) 
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [viewingResults, setViewingResults] = useState(false);
 
-  // Fetch exams for student's class filtered by academic year
+  // Fetch exams based on student's actual results for that year (not current class)
+  // This ensures historical results are visible even after class changes
   const { data: exams = [], isLoading: examsLoading } = useQuery({
-    queryKey: ["student-exams", studentClass, selectedYear],
+    queryKey: ["student-exams", studentId, selectedYear, studentClass],
     queryFn: async () => {
+      // Step 1: Get distinct exam IDs from student's results for this year
+      const { data: resultExamIds, error: resultError } = await supabase
+        .from("academic_results")
+        .select("exam_id")
+        .eq("student_id", studentId)
+        .eq("year", selectedYear);
+      
+      if (resultError) throw resultError;
+      
+      const uniqueExamIds = [...new Set(resultExamIds?.map(r => r.exam_id).filter(Boolean))];
+      
+      if (uniqueExamIds.length === 0) {
+        // Fallback: Check for upcoming/current exams in current class (no results yet)
+        const { data, error } = await supabase
+          .from("exams")
+          .select("*")
+          .eq("class_name", studentClass)
+          .eq("year", selectedYear)
+          .order("start_date", { ascending: false });
+        if (error) throw error;
+        return (data || []) as Exam[];
+      }
+      
+      // Step 2: Fetch exams by IDs (works for any class, past or present)
       const { data, error } = await supabase
         .from("exams")
         .select("*")
-        .eq("class_name", studentClass)
-        .eq("year", selectedYear)
+        .in("id", uniqueExamIds)
         .order("start_date", { ascending: false });
       if (error) throw error;
       return (data || []) as Exam[];
     },
-    enabled: !!studentClass,
+    enabled: !!studentId && !!studentClass,
   });
 
   // Fetch all academic results for the student filtered by academic year
