@@ -1,276 +1,199 @@
 
-# Academic Year Results: Historical View & Edit Access
 
-## Problem Summary
+# Student Leader & Class Rep Website Content Editing Privileges
 
-There are **three key issues** to address:
+## Overview
 
-1. **Student Dashboard - Exam Info Card**: When viewing results, the first card shows `studentClass` (current class like "Form 3") instead of the exam's actual class (e.g., "Grade 10" for a 2025 exam)
+This plan adds the ability for **Student Leaders** and **Class Reps** to edit specific sections of the website content through their dedicated dashboards. They will have access to manage:
 
-2. **Class Teacher Dashboard - Historical Exams Not Visible**: The ExamsManager only queries exams for the current `assignedClass`. This means a class teacher for "Form 3" cannot see "Grade 10" exams from 2025, even if their current students have results from that class
+- **Home Page** (Hero, Features, Stats, Trust Badges, Events, Testimonials, FAQs, CTA Banner)
+- **Programs** (Leadership Programs, Student Leaders, Clubs)
+- **Student Voice** (Student Ambassador, Clubs & Societies, Previous Student Leaders)
+- **Gallery** (Images and Videos)
 
-3. **Class Teacher & Teacher - No Edit Privileges for Historical Results**: The current architecture assumes only the class teacher of the exact class can edit results. When students progress to a new class with a new class teacher, the previous results become "orphaned" from an editing perspective
+This matches the user request while keeping sensitive areas (About Page, Admissions, Contact, User Management) restricted to Super Admins only.
 
 ---
 
-## Solution Overview
+## Solution Architecture
 
-### Part 1: Fix Student Exam Info Card
+### Part 1: Database RLS Policy Updates
 
-**Current behavior:**
-```tsx
-<CardDescription>Term {exam.term}, {exam.year} | {studentClass}</CardDescription>
-```
-This displays the student's **current** class, not the class the exam belongs to.
+Currently, all content management tables only allow `super_admin` role to INSERT, UPDATE, and DELETE. We need to add RLS policies that also allow `student_leader` and `class_rep` roles.
 
-**Fix:** Use `exam.class_name` instead of `studentClass`:
-```tsx
-<CardDescription>Term {exam.term}, {exam.year} | {exam.class_name}</CardDescription>
-```
+**Tables requiring RLS updates:**
 
-### Part 2: Class Teacher - View Historical Exams
+| Table | Current Access | New Access |
+|-------|---------------|------------|
+| `gallery_media` | super_admin only | + student_leader, class_rep |
+| `hero_content` | super_admin only | + student_leader, class_rep |
+| `home_features` | super_admin only | + student_leader, class_rep |
+| `site_stats` | super_admin only | + student_leader, class_rep |
+| `trust_badges` | super_admin only | + student_leader, class_rep |
+| `events` | super_admin only | + student_leader, class_rep |
+| `community_testimonials` | super_admin only | + student_leader, class_rep |
+| `faqs` | super_admin only | + student_leader, class_rep |
+| `cta_banner` | super_admin only | 
+| `subjects` | super_admin only |
+| `departments` | super_admin only | 
+| `department_staff` | super_admin only |
+| `leadership_programs` | super_admin only | + student_leader, class_rep |
+| `program_members` | super_admin only | + student_leader, class_rep |
+| `beyond_classroom` | super_admin only | + student_leader, class_rep |
+| `student_ambassador` | super_admin only | + student_leader, class_rep |
+| `clubs_societies` | super_admin only | + student_leader, class_rep |
+| `previous_leaders` | super_admin only | + student_leader, class_rep |
 
-**Current behavior:**
-The `ExamsManager` component queries exams only for the teacher's assigned class:
-```tsx
-.eq("class_name", assignedClass)
-```
+### Part 2: New Student Content Dashboard Component
 
-**Solution:**
-Create a new component or modify the existing one to allow class teachers to view exams based on:
-1. Their students' historical results (any exam their current students have results for)
-2. Add academic year filtering to the Exams tab
+Create a new component that provides a streamlined content management interface for Student Leaders and Class Reps, reusing the existing manager components.
 
-This will require:
-- Modifying the Academics tab in ClassTeacherPortal to include an academic year selector
-- Creating a query that fetches exams based on students' historical results (similar to what we did for the student portal)
+**New File:** `src/pages/students/StudentContentDashboard.tsx`
 
-### Part 3: Class Teacher & Teacher - Edit Historical Results
+This component will:
+- Provide a sidebar navigation similar to AdminSidebar but with only the allowed sections
+- Render the appropriate content managers (HomeContentManager, GalleryManager, etc.)
+- Include proper authentication and role checks
 
-**Current behavior:**
-RLS policies on `academic_results` allow editing based on:
-- `teacher_id = auth.uid()` (teacher who entered the result)
-- `has_role(auth.uid(), 'classteacher')` (any classteacher can edit)
-- `has_teaching_assignment_for_class()` (staff with teaching assignments)
+### Part 3: Update Student Leader Portal
 
-The problem is the ExamResultsMatrix loads students from the **current** class, not the historical class.
+Modify `src/pages/students/Portal.tsx` to add a "Website Content" tab that links to the content management features for Student Leaders.
 
-**Solution:**
-When viewing a historical exam (e.g., "Grade 10 Opener 2025"):
-- Fetch students based on the exam's `class_name` from `academic_results` (who has results for that exam)
-- Allow the current class teacher to edit all results for their current students, regardless of which class the exam belonged to
+### Part 4: Update Class Rep Portal
+
+Modify `src/pages/students/ClassRepPortal.tsx` to add a "Website Content" tab for Class Reps.
 
 ---
 
 ## Technical Implementation
 
-### File Changes
-
-| File | Change |
-|------|--------|
-| `src/components/student/ExamResultsView.tsx` | Use `exam.class_name` in the header card instead of `studentClass` |
-| `src/components/classteacher/ExamsManager.tsx` | Add year filtering and ability to view exams from historical classes |
-| `src/pages/staff/ClassTeacherPortal.tsx` | Pass academic year selector to ExamsManager |
-| `src/components/classteacher/ExamResultsMatrix.tsx` | Support viewing students from historical exams (not just current class) |
-| `src/components/staff/MyClassesManager.tsx` | Add academic year selector for teachers to view historical results |
-| `src/components/teacher/TeacherExamResults.tsx` | Support viewing/editing historical exam results |
-
----
-
-### Detailed Changes
-
-#### 1. ExamResultsView.tsx (Student Dashboard)
-Change line 498 from:
-```tsx
-<CardDescription>Term {exam.term}, {exam.year} | {studentClass}</CardDescription>
-```
-To:
-```tsx
-<CardDescription>Term {exam.term}, {exam.year} | {exam.class_name}</CardDescription>
-```
-
-#### 2. ExamsManager.tsx (Class Teacher - View Historical Exams)
-Modify the exams query to support viewing exams from any class where students have results:
-
-```typescript
-// Add state for selected academic year
-const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
-
-// Modify exams query to include historical exams
-const { data: exams = [] } = useQuery({
-  queryKey: ["class-exams-all", assignedClass, selectedYear],
-  queryFn: async () => {
-    // Step 1: Get current students
-    const { data: students } = await supabase
-      .from("students_data")
-      .select("id")
-      .eq("class", assignedClass);
-    
-    if (!students || students.length === 0) return [];
-    const studentIds = students.map(s => s.id);
-    
-    // Step 2: Get exam IDs from students' results for selected year
-    const { data: resultExamIds } = await supabase
-      .from("academic_results")
-      .select("exam_id")
-      .in("student_id", studentIds)
-      .eq("year", selectedYear);
-    
-    const uniqueExamIds = [...new Set(resultExamIds?.map(r => r.exam_id).filter(Boolean))];
-    
-    // Step 3: Fetch current class exams for selected year
-    const { data: currentClassExams } = await supabase
-      .from("exams")
-      .select("*")
-      .eq("class_name", assignedClass)
-      .eq("year", selectedYear);
-    
-    // Step 4: Fetch historical exams by IDs (if any)
-    let historicalExams = [];
-    if (uniqueExamIds.length > 0) {
-      const { data } = await supabase
-        .from("exams")
-        .select("*")
-        .in("id", uniqueExamIds);
-      historicalExams = data || [];
-    }
-    
-    // Merge and deduplicate
-    const allExams = [...(currentClassExams || []), ...historicalExams];
-    const uniqueExams = allExams.reduce((acc, exam) => {
-      if (!acc.find(e => e.id === exam.id)) acc.push(exam);
-      return acc;
-    }, []);
-    
-    return uniqueExams.sort((a, b) => 
-      new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
-    );
-  },
-  enabled: !!assignedClass,
-});
-```
-
-#### 3. ExamResultsMatrix.tsx (Class Teacher - View/Edit Historical Results)
-When viewing a historical exam, fetch students who have results for that exam rather than filtering by current class:
-
-```typescript
-// Modify students query to support historical exams
-const { data: students = [] } = useQuery({
-  queryKey: ["exam-students", exam.id, exam.class_name, assignedClass],
-  queryFn: async () => {
-    // For exams matching current class, use normal query
-    if (exam.class_name === assignedClass) {
-      const { data } = await supabase
-        .from("students_data")
-        .select("id, full_name, admission_number")
-        .eq("class", assignedClass)
-        .order("full_name");
-      return data || [];
-    }
-    
-    // For historical exams, get students who have results for this exam
-    // AND are currently in the teacher's class
-    const { data: currentStudents } = await supabase
-      .from("students_data")
-      .select("id, full_name, admission_number")
-      .eq("class", assignedClass);
-    
-    if (!currentStudents || currentStudents.length === 0) return [];
-    
-    const studentIds = currentStudents.map(s => s.id);
-    
-    // Check which of these students have results for this exam
-    const { data: resultsCheck } = await supabase
-      .from("academic_results")
-      .select("student_id")
-      .eq("exam_id", exam.id)
-      .in("student_id", studentIds);
-    
-    const studentsWithResults = new Set(resultsCheck?.map(r => r.student_id) || []);
-    
-    return currentStudents.filter(s => studentsWithResults.has(s.id));
-  },
-});
-```
-
-#### 4. MyClassesManager.tsx (Teacher Portal - Academic Year Support)
-Add academic year selector to allow teachers to view their results across different years:
-
-```typescript
-// Add state for year selection
-const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-
-// Modify exams query to filter by year
-const { data: exams = [] } = useQuery({
-  queryKey: ['class-exams', selectedClass, selectedYear],
-  queryFn: async () => {
-    if (!selectedClass) return [];
-    const { data } = await supabase
-      .from('exams')
-      .select('*')
-      .eq('class_name', selectedClass)
-      .eq('year', selectedYear)
-      .order('start_date', { ascending: false });
-    return data || [];
-  },
-  enabled: !!selectedClass && !!selectedSubject
-});
-```
-
----
-
-## RLS Considerations
-
-The current RLS policies on `academic_results` already support this:
+### Database Migration (RLS Policies)
 
 ```sql
--- Existing policy allows classteachers to edit
-has_role(auth.uid(), 'classteacher')
+-- Create helper function for student content editors
+CREATE OR REPLACE FUNCTION public.is_student_content_editor(_user_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.user_roles
+    WHERE user_id = _user_id
+      AND role IN ('student_leader', 'class_rep')
+  )
+$$;
 
--- Existing policy allows teachers who entered the result
-teacher_id = auth.uid()
+-- Add policies for each table (example for gallery_media)
+CREATE POLICY "Student leaders can manage gallery media"
+ON public.gallery_media
+FOR ALL
+TO authenticated
+USING (is_student_content_editor(auth.uid()))
+WITH CHECK (is_student_content_editor(auth.uid()));
 ```
 
-No RLS changes are needed as long as:
-- Class teachers query students from their assigned class
-- The edit modal works through the existing mutation patterns
+This pattern will be applied to all 18 tables listed above.
+
+### New Components
+
+#### 1. StudentContentSidebar Component
+A simplified sidebar showing only the allowed content sections:
+- Home Page
+- Programs
+- Student Voice
+- Gallery
+
+#### 2. StudentContentDashboard Component
+Main dashboard layout with:
+- Sidebar navigation
+- Content area that renders the appropriate manager components
+- Hash-based routing (similar to SuperAdminDashboard)
+
+### Portal Updates
+
+#### Student Leader Portal
+Add a new card or button that navigates to `/students/content-dashboard`:
+```tsx
+{isStudentLeader && (
+  <Card className="cursor-pointer" onClick={() => navigate('/students/content-dashboard')}>
+    <CardHeader>
+      <CardTitle>Website Content</CardTitle>
+      <CardDescription>Manage website content (Home, Programs, Student Voice, Gallery)</CardDescription>
+    </CardHeader>
+  </Card>
+)}
+```
+
+#### Class Rep Portal
+Add a new tab for Website Content:
+```tsx
+<TabsTrigger value="content">
+  <Edit className="w-4 h-4 mr-2" />
+  Website Content
+</TabsTrigger>
+```
 
 ---
 
-## UI/UX Improvements
+## Files to Create/Modify
 
-1. **Historical Exam Badge**: Show a badge on historical exams indicating they're from a previous class:
-   ```tsx
-   {exam.class_name !== assignedClass && (
-     <Badge variant="outline" className="text-xs">
-       Historical ({exam.class_name})
-     </Badge>
-   )}
-   ```
+| File | Action | Description |
+|------|--------|-------------|
+| `supabase/migrations/...` | Create | RLS policies for student content editors |
+| `src/pages/students/StudentContentDashboard.tsx` | Create | New content management dashboard |
+| `src/components/students/StudentContentSidebar.tsx` | Create | Sidebar for student content editors |
+| `src/pages/students/Portal.tsx` | Modify | Add link to content dashboard for student leaders |
+| `src/pages/students/ClassRepPortal.tsx` | Modify | Add Website Content tab |
+| `src/App.tsx` | Modify | Add route for `/students/content-dashboard` |
+| `src/components/ProtectedRoute.tsx` | Possibly Modify | Allow student_leader and class_rep access to content dashboard |
 
-2. **Year Selector in Exams Tab**: Add the `AcademicYearSelector` component to the Exams tab header
+---
 
-3. **Clear Messaging**: When viewing historical results, show a message explaining that these are results from when students were in a different class
+## Security Considerations
+
+1. **RLS Policies**: All changes are enforced at the database level through RLS policies, ensuring student leaders cannot access tables they shouldn't even if frontend is bypassed.
+
+2. **Role Verification**: The new dashboard will verify the user has `student_leader` or `class_rep` role before rendering content management tools.
+
+3. **Separation of Concerns**: Sensitive sections (Admissions, Contact, User Management, Audit Logs) remain Super Admin only.
+
+4. **Impersonation Support**: Super Admin impersonation will continue to work, allowing admins to test the student content dashboard.
+
+---
+
+## UI/UX Design
+
+The Student Content Dashboard will have a clean, focused interface:
+
+```text
++------------------+----------------------------------------+
+|  Student Content |                                        |
+|    Dashboard     |                                        |
++------------------+                                        |
+| [Home Page]      |     [Content Manager Component]       |
+| [Programs]       |                                        |
+| [Student Voice]  |                                        |
+| [Gallery]        |                                        |
++------------------+----------------------------------------+
+```
+
+Navigation uses hash-based routing:
+- `#home` - HomeContentManager (without Duty Roster and School Occasions)
+- `#programs` - Leadership programs, clubs, departments
+- `#student` - Student Ambassador, Previous Leaders
+- `#gallery` - GalleryManager
 
 ---
 
 ## Expected Outcome
 
 After implementation:
+- Student Leaders can access a dedicated content dashboard from their portal
+- Class Reps can access website content management from a new tab in their portal
+- Both roles can manage: Home Page, Programs, Student Voice, and Gallery sections
+- Super Admin retains full access and can monitor changes through audit logs
+- All changes are enforced at the database level for security
 
-- **Students**: See the correct class name (e.g., "Grade 10") when viewing 2025 exam results, not their current class
-- **Class Teachers**: Can select academic years and view all exams their current students participated in, including historical classes
-- **Class Teachers**: Can edit historical results for their current students (acting as "previous class teacher")
-- **Teachers**: Can view and edit results across different academic years through the year selector
-
----
-
-## Files Summary
-
-| Priority | File | Changes |
-|----------|------|---------|
-| 1 | `ExamResultsView.tsx` | Use `exam.class_name` in header |
-| 2 | `ExamsManager.tsx` | Add year selector, fetch historical exams based on student results |
-| 3 | `ExamResultsMatrix.tsx` | Support viewing students from historical exams |
-| 4 | `MyClassesManager.tsx` | Add year filtering for teachers |
-| 5 | `ClassTeacherPortal.tsx` | Wire up year selection prop |
