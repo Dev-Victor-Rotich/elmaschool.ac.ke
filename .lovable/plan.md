@@ -1,143 +1,162 @@
 
-# Fix: Staff Email Display and Staff Registry Population
+# Fix: Academic Year Results Visibility for Students
 
-## Problem Summary
-Two newly registered staff members (Edwin Chelimo and Vincent) have:
-1. **Missing emails** in the Super Admin dashboard's "All Users & Their Roles" table
-2. **Not appearing** in the Staff Registry card
+## Problem Analysis
 
-This is because:
-- They exist in `profiles` and `user_roles` tables but are **missing from `staff_registry`**
-- The email lookup in the dashboard relies on `staff_registry` for staff emails
-- The `create-user` edge function's `staff_registry` insert failed silently
+Through database investigation, I identified **two root causes**:
 
-## Solution Overview
-
-### Part 1: Add Missing Staff to `staff_registry` (Data Fix)
-Run an SQL command to insert the missing staff members into `staff_registry`:
-
+### Issue 1: Exam Query Uses Current Class, Not Historical Class
+**The Bug:**
+When a student (e.g., Elizabeth Keen) selects 2025, the query looks for:
 ```sql
-INSERT INTO staff_registry (email, full_name, phone, id_number, role, status, created_by)
-SELECT 
-  au.email,
-  p.full_name,
-  p.phone_number,
-  p.id_number,
-  ur.role::text,
-  'active',
-  NULL
-FROM profiles p
-JOIN auth.users au ON au.id = p.id
-JOIN user_roles ur ON ur.user_id = p.id
-WHERE ur.role IN ('super_admin', 'admin', 'bursar', 'chaplain', 'hod', 'teacher', 'librarian', 'classteacher')
-AND NOT EXISTS (
-  SELECT 1 FROM staff_registry sr WHERE lower(sr.email) = lower(au.email)
-);
+WHERE class_name = 'Form 3' AND year = 2025
 ```
+But in 2025, they were in **"Grade 10"**, not "Form 3" - so the query returns **zero exams**.
 
-### Part 2: Improve Email Lookup in RoleManagement (Code Fix)
-Update `RoleManagement.tsx` to fetch emails directly from `auth.users` via the profiles join, instead of relying on `staff_registry` name matching.
+**Evidence from database:**
+| Student | Current Class | 2025 Exams | 2025 Results |
+|---------|---------------|------------|--------------|
+| Elizabeth Keen | Form 3 | Grade 10 exams (3 exams) | 20+ results |
+| Nancy Anne | Form 3 | Grade 10 exams (3 exams) | 19 results |
 
-**Current approach** (fragile):
-- Fetches staff emails by matching `full_name` - fails if names don't match exactly
+### Issue 2: "Pending" Instead of "View Results" for 2026 Opener Exam
+**The Bug:**
+The 2026 "Form 3 Opener" exam exists and has 5 results, but those results are stored with `year: 2025` instead of `year: 2026`.
 
-**New approach** (robust):
-- Create a backend function or edge function to get user emails by profile ID
-- Or store email in the profiles table directly
+When filtering results by `year: 2026`, the query returns empty, so `hasResults()` returns `false`, and the button shows "Pending".
 
-Since we can't query `auth.users` directly from the client, the most reliable fix is:
-
-**Option A**: Add email column to `profiles` table and populate it when users are created
-- Requires schema change
-- Most reliable long-term solution
-
-**Option B**: Create a security definer function to get emails by user_id
-- Can be called from the client
-- No schema changes needed
-
-### Part 3: Improve `create-user` Edge Function (Prevention)
-Update the edge function to:
-1. Fail loudly if `staff_registry` insert fails (instead of silent catch)
-2. Or retry the insert if it fails
-
-## Recommended Implementation Plan
-
-### Step 1: Add `email` column to `profiles` table
-```sql
--- Add email column to profiles
-ALTER TABLE profiles ADD COLUMN IF NOT EXISTS email text;
-
--- Populate from auth.users
-UPDATE profiles p
-SET email = au.email
-FROM auth.users au
-WHERE au.id = p.id AND p.email IS NULL;
-```
-
-### Step 2: Add missing staff to `staff_registry`
-```sql
-INSERT INTO staff_registry (email, full_name, phone, id_number, role, status)
-VALUES 
-  ('kedwin946@gmail.com', 'Edwin Chelimo', '0797620540', '5655178', 'super_admin', 'active'),
-  ('vinnyprojects01@gmail.com', 'Vincent', '0797620540', '41362604', 'super_admin', 'active')
-ON CONFLICT DO NOTHING;
-```
-
-### Step 3: Update RoleManagement.tsx
-Modify the `allUsers` query to use the new `email` column from profiles instead of the fragile name-based lookup from `staff_registry`.
-
-```typescript
-// Simplified - fetch email directly from profiles
-return profiles.map(profile => ({
-  id: profile.id,
-  full_name: profile.full_name,
-  email: profile.email || '', // Direct from profiles
-  phone_number: profile.phone_number,
-  // ... rest
-}));
-```
-
-### Step 4: Update create-user edge function
-Ensure new users always get their email stored in profiles and staff_registry properly.
+**Evidence:**
+| Exam | Exam Year | Results Year | Result Count |
+|------|-----------|--------------|--------------|
+| Opener | 2026 | 2025 (wrong!) | 5 |
+| Series 12 | 2025 | 2025 | 16 |
+| Series 13 | 2025 | 2025 | 16 |
 
 ---
 
-## Technical Details
+## Solution
 
-### Files to Modify
-| File | Changes |
-|------|---------|
-| Database migration | Add `email` column to `profiles`, populate from `auth.users` |
-| Database migration | Insert missing Edwin & Vincent into `staff_registry` |
-| `src/components/admin/RoleManagement.tsx` | Simplify email lookup to use `profiles.email` |
-| `supabase/functions/create-user/index.ts` | Store email in profiles, better error handling for staff_registry |
+### Part 1: Fix Exam Query to Use Student's Results, Not Current Class (Code Change)
 
-### Database Trigger for Future Users
-Create a trigger to automatically populate `profiles.email` from `auth.users`:
-
-```sql
-CREATE OR REPLACE FUNCTION public.handle_new_user()
-RETURNS trigger
-LANGUAGE plpgsql
-SECURITY DEFINER
-SET search_path TO 'public'
-AS $$
-BEGIN
-  INSERT INTO public.profiles (id, full_name, phone_number, email)
-  VALUES (
-    NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
-    COALESCE(NEW.raw_user_meta_data->>'phone_number', ''),
-    NEW.email  -- Add email here
-  );
-  RETURN NEW;
-END;
-$$;
+**Current approach (broken):**
+```typescript
+// Fetches exams by current class - fails for historical years
+.eq("class_name", studentClass)
+.eq("year", selectedYear)
 ```
 
+**New approach:**
+Fetch exams based on the student's actual results for that year, not their current class. This way, if a student has results for Grade 10 exams in 2025, those exams will appear when they select 2025.
+
+```typescript
+// Step 1: Fetch distinct exam IDs from student's results for the selected year
+const examIds = await supabase
+  .from("academic_results")
+  .select("exam_id")
+  .eq("student_id", studentId)
+  .eq("year", selectedYear);
+
+// Step 2: Fetch those exams
+const exams = await supabase
+  .from("exams")
+  .select("*")
+  .in("id", examIds);
+```
+
+### Part 2: Fix Data Year Mismatch (Data Correction)
+
+The 2026 Opener exam results have `year: 2025` instead of `year: 2026`. This needs to be corrected:
+
+```sql
+UPDATE academic_results ar
+SET year = e.year
+FROM exams e
+WHERE ar.exam_id = e.id
+AND ar.year != e.year;
+```
+
+### Part 3: Prevent Future Year Mismatches (Optional Enhancement)
+
+Ensure that when results are entered, the `year` field is automatically derived from the exam's year rather than being set manually.
+
+---
+
+## Files to Modify
+
+| File | Change |
+|------|--------|
+| `src/components/student/AcademicAnalytics.tsx` | Change exam query to fetch by student's results, not current class |
+| Database | Fix year mismatch for Opener exam results |
+
+---
+
+## Technical Implementation Details
+
+### AcademicAnalytics.tsx Changes
+
+```typescript
+// BEFORE: Fetches exams by current class (fails for historical data)
+const { data: exams = [] } = useQuery({
+  queryKey: ["student-exams", studentClass, selectedYear],
+  queryFn: async () => {
+    const { data } = await supabase
+      .from("exams")
+      .select("*")
+      .eq("class_name", studentClass)  // Problem: uses current class
+      .eq("year", selectedYear);
+    return data;
+  },
+});
+
+// AFTER: Fetches exams based on student's actual results
+const { data: exams = [] } = useQuery({
+  queryKey: ["student-exams", studentId, selectedYear],
+  queryFn: async () => {
+    // Get distinct exam IDs from student's results for this year
+    const { data: resultExamIds } = await supabase
+      .from("academic_results")
+      .select("exam_id")
+      .eq("student_id", studentId)
+      .eq("year", selectedYear);
+    
+    const uniqueExamIds = [...new Set(resultExamIds?.map(r => r.exam_id).filter(Boolean))];
+    
+    if (uniqueExamIds.length === 0) {
+      // Fallback: Check for upcoming exams in current class
+      const { data } = await supabase
+        .from("exams")
+        .select("*")
+        .eq("class_name", studentClass)
+        .eq("year", selectedYear);
+      return data || [];
+    }
+    
+    // Fetch exams by IDs (works for any class, past or present)
+    const { data } = await supabase
+      .from("exams")
+      .select("*")
+      .in("id", uniqueExamIds);
+    return data || [];
+  },
+});
+```
+
+### Database Correction
+
+```sql
+-- Fix the year mismatch for Opener exam results
+UPDATE academic_results 
+SET year = 2026 
+WHERE exam_id = 'fad054a2-e26a-45e3-a435-9a90ee217b34' 
+AND year = 2025;
+```
+
+---
+
 ## Expected Outcome
+
 After implementation:
-- Edwin Chelimo and Vincent will show their emails in both tables
-- All future staff will have emails displayed correctly
-- Staff Registry will show all registered staff members
-- No more silent failures when adding staff
+- Students can view their 2025 Grade 10 results even though they're now in Form 3
+- The 2026 Opener exam will show "View Results" instead of "Pending"
+- Class teacher changes won't affect historical result visibility
+- Future results will have correct year values
