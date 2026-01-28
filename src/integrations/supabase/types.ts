@@ -1956,6 +1956,10 @@ export type Database = {
         Args: { _message_id: string; _user_id: string }
         Returns: boolean
       }
+      is_student_content_editor: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       is_super_admin: { Args: { user_id: string }; Returns: boolean }
       log_admin_action: {
         Args: {

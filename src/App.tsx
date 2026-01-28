@@ -36,6 +36,7 @@ import ClassTeacherPortal from "./pages/staff/ClassTeacherPortal";
 import LibrarianPortal from "./pages/staff/LibrarianPortal";
 import ChaplainPortal from "./pages/staff/ChaplainPortal";
 import ClassRepPortal from "./pages/students/ClassRepPortal";
+import StudentContentDashboard from "./pages/students/StudentContentDashboard";
 
 const queryClient = new QueryClient();
 
@@ -79,6 +80,7 @@ const App = () => (
           <Route path="/staff/librarian" element={<LibrarianPortal />} />
           <Route path="/staff/chaplain" element={<ChaplainPortal />} />
           <Route path="/students/class-rep" element={<ClassRepPortal />} />
+          <Route path="/students/content-dashboard" element={<StudentContentDashboard />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

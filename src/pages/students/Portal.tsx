@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { GraduationCap, DollarSign, Calendar, MessageSquare, Mail, CheckCircle, Receipt, FileText, TrendingUp, TrendingDown } from "lucide-react";
+import { GraduationCap, DollarSign, Calendar, MessageSquare, Mail, CheckCircle, Receipt, FileText, TrendingUp, TrendingDown, Edit } from "lucide-react";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
@@ -330,6 +330,12 @@ const StudentPortal = () => {
               </p>
             </div>
             <div className="flex gap-2">
+              {isStudentLeader && (
+                <Button onClick={() => navigate("/students/content-dashboard")} variant="outline">
+                  <Edit className="w-4 h-4 mr-2" />
+                  Website Content
+                </Button>
+              )}
               <Button onClick={() => navigate("/profile")} variant="outline">
                 Edit Profile
               </Button>
