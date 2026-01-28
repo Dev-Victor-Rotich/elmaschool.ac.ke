@@ -4,7 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, BarChart3, Lightbulb, BookOpen, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Calendar, BarChart3, Lightbulb, BookOpen, Loader2, MoreVertical } from "lucide-react";
 import ExamsList from "./ExamsList";
 import PerformanceChart from "./PerformanceChart";
 import PerformanceInsights from "./PerformanceInsights";
@@ -29,6 +31,16 @@ const AcademicAnalytics = ({ studentId, studentClass }: AcademicAnalyticsProps) 
   const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [viewingResults, setViewingResults] = useState(false);
+  const [activeTab, setActiveTab] = useState("exams");
+
+  const getTabLabel = () => {
+    switch (activeTab) {
+      case "exams": return "My Exams";
+      case "trends": return "Performance Trends";
+      case "insights": return "Insights & Predictions";
+      default: return "My Exams";
+    }
+  };
 
   // Fetch exams based on student's actual results for that year (not current class)
   // This ensures historical results are visible even after class changes
@@ -156,41 +168,75 @@ const AcademicAnalytics = ({ studentId, studentClass }: AcademicAnalyticsProps) 
     <Card>
       <CardHeader>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <BookOpen className="w-5 h-5" />
-              Academic Analytics
-            </CardTitle>
-            <CardDescription>
-              Track your exams, performance trends, and get personalized insights
-            </CardDescription>
+          <div className="flex items-center justify-between flex-1">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <BookOpen className="w-5 h-5" />
+                Academic Analytics
+                <Badge variant="secondary" className="ml-2 font-normal">
+                  {getTabLabel()}
+                </Badge>
+              </CardTitle>
+              <CardDescription>
+                Track your exams, performance trends, and get personalized insights
+              </CardDescription>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 md:hidden">
+                  <MoreVertical className="h-4 w-4" />
+                  <span className="sr-only">Open menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setActiveTab("exams")}>
+                  <Calendar className="w-4 h-4 mr-2" />
+                  My Exams
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab("trends")}>
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  Performance Trends
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab("insights")}>
+                  <Lightbulb className="w-4 h-4 mr-2" />
+                  Insights & Predictions
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-          <AcademicYearSelector
-            selectedYear={selectedYear}
-            onYearChange={setSelectedYear}
-            availableYears={availableYears}
-          />
+          <div className="flex items-center gap-2">
+            <AcademicYearSelector
+              selectedYear={selectedYear}
+              onYearChange={setSelectedYear}
+              availableYears={availableYears}
+            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8 hidden md:flex">
+                  <MoreVertical className="h-4 w-4" />
+                  <span className="sr-only">Open menu</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => setActiveTab("exams")}>
+                  <Calendar className="w-4 h-4 mr-2" />
+                  My Exams
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab("trends")}>
+                  <BarChart3 className="w-4 h-4 mr-2" />
+                  Performance Trends
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveTab("insights")}>
+                  <Lightbulb className="w-4 h-4 mr-2" />
+                  Insights & Predictions
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="exams" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="exams" className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" />
-              My Exams
-              {exams.length > 0 && (
-                <Badge variant="secondary" className="ml-1">{exams.length}</Badge>
-              )}
-            </TabsTrigger>
-            <TabsTrigger value="trends" className="flex items-center gap-2">
-              <BarChart3 className="w-4 h-4" />
-              Performance Trends
-            </TabsTrigger>
-            <TabsTrigger value="insights" className="flex items-center gap-2">
-              <Lightbulb className="w-4 h-4" />
-              Insights & Predictions
-            </TabsTrigger>
-          </TabsList>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
 
           <TabsContent value="exams">
             <ExamsList 
