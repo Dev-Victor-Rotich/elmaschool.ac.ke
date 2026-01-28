@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
-const TIMEOUT_DURATION = 30 * 60 * 1000; // 30 minutes in milliseconds
-const WARNING_BEFORE = 2 * 60 * 1000; // Warn 2 minutes before timeout
+const TIMEOUT_DURATION = 30 * 1000; // 30 seconds in milliseconds
+const WARNING_BEFORE = 10 * 1000; // Warn 10 seconds before timeout
 
 export const useSessionTimeout = () => {
   const navigate = useNavigate();
