@@ -29,8 +29,8 @@ export const StudentContentSidebar = ({ activeSection, onSectionChange }: Studen
   const isCollapsed = state === "collapsed";
 
   return (
-    <Sidebar collapsible="icon" className="border-r !bg-card">
-      <SidebarContent>
+    <Sidebar collapsible="icon" className="border-r bg-card">
+      <SidebarContent className="bg-card">
         <SidebarGroup>
           {!isCollapsed && (
             <div className="px-4 py-3">

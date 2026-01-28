@@ -4,9 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { StudentContentSidebar } from "@/components/students/StudentContentSidebar";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2, Menu } from "lucide-react";
+import { ArrowLeft, Loader2, MoreVertical } from "lucide-react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 // Content managers - reusing existing components
 import { HeroContentManager } from "@/components/admin/HeroContentManager";
@@ -24,7 +31,7 @@ import { BeyondClassroomManager } from "@/components/admin/BeyondClassroomManage
 import { StudentAmbassadorManager } from "@/components/admin/StudentAmbassadorManager";
 import { PreviousLeadersManager } from "@/components/admin/PreviousLeadersManager";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 const StudentContentDashboard = () => {
@@ -137,224 +144,300 @@ const StudentContentDashboard = () => {
 };
 
 // Home Page Content Section
-const HomePageContent = () => (
-  <div className="space-y-6">
-    <div>
-      <h2 className="text-xl font-semibold">Home Page</h2>
-      <p className="text-muted-foreground">
-        Manage hero section, features, stats, badges, events, testimonials, and FAQs
-      </p>
+const HomePageContent = () => {
+  const [activeTab, setActiveTab] = useState("hero");
+
+  const getTabLabel = () => {
+    switch (activeTab) {
+      case "hero": return "Hero";
+      case "features": return "Features";
+      case "stats": return "Stats";
+      case "badges": return "Badges";
+      case "events": return "Events";
+      case "testimonials": return "Testimonials";
+      case "faqs": return "FAQs";
+      default: return "Hero";
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-semibold">Home Page</h2>
+            <Badge variant="secondary">{getTabLabel()}</Badge>
+          </div>
+          <p className="text-muted-foreground">
+            Manage hero section, features, stats, badges, events, testimonials, and FAQs
+          </p>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-popover">
+            <DropdownMenuItem onClick={() => setActiveTab("hero")}>Hero</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setActiveTab("features")}>Features</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setActiveTab("stats")}>Stats</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setActiveTab("badges")}>Badges</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setActiveTab("events")}>Events</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setActiveTab("testimonials")}>Testimonials</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setActiveTab("faqs")}>FAQs</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsContent value="hero">
+          <Card>
+            <CardHeader>
+              <CardTitle>Hero Section</CardTitle>
+              <CardDescription>Main banner displayed on the homepage</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <HeroContentManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="features">
+          <Card>
+            <CardHeader>
+              <CardTitle>Home Features</CardTitle>
+              <CardDescription>Key features displayed on homepage</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <HomeFeaturesManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="stats">
+          <Card>
+            <CardHeader>
+              <CardTitle>Site Statistics</CardTitle>
+              <CardDescription>Animated counters shown on homepage</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SiteStatsManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="badges">
+          <Card>
+            <CardHeader>
+              <CardTitle>Trust Badges</CardTitle>
+              <CardDescription>Trust indicators displayed below hero</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TrustBadgesManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="events">
+          <Card>
+            <CardHeader>
+              <CardTitle>Events</CardTitle>
+              <CardDescription>School events displayed on homepage</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <EventsManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="testimonials">
+          <Card>
+            <CardHeader>
+              <CardTitle>Community Testimonials</CardTitle>
+              <CardDescription>Testimonials from parents and community</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TestimonialsManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="faqs">
+          <Card>
+            <CardHeader>
+              <CardTitle>FAQs</CardTitle>
+              <CardDescription>Frequently Asked Questions</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FAQsManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
-
-    <Tabs defaultValue="hero" className="space-y-4">
-      <TabsList className="inline-flex h-10 items-center gap-1 overflow-x-auto w-full max-w-full scrollbar-hide pb-1">
-        <TabsTrigger value="hero" className="shrink-0">Hero</TabsTrigger>
-        <TabsTrigger value="features" className="shrink-0">Features</TabsTrigger>
-        <TabsTrigger value="stats" className="shrink-0">Stats</TabsTrigger>
-        <TabsTrigger value="badges" className="shrink-0">Badges</TabsTrigger>
-        <TabsTrigger value="events" className="shrink-0">Events</TabsTrigger>
-        <TabsTrigger value="testimonials" className="shrink-0">Testimonials</TabsTrigger>
-        <TabsTrigger value="faqs" className="shrink-0">FAQs</TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="hero">
-        <Card>
-          <CardHeader>
-            <CardTitle>Hero Section</CardTitle>
-            <CardDescription>Main banner displayed on the homepage</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <HeroContentManager />
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="features">
-        <Card>
-          <CardHeader>
-            <CardTitle>Home Features</CardTitle>
-            <CardDescription>Key features displayed on homepage</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <HomeFeaturesManager />
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="stats">
-        <Card>
-          <CardHeader>
-            <CardTitle>Site Statistics</CardTitle>
-            <CardDescription>Animated counters shown on homepage</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <SiteStatsManager />
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="badges">
-        <Card>
-          <CardHeader>
-            <CardTitle>Trust Badges</CardTitle>
-            <CardDescription>Trust indicators displayed below hero</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <TrustBadgesManager />
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="events">
-        <Card>
-          <CardHeader>
-            <CardTitle>Events</CardTitle>
-            <CardDescription>School events displayed on homepage</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <EventsManager />
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="testimonials">
-        <Card>
-          <CardHeader>
-            <CardTitle>Community Testimonials</CardTitle>
-            <CardDescription>Testimonials from parents and community</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <TestimonialsManager />
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="faqs">
-        <Card>
-          <CardHeader>
-            <CardTitle>FAQs</CardTitle>
-            <CardDescription>Frequently Asked Questions</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <FAQsManager />
-          </CardContent>
-        </Card>
-      </TabsContent>
-    </Tabs>
-  </div>
-);
+  );
+};
 
 // Programs Content Section
-const ProgramsContent = () => (
-  <div className="space-y-6">
-    <div>
-      <h2 className="text-xl font-semibold">Programs</h2>
-      <p className="text-muted-foreground">
-        Manage leadership programs, clubs, and extracurricular activities
-      </p>
+const ProgramsContent = () => {
+  const [activeTab, setActiveTab] = useState("leadership");
+
+  const getTabLabel = () => {
+    switch (activeTab) {
+      case "leadership": return "Leadership Programs";
+      case "members": return "Program Members";
+      case "clubs": return "Clubs & Societies";
+      case "beyond": return "Beyond Classroom";
+      default: return "Leadership Programs";
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-semibold">Programs</h2>
+            <Badge variant="secondary">{getTabLabel()}</Badge>
+          </div>
+          <p className="text-muted-foreground">
+            Manage leadership programs, clubs, and extracurricular activities
+          </p>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-popover">
+            <DropdownMenuItem onClick={() => setActiveTab("leadership")}>Leadership Programs</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setActiveTab("members")}>Program Members</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setActiveTab("clubs")}>Clubs & Societies</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setActiveTab("beyond")}>Beyond Classroom</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsContent value="leadership">
+          <Card>
+            <CardHeader>
+              <CardTitle>Leadership Programs</CardTitle>
+              <CardDescription>Student leadership and development programs</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <LeadershipProgramsManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="members">
+          <Card>
+            <CardHeader>
+              <CardTitle>Program Members</CardTitle>
+              <CardDescription>Members of leadership programs</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ProgramMembersManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="clubs">
+          <Card>
+            <CardHeader>
+              <CardTitle>Clubs & Societies</CardTitle>
+              <CardDescription>Student clubs and organizations</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ClubsSocietiesManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="beyond">
+          <Card>
+            <CardHeader>
+              <CardTitle>Beyond Classroom</CardTitle>
+              <CardDescription>Extracurricular activities and achievements</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <BeyondClassroomManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
-
-    <Tabs defaultValue="leadership" className="space-y-4">
-      <TabsList>
-        <TabsTrigger value="leadership">Leadership Programs</TabsTrigger>
-        <TabsTrigger value="members">Program Members</TabsTrigger>
-        <TabsTrigger value="clubs">Clubs & Societies</TabsTrigger>
-        <TabsTrigger value="beyond">Beyond Classroom</TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="leadership">
-        <Card>
-          <CardHeader>
-            <CardTitle>Leadership Programs</CardTitle>
-            <CardDescription>Student leadership and development programs</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <LeadershipProgramsManager />
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="members">
-        <Card>
-          <CardHeader>
-            <CardTitle>Program Members</CardTitle>
-            <CardDescription>Members of leadership programs</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ProgramMembersManager />
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="clubs">
-        <Card>
-          <CardHeader>
-            <CardTitle>Clubs & Societies</CardTitle>
-            <CardDescription>Student clubs and organizations</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ClubsSocietiesManager />
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="beyond">
-        <Card>
-          <CardHeader>
-            <CardTitle>Beyond Classroom</CardTitle>
-            <CardDescription>Extracurricular activities and achievements</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <BeyondClassroomManager />
-          </CardContent>
-        </Card>
-      </TabsContent>
-    </Tabs>
-  </div>
-);
+  );
+};
 
 // Student Voice Content Section
-const StudentVoiceContent = () => (
-  <div className="space-y-6">
-    <div>
-      <h2 className="text-xl font-semibold">Student Voice</h2>
-      <p className="text-muted-foreground">
-        Manage student ambassador and previous student leaders
-      </p>
+const StudentVoiceContent = () => {
+  const [activeTab, setActiveTab] = useState("ambassador");
+
+  const getTabLabel = () => {
+    switch (activeTab) {
+      case "ambassador": return "Student Ambassador";
+      case "previous": return "Previous Leaders";
+      default: return "Student Ambassador";
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-2">
+            <h2 className="text-xl font-semibold">Student Voice</h2>
+            <Badge variant="secondary">{getTabLabel()}</Badge>
+          </div>
+          <p className="text-muted-foreground">
+            Manage student ambassador and previous student leaders
+          </p>
+        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-popover">
+            <DropdownMenuItem onClick={() => setActiveTab("ambassador")}>Student Ambassador</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setActiveTab("previous")}>Previous Leaders</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsContent value="ambassador">
+          <Card>
+            <CardHeader>
+              <CardTitle>Student Ambassador</CardTitle>
+              <CardDescription>Current student ambassador information</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <StudentAmbassadorManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="previous">
+          <Card>
+            <CardHeader>
+              <CardTitle>Previous Student Leaders</CardTitle>
+              <CardDescription>Archive of past student leaders</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PreviousLeadersManager />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
-
-    <Tabs defaultValue="ambassador" className="space-y-4">
-      <TabsList>
-        <TabsTrigger value="ambassador">Student Ambassador</TabsTrigger>
-        <TabsTrigger value="previous">Previous Leaders</TabsTrigger>
-      </TabsList>
-
-      <TabsContent value="ambassador">
-        <Card>
-          <CardHeader>
-            <CardTitle>Student Ambassador</CardTitle>
-            <CardDescription>Current student ambassador information</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <StudentAmbassadorManager />
-          </CardContent>
-        </Card>
-      </TabsContent>
-
-      <TabsContent value="previous">
-        <Card>
-          <CardHeader>
-            <CardTitle>Previous Student Leaders</CardTitle>
-            <CardDescription>Archive of past student leaders</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <PreviousLeadersManager />
-          </CardContent>
-        </Card>
-      </TabsContent>
-    </Tabs>
-  </div>
-);
+  );
+};
 
 // Gallery Content Section
 const GalleryContent = () => (
