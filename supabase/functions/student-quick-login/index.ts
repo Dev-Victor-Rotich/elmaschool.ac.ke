@@ -93,11 +93,24 @@ serve(async (req) => {
       )
     }
 
+    // Extract the actual token from the action_link URL
+    const actionLink = linkData.properties.action_link
+    const url = new URL(actionLink)
+    const token = url.searchParams.get('token')
+
+    if (!token) {
+      console.error('No token found in action link')
+      return new Response(
+        JSON.stringify({ valid: false, message: 'Login failed. Please try again.' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
+    }
+
     return new Response(
       JSON.stringify({ 
         valid: true, 
         email: student.email,
-        token_hash: linkData.properties.hashed_token,
+        token: token,
         userId: student.user_id 
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

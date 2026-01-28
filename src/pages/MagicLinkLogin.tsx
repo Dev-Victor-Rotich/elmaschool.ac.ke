@@ -98,8 +98,8 @@ const MagicLinkLogin = () => {
       // Use the token to verify OTP and establish session directly
       const { error: verifyError } = await supabase.auth.verifyOtp({
         email: data.email,
-        token: data.token_hash,
-        type: 'email',
+        token: data.token,
+        type: 'magiclink',
       });
 
       if (verifyError) {
