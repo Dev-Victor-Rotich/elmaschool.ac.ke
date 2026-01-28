@@ -320,29 +320,34 @@ const StudentPortal = () => {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-primary text-primary-foreground">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold">{studentData.full_name}</h1>
-              <p className="text-sm opacity-90">
-                {studentData.class} • Admission: {studentData.admission_number}
-                {isStudentLeader && <Badge variant="secondary" className="ml-2">Student Leader</Badge>}
+        <div className="container mx-auto px-4 py-4 md:py-6">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold truncate">
+                {studentData.full_name}
+              </h1>
+              <p className="text-xs sm:text-sm opacity-90 flex flex-wrap items-center gap-1">
+                <span>{studentData.class}</span>
+                <span>•</span>
+                <span>Adm: {studentData.admission_number}</span>
+                {isStudentLeader && (
+                  <Badge variant="secondary" className="ml-1">
+                    Student Leader
+                  </Badge>
+                )}
               </p>
             </div>
-            <div className="flex gap-2">
-              {isStudentLeader && (
-                <Button onClick={() => navigate("/students/content-dashboard")} variant="outline">
-                  <Edit className="w-4 h-4 mr-2" />
-                  Website Content
-                </Button>
-              )}
-              <Button onClick={() => navigate("/profile")} variant="outline">
-                Edit Profile
+            {isStudentLeader && (
+              <Button 
+                onClick={() => navigate("/students/content-dashboard")} 
+                variant="secondary"
+                size="sm"
+                className="whitespace-nowrap"
+              >
+                <Edit className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Website Content</span>
               </Button>
-              <Button onClick={handleLogout} variant="secondary">
-                Logout
-              </Button>
-            </div>
+            )}
           </div>
         </div>
       </header>
