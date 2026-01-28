@@ -499,9 +499,12 @@ const StudentPortal = () => {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center">
-                  <DollarSign className="w-5 h-5 mr-2" />
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="w-5 h-5" />
                   Fee Details - {currentYear}
+                  <Badge variant="secondary" className="ml-2 font-normal">
+                    {feeTab === "overview" ? "Overview" : feeTab === "history" ? "Payment History" : "Fee Structure"}
+                  </Badge>
                 </CardTitle>
                 <CardDescription>View your payment history, fee structure, and status</CardDescription>
               </div>
@@ -531,20 +534,6 @@ const StudentPortal = () => {
           </CardHeader>
           <CardContent>
             <Tabs value={feeTab} onValueChange={setFeeTab} className="space-y-4">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="overview">
-                  <TrendingUp className="w-4 h-4 mr-2" />
-                  Overview
-                </TabsTrigger>
-                <TabsTrigger value="history">
-                  <Receipt className="w-4 h-4 mr-2" />
-                  Payment History
-                </TabsTrigger>
-                <TabsTrigger value="structure">
-                  <FileText className="w-4 h-4 mr-2" />
-                  Fee Structure
-                </TabsTrigger>
-              </TabsList>
 
               <TabsContent value="overview">
                 {/* Term Selector */}
