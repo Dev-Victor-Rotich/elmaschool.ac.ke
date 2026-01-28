@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { StudentContentSidebar } from "@/components/students/StudentContentSidebar";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2, Menu } from "lucide-react";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { toast } from "sonner";
 
 // Content managers - reusing existing components
@@ -103,19 +104,20 @@ const StudentContentDashboard = () => {
         />
 
         <main className="flex-1 overflow-auto">
-          <header className="border-b bg-card px-6 py-4">
-            <div className="flex items-center gap-4">
+          <header className="border-b bg-card px-4 sm:px-6 py-4">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <SidebarTrigger className="h-8 w-8 shrink-0" />
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => navigate(-1)}
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
+                <span className="hidden sm:inline">Back</span>
               </Button>
-              <div>
-                <h1 className="text-2xl font-bold">Website Content Management</h1>
-                <p className="text-muted-foreground text-sm">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-lg sm:text-2xl font-bold truncate">Website Content Management</h1>
+                <p className="text-muted-foreground text-xs sm:text-sm hidden sm:block">
                   Manage Home, Programs, Student Voice, and Gallery sections
                 </p>
               </div>
@@ -145,14 +147,14 @@ const HomePageContent = () => (
     </div>
 
     <Tabs defaultValue="hero" className="space-y-4">
-      <TabsList className="grid w-full grid-cols-4 lg:grid-cols-7">
-        <TabsTrigger value="hero">Hero</TabsTrigger>
-        <TabsTrigger value="features">Features</TabsTrigger>
-        <TabsTrigger value="stats">Stats</TabsTrigger>
-        <TabsTrigger value="badges">Badges</TabsTrigger>
-        <TabsTrigger value="events">Events</TabsTrigger>
-        <TabsTrigger value="testimonials">Testimonials</TabsTrigger>
-        <TabsTrigger value="faqs">FAQs</TabsTrigger>
+      <TabsList className="inline-flex h-10 items-center gap-1 overflow-x-auto w-full max-w-full scrollbar-hide pb-1">
+        <TabsTrigger value="hero" className="shrink-0">Hero</TabsTrigger>
+        <TabsTrigger value="features" className="shrink-0">Features</TabsTrigger>
+        <TabsTrigger value="stats" className="shrink-0">Stats</TabsTrigger>
+        <TabsTrigger value="badges" className="shrink-0">Badges</TabsTrigger>
+        <TabsTrigger value="events" className="shrink-0">Events</TabsTrigger>
+        <TabsTrigger value="testimonials" className="shrink-0">Testimonials</TabsTrigger>
+        <TabsTrigger value="faqs" className="shrink-0">FAQs</TabsTrigger>
       </TabsList>
 
       <TabsContent value="hero">
