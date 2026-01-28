@@ -7,10 +7,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { useQuery } from "@tanstack/react-query";
-import { FileText, Search, Filter } from "lucide-react";
+import { FileText, Search, Filter, CalendarDays } from "lucide-react";
+import AcademicYearSelector from "@/components/shared/AcademicYearSelector";
 
 interface StudentResultsManagerProps {
   assignedClass: string;
+  academicYear?: number;
+  onYearChange?: (year: number) => void;
 }
 
 interface AcademicResult {
@@ -33,12 +36,25 @@ interface AcademicResult {
   } | null;
 }
 
-export const StudentResultsManager = ({ assignedClass }: StudentResultsManagerProps) => {
+export const StudentResultsManager = ({ 
+  assignedClass, 
+  academicYear,
+  onYearChange 
+}: StudentResultsManagerProps) => {
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(academicYear || currentYear);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterSubject, setFilterSubject] = useState("all");
   const [filterTerm, setFilterTerm] = useState("all");
-  const [filterYear, setFilterYear] = useState("all");
   const [filterStudent, setFilterStudent] = useState("all");
+  
+  // Handle year change
+  const handleYearChange = (year: number) => {
+    setSelectedYear(year);
+    if (onYearChange) {
+      onYearChange(year);
+    }
+  };
 
   // Fetch students in the class
   const { data: students = [] } = useQuery({
@@ -56,9 +72,9 @@ export const StudentResultsManager = ({ assignedClass }: StudentResultsManagerPr
     enabled: !!assignedClass
   });
 
-  // Fetch all academic results for students in this class
+  // Fetch all academic results for students in this class for the selected year
   const { data: results = [], isLoading } = useQuery({
-    queryKey: ['class-academic-results', assignedClass, students.map(s => s.id)],
+    queryKey: ['class-academic-results', assignedClass, students.map(s => s.id), selectedYear],
     queryFn: async () => {
       if (students.length === 0) return [];
 
@@ -68,6 +84,7 @@ export const StudentResultsManager = ({ assignedClass }: StudentResultsManagerPr
         .from('academic_results')
         .select('*')
         .in('student_id', studentIds)
+        .eq('year', selectedYear)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -106,11 +123,37 @@ export const StudentResultsManager = ({ assignedClass }: StudentResultsManagerPr
     enabled: students.length > 0
   });
 
-  // Get unique subjects, years from results
-  const uniqueSubjects = [...new Set(results.map(r => r.subject))].sort();
-  const uniqueYears = [...new Set(results.map(r => r.year))].sort((a, b) => b - a);
+  // Fetch available years from the database for this class
+  const { data: availableYears = [] } = useQuery({
+    queryKey: ['available-academic-years', assignedClass],
+    queryFn: async () => {
+      // Get distinct years from academic_results for students in this class
+      const { data: studentsData } = await supabase
+        .from('students_data')
+        .select('id')
+        .eq('class', assignedClass);
+      
+      if (!studentsData || studentsData.length === 0) return [];
+      
+      const studentIds = studentsData.map(s => s.id);
+      
+      const { data, error } = await supabase
+        .from('academic_results')
+        .select('year')
+        .in('student_id', studentIds);
+      
+      if (error) throw error;
+      
+      const years = [...new Set((data || []).map(r => r.year))].sort((a, b) => b - a);
+      return years;
+    },
+    enabled: !!assignedClass
+  });
 
-  // Filter results
+  // Get unique subjects from results
+  const uniqueSubjects = [...new Set(results.map(r => r.subject))].sort();
+
+  // Filter results (year is already filtered at query level via selectedYear)
   const filteredResults = results.filter(result => {
     const matchesSearch = searchTerm === "" || 
       result.student?.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -119,10 +162,9 @@ export const StudentResultsManager = ({ assignedClass }: StudentResultsManagerPr
 
     const matchesSubject = filterSubject === "all" || result.subject === filterSubject;
     const matchesTerm = filterTerm === "all" || result.term === filterTerm;
-    const matchesYear = filterYear === "all" || result.year.toString() === filterYear;
     const matchesStudent = filterStudent === "all" || result.student_id === filterStudent;
 
-    return matchesSearch && matchesSubject && matchesTerm && matchesYear && matchesStudent;
+    return matchesSearch && matchesSubject && matchesTerm && matchesStudent;
   });
 
   // Calculate statistics
@@ -188,17 +230,22 @@ export const StudentResultsManager = ({ assignedClass }: StudentResultsManagerPr
             <div>
               <CardTitle className="flex items-center gap-2">
                 <FileText className="h-5 w-5" />
-                Student Results - {assignedClass}
+                Student Results - {assignedClass} ({selectedYear})
               </CardTitle>
               <CardDescription>
-                View all academic results entered by subject teachers
+                View all academic results entered by subject teachers for the {selectedYear} academic year
               </CardDescription>
             </div>
+            <AcademicYearSelector
+              selectedYear={selectedYear}
+              onYearChange={handleYearChange}
+              availableYears={availableYears}
+            />
           </div>
         </CardHeader>
         <CardContent>
           {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
             <div className="space-y-2">
               <Label className="flex items-center gap-2">
                 <Search className="h-4 w-4" />
@@ -262,23 +309,6 @@ export const StudentResultsManager = ({ assignedClass }: StudentResultsManagerPr
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="space-y-2">
-              <Label>Year</Label>
-              <Select value={filterYear} onValueChange={setFilterYear}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All years" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Years</SelectItem>
-                  {uniqueYears.map(year => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           {/* Results Table */}
@@ -289,10 +319,10 @@ export const StudentResultsManager = ({ assignedClass }: StudentResultsManagerPr
           ) : filteredResults.length === 0 ? (
             <div className="text-center py-12">
               <FileText className="h-12 w-12 mx-auto text-muted-foreground/50 mb-4" />
-              <p className="text-muted-foreground">No results found</p>
+              <p className="text-muted-foreground">No results found for {selectedYear}</p>
               <p className="text-sm text-muted-foreground mt-1">
                 {results.length === 0 
-                  ? "No academic results have been entered yet"
+                  ? `No academic results have been entered for the ${selectedYear} academic year. Try selecting a different year.`
                   : "Try adjusting your filters"}
               </p>
             </div>
