@@ -104,39 +104,24 @@ export const RoleManagement = () => {
   const { data: allUsers, isLoading } = useQuery<UserWithRoles[]>({
     queryKey: ['all-users-with-roles'],
     queryFn: async () => {
+      // Fetch profiles including email column (now synced from auth.users)
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, full_name, phone_number, id_number, approval_status, status, email')
         .order('created_at', { ascending: false });
       
       if (profilesError) throw profilesError;
       if (!profiles) return [];
 
-      // Fetch emails from staff_registry
-      const { data: staffData } = await supabase
-        .from('staff_registry')
-        .select('email, full_name');
-      
-      // Fetch emails from students_data
+      // Fetch student emails as fallback for students
       const { data: studentsData } = await supabase
         .from('students_data')
-        .select('email, user_id, full_name');
+        .select('email, user_id');
       
-      // Create email map from staff and students
-      const emailMap = new Map<string, string>();
-      
-      // Map staff emails by matching full_name (since staff_registry doesn't have user_id directly)
-      const staffEmailByName = new Map<string, string>();
-      staffData?.forEach(staff => {
-        if (staff.email && staff.full_name) {
-          staffEmailByName.set(staff.full_name.toLowerCase(), staff.email);
-        }
-      });
-      
-      // Map student emails by user_id
+      const studentEmailMap = new Map<string, string>();
       studentsData?.forEach(student => {
         if (student.email && student.user_id) {
-          emailMap.set(student.user_id, student.email);
+          studentEmailMap.set(student.user_id, student.email);
         }
       });
       
@@ -155,11 +140,8 @@ export const RoleManagement = () => {
       });
       
       return profiles.map(profile => {
-        // Try to get email from student data first (by user_id), then from staff (by name)
-        let email = emailMap.get(profile.id) || '';
-        if (!email && profile.full_name) {
-          email = staffEmailByName.get(profile.full_name.toLowerCase()) || '';
-        }
+        // Use email from profiles directly, fallback to students_data for students
+        const email = (profile as any).email || studentEmailMap.get(profile.id) || '';
         
         return {
           id: profile.id,
