@@ -9,6 +9,7 @@ import ExamsList from "./ExamsList";
 import PerformanceChart from "./PerformanceChart";
 import PerformanceInsights from "./PerformanceInsights";
 import ExamResultsView from "./ExamResultsView";
+import AcademicYearSelector from "@/components/shared/AcademicYearSelector";
 import {
   type Exam,
   type ExamResult,
@@ -24,17 +25,20 @@ interface AcademicAnalyticsProps {
 }
 
 const AcademicAnalytics = ({ studentId, studentClass }: AcademicAnalyticsProps) => {
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(currentYear);
   const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
   const [viewingResults, setViewingResults] = useState(false);
 
-  // Fetch exams for student's class
+  // Fetch exams for student's class filtered by academic year
   const { data: exams = [], isLoading: examsLoading } = useQuery({
-    queryKey: ["student-exams", studentClass],
+    queryKey: ["student-exams", studentClass, selectedYear],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("exams")
         .select("*")
         .eq("class_name", studentClass)
+        .eq("year", selectedYear)
         .order("start_date", { ascending: false });
       if (error) throw error;
       return (data || []) as Exam[];
@@ -42,17 +46,33 @@ const AcademicAnalytics = ({ studentId, studentClass }: AcademicAnalyticsProps) 
     enabled: !!studentClass,
   });
 
-  // Fetch all academic results for the student
+  // Fetch all academic results for the student filtered by academic year
   const { data: allResults = [], isLoading: resultsLoading } = useQuery({
-    queryKey: ["student-all-results", studentId],
+    queryKey: ["student-all-results", studentId, selectedYear],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("academic_results")
         .select("*")
         .eq("student_id", studentId)
+        .eq("year", selectedYear)
         .order("created_at", { ascending: true });
       if (error) throw error;
       return (data || []) as ExamResult[];
+    },
+    enabled: !!studentId,
+  });
+
+  // Fetch available years for this student
+  const { data: availableYears = [] } = useQuery({
+    queryKey: ["student-available-years", studentId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("academic_results")
+        .select("year")
+        .eq("student_id", studentId);
+      if (error) throw error;
+      const years = [...new Set((data || []).map(r => r.year))].sort((a, b) => b - a);
+      return years;
     },
     enabled: !!studentId,
   });
@@ -111,13 +131,22 @@ const AcademicAnalytics = ({ studentId, studentClass }: AcademicAnalyticsProps) 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <BookOpen className="w-5 h-5" />
-          Academic Analytics
-        </CardTitle>
-        <CardDescription>
-          Track your exams, performance trends, and get personalized insights
-        </CardDescription>
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <BookOpen className="w-5 h-5" />
+              Academic Analytics
+            </CardTitle>
+            <CardDescription>
+              Track your exams, performance trends, and get personalized insights
+            </CardDescription>
+          </div>
+          <AcademicYearSelector
+            selectedYear={selectedYear}
+            onYearChange={setSelectedYear}
+            availableYears={availableYears}
+          />
+        </div>
       </CardHeader>
       <CardContent>
         <Tabs defaultValue="exams" className="space-y-4">
