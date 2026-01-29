@@ -289,13 +289,13 @@ const BursarPortal = () => {
     const paidAmount = parseFloat(amountPaid);
     const balance = dueAmount - paidAmount;
 
+    // Note: Do NOT insert 'balance' column - it may be computed/generated
     const { error } = await supabase.from("fee_payments").insert({
       student_id: selectedStudent,
       term,
       year: parseInt(year),
       amount_due: dueAmount,
       amount_paid: paidAmount,
-      balance: balance,
       receipt_number: receiptNumber,
       payment_date: new Date().toISOString(),
       recorded_by: session?.user.id,
