@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Users, UserCheck, Shield, Activity, LogOut, Menu } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { useSessionTimeout } from "@/hooks/useSessionTimeout";
+
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/AdminSidebar";
 
@@ -41,7 +41,7 @@ const SuperAdminDashboard = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [loading, setLoading] = useState(true);
-  useSessionTimeout();
+  
 
   const currentHash = location.hash || "#dashboard";
 
