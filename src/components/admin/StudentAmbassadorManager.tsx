@@ -20,13 +20,13 @@ export const StudentAmbassadorManager = () => {
 
   const queryClient = useQueryClient();
 
-  const { data: ambassador, isLoading } = useQuery({
+  const { data: ambassador, isLoading, error } = useQuery({
     queryKey: ["student-ambassador"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("student_ambassador")
         .select("*")
-        .single();
+        .maybeSingle();
       if (error) throw error;
       return data;
     },
@@ -64,6 +64,15 @@ export const StudentAmbassadorManager = () => {
   };
 
   if (isLoading) return <div>Loading...</div>;
+  
+  if (error) {
+    return (
+      <div className="p-4 border border-destructive/20 bg-destructive/5 rounded-lg text-center">
+        <p className="text-destructive font-medium">Failed to load student ambassador</p>
+        <p className="text-sm text-muted-foreground">{(error as Error).message}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

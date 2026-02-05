@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AdminSidebar } from "@/components/AdminSidebar";
+import { SectionErrorBoundary } from "@/components/shared/SectionErrorBoundary";
 
 // Content Managers
 import HomeContentManager from "./admin/HomeContentManager";
@@ -334,7 +335,9 @@ const SuperAdminDashboard = () => {
                     <CardDescription>Manage featured student ambassador</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <StudentAmbassadorManager />
+                    <SectionErrorBoundary fallbackTitle="Student Ambassador failed to load">
+                      <StudentAmbassadorManager />
+                    </SectionErrorBoundary>
                   </CardContent>
                 </Card>
 
@@ -345,7 +348,9 @@ const SuperAdminDashboard = () => {
                     <CardDescription>Manage student clubs and societies</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <ClubsSocietiesManager />
+                    <SectionErrorBoundary fallbackTitle="Clubs & Societies failed to load">
+                      <ClubsSocietiesManager />
+                    </SectionErrorBoundary>
                   </CardContent>
                 </Card>
 
@@ -355,7 +360,9 @@ const SuperAdminDashboard = () => {
                     <CardDescription>Manage alumni student leaders</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <PreviousLeadersManager />
+                    <SectionErrorBoundary fallbackTitle="Previous Leaders failed to load">
+                      <PreviousLeadersManager />
+                    </SectionErrorBoundary>
                   </CardContent>
                 </Card>
               </div>
