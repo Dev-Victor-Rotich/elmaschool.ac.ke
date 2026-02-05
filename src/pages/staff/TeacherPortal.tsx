@@ -465,8 +465,6 @@ const MyClubsSection = ({ userId }: { userId: string | null }) => {
     enabled: !!userId,
   });
 
-  if (myClubs.length === 0) return null;
-
   if (selectedClubId) {
     return (
       <div className="mb-8">
@@ -492,33 +490,45 @@ const MyClubsSection = ({ userId }: { userId: string | null }) => {
         <CardDescription>Clubs you manage as patron</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {myClubs.map((club) => (
-            <div
-              key={club.id}
-              className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
-              onClick={() => setSelectedClubId(club.id)}
-            >
-              {club.image_url ? (
-                <img
-                  src={club.image_url}
-                  alt={club.name}
-                  className="h-12 w-12 rounded-lg object-cover"
-                />
-              ) : (
-                <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <Sparkles className="h-6 w-6 text-primary" />
+        {myClubs.length > 0 ? (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {myClubs.map((club) => (
+              <div
+                key={club.id}
+                className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => setSelectedClubId(club.id)}
+              >
+                {club.image_url ? (
+                  <img
+                    src={club.image_url}
+                    alt={club.name}
+                    className="h-12 w-12 rounded-lg object-cover shrink-0"
+                  />
+                ) : (
+                  <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <Sparkles className="h-6 w-6 text-primary" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{club.name}</p>
+                  <Badge variant={club.is_active ? "default" : "secondary"} className="text-xs">
+                    {club.is_active ? "Active" : "Inactive"}
+                  </Badge>
                 </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{club.name}</p>
-                <Badge variant={club.is_active ? "default" : "secondary"} className="text-xs">
-                  {club.is_active ? "Active" : "Inactive"}
-                </Badge>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-6">
+            <Sparkles className="h-10 w-10 mx-auto text-muted-foreground/50 mb-3" />
+            <p className="text-muted-foreground">
+              You are not assigned as patron to any clubs yet.
+            </p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Contact the Super Admin to be assigned as a club patron.
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
