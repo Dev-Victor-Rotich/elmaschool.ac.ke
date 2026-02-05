@@ -873,8 +873,6 @@ const MyClubsCard = ({ studentId }: { studentId: string }) => {
     enabled: !!studentId,
   });
 
-  if (myClubs.length === 0) return null;
-
   return (
     <Card className="mb-6">
       <CardHeader>
@@ -884,38 +882,66 @@ const MyClubsCard = ({ studentId }: { studentId: string }) => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {myClubs.map((club) => (
-            <div
-              key={club.id}
-              className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
-              onClick={() => navigate(`/students/clubs/${club.id}`)}
-            >
-              {club.image_url ? (
-                <img
-                  src={club.image_url}
-                  alt={club.name}
-                  className="h-12 w-12 rounded-lg object-cover shrink-0"
-                />
-              ) : (
-                <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  <Sparkles className="h-6 w-6 text-primary" />
+        {myClubs.length > 0 ? (
+          <div className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {myClubs.map((club) => (
+                <div
+                  key={club.id}
+                  className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                  onClick={() => navigate(`/students/clubs/${club.id}`)}
+                >
+                  {club.image_url ? (
+                    <img
+                      src={club.image_url}
+                      alt={club.name}
+                      className="h-12 w-12 rounded-lg object-cover shrink-0"
+                    />
+                  ) : (
+                    <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                      <Sparkles className="h-6 w-6 text-primary" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium truncate">{club.name}</p>
+                    {club.role !== "member" && (
+                      <Badge variant="secondary" className="text-xs capitalize">
+                        {club.role}
+                      </Badge>
+                    )}
+                    {club.motto && (
+                      <p className="text-xs text-muted-foreground truncate">{club.motto}</p>
+                    )}
+                  </div>
                 </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{club.name}</p>
-                {club.role !== "member" && (
-                  <Badge variant="secondary" className="text-xs capitalize">
-                    {club.role}
-                  </Badge>
-                )}
-                {club.motto && (
-                  <p className="text-xs text-muted-foreground truncate">{club.motto}</p>
-                )}
-              </div>
+              ))}
             </div>
-          ))}
-        </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/students/clubs")}
+              className="w-full"
+            >
+              Browse All Clubs
+            </Button>
+          </div>
+        ) : (
+          <div className="text-center py-6">
+            <Sparkles className="h-12 w-12 mx-auto text-muted-foreground/50 mb-3" />
+            <p className="text-muted-foreground mb-2">
+              You haven't joined any clubs yet.
+            </p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Ask a club patron to add you as a member.
+            </p>
+            <Button
+              variant="outline"
+              onClick={() => navigate("/students/clubs")}
+            >
+              Browse All Clubs
+            </Button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
