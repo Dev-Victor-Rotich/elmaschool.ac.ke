@@ -448,35 +448,177 @@ export type Database = {
         }
         Relationships: []
       }
+      club_comments: {
+        Row: {
+          author_id: string
+          author_type: string
+          content: string
+          created_at: string
+          id: string
+          post_id: string
+        }
+        Insert: {
+          author_id: string
+          author_type: string
+          content: string
+          created_at?: string
+          id?: string
+          post_id: string
+        }
+        Update: {
+          author_id?: string
+          author_type?: string
+          content?: string
+          created_at?: string
+          id?: string
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "club_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_members: {
+        Row: {
+          added_by: string | null
+          club_id: string
+          created_at: string
+          id: string
+          joined_at: string
+          role: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          added_by?: string | null
+          club_id: string
+          created_at?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          added_by?: string | null
+          club_id?: string
+          created_at?: string
+          id?: string
+          joined_at?: string
+          role?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_members_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_societies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "club_members_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students_data"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      club_posts: {
+        Row: {
+          author_id: string
+          author_type: string
+          club_id: string
+          content: string
+          created_at: string
+          id: string
+          image_url: string | null
+          is_pinned: boolean | null
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          author_type: string
+          club_id: string
+          content: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_pinned?: boolean | null
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          author_type?: string
+          club_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_pinned?: boolean | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "club_posts_club_id_fkey"
+            columns: ["club_id"]
+            isOneToOne: false
+            referencedRelation: "clubs_societies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clubs_societies: {
         Row: {
           created_at: string | null
           description: string
           display_order: number | null
+          features: Json | null
           id: string
           image_url: string | null
+          is_active: boolean | null
+          meeting_schedule: string | null
           member_count: number | null
+          motto: string | null
           name: string
+          patron_id: string | null
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
           description: string
           display_order?: number | null
+          features?: Json | null
           id?: string
           image_url?: string | null
+          is_active?: boolean | null
+          meeting_schedule?: string | null
           member_count?: number | null
+          motto?: string | null
           name: string
+          patron_id?: string | null
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
           description?: string
           display_order?: number | null
+          features?: Json | null
           id?: string
           image_url?: string | null
+          is_active?: boolean | null
+          meeting_schedule?: string | null
           member_count?: number | null
+          motto?: string | null
           name?: string
+          patron_id?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -1917,6 +2059,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_access_club: {
+        Args: { check_club_id: string; check_user_id: string }
+        Returns: boolean
+      }
       cleanup_expired_magic_links: { Args: never; Returns: undefined }
       count_super_admins: { Args: never; Returns: number }
       get_class_improvement_rankings: {
@@ -1937,6 +2083,10 @@ export type Database = {
         Returns: Json
       }
       get_staff_role_by_email: { Args: { _email: string }; Returns: string }
+      get_student_id_from_user: {
+        Args: { check_user_id: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1950,6 +2100,14 @@ export type Database = {
       }
       is_classteacher_for_class: {
         Args: { _class_name: string; _user_id: string }
+        Returns: boolean
+      }
+      is_club_member: {
+        Args: { check_club_id: string; check_user_id: string }
+        Returns: boolean
+      }
+      is_club_patron: {
+        Args: { check_club_id: string; check_user_id: string }
         Returns: boolean
       }
       is_message_recipient: {

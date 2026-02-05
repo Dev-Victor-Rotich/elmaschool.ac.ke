@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,8 +11,9 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Users, LogOut, Crown, Shield, GraduationCap, Edit, Trash2, ClipboardList } from "lucide-react";
+import { Users, LogOut, Crown, Shield, GraduationCap, Edit, Trash2, ClipboardList, Sparkles } from "lucide-react";
 import MyClassesManager from "@/components/staff/MyClassesManager";
+import ClubManagementPortal from "@/components/staff/ClubManagementPortal";
 
 interface StudentWithRole {
   id: string;
@@ -260,8 +262,10 @@ const TeacherPortal = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        <MyClubsSection userId={currentTeacherId} />
+        
         <Tabs defaultValue="my-classes" className="space-y-6">
-          <TabsList>
+          <TabsList className="flex-wrap h-auto gap-1">
             <TabsTrigger value="my-classes">
               <GraduationCap className="h-4 w-4 mr-2" />
               My Classes
@@ -439,6 +443,84 @@ const TeacherPortal = () => {
         </DialogContent>
       </Dialog>
     </div>
+  );
+};
+
+// My Clubs Section Component
+const MyClubsSection = ({ userId }: { userId: string | null }) => {
+  const [selectedClubId, setSelectedClubId] = useState<string | null>(null);
+
+  const { data: myClubs = [] } = useQuery({
+    queryKey: ["my-clubs-patron", userId],
+    queryFn: async () => {
+      if (!userId) return [];
+      const { data, error } = await supabase
+        .from("clubs_societies")
+        .select("id, name, image_url, is_active")
+        .eq("patron_id", userId)
+        .order("name");
+      if (error) throw error;
+      return data || [];
+    },
+    enabled: !!userId,
+  });
+
+  if (myClubs.length === 0) return null;
+
+  if (selectedClubId) {
+    return (
+      <div className="mb-8">
+        <Button
+          variant="ghost"
+          className="mb-4"
+          onClick={() => setSelectedClubId(null)}
+        >
+          ← Back to My Clubs
+        </Button>
+        <ClubManagementPortal clubId={selectedClubId} userId={userId!} />
+      </div>
+    );
+  }
+
+  return (
+    <Card className="mb-8">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-primary" />
+          My Clubs (Patron)
+        </CardTitle>
+        <CardDescription>Clubs you manage as patron</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {myClubs.map((club) => (
+            <div
+              key={club.id}
+              className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => setSelectedClubId(club.id)}
+            >
+              {club.image_url ? (
+                <img
+                  src={club.image_url}
+                  alt={club.name}
+                  className="h-12 w-12 rounded-lg object-cover"
+                />
+              ) : (
+                <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Sparkles className="h-6 w-6 text-primary" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate">{club.name}</p>
+                <Badge variant={club.is_active ? "default" : "secondary"} className="text-xs">
+                  {club.is_active ? "Active" : "Inactive"}
+                </Badge>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
