@@ -8,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { GraduationCap, DollarSign, Calendar, MessageSquare, Mail, CheckCircle, Receipt, FileText, TrendingUp, TrendingDown, Edit, MoreVertical } from "lucide-react";
+import { GraduationCap, DollarSign, Calendar, MessageSquare, Mail, CheckCircle, Receipt, FileText, TrendingUp, TrendingDown, Edit, MoreVertical, Sparkles } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -355,6 +355,9 @@ const StudentPortal = () => {
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        {/* My Clubs Section */}
+        <MyClubsCard studentId={studentId} />
+        
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4 mb-8">
           {/* Student Info */}
           <Card>
@@ -830,6 +833,91 @@ const StudentPortal = () => {
         </DialogContent>
       </Dialog>
     </div>
+  );
+};
+
+// My Clubs Card Component for Student Portal
+const MyClubsCard = ({ studentId }: { studentId: string }) => {
+  const navigate = useNavigate();
+
+  const { data: myClubs = [] } = useQuery({
+    queryKey: ["my-clubs-student", studentId],
+    queryFn: async () => {
+      if (!studentId) return [];
+      
+      // Get clubs where student is a member
+      const { data: memberships, error: memberError } = await supabase
+        .from("club_members")
+        .select("club_id, role")
+        .eq("student_id", studentId);
+      
+      if (memberError) throw memberError;
+      if (!memberships || memberships.length === 0) return [];
+
+      const clubIds = memberships.map(m => m.club_id);
+      
+      const { data: clubs, error: clubsError } = await supabase
+        .from("clubs_societies")
+        .select("id, name, image_url, motto")
+        .in("id", clubIds)
+        .eq("is_active", true);
+      
+      if (clubsError) throw clubsError;
+
+      // Combine with role info
+      return (clubs || []).map(club => ({
+        ...club,
+        role: memberships.find(m => m.club_id === club.id)?.role || "member"
+      }));
+    },
+    enabled: !!studentId,
+  });
+
+  if (myClubs.length === 0) return null;
+
+  return (
+    <Card className="mb-6">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-primary" />
+          My Clubs
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {myClubs.map((club) => (
+            <div
+              key={club.id}
+              className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => navigate(`/students/clubs/${club.id}`)}
+            >
+              {club.image_url ? (
+                <img
+                  src={club.image_url}
+                  alt={club.name}
+                  className="h-12 w-12 rounded-lg object-cover shrink-0"
+                />
+              ) : (
+                <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Sparkles className="h-6 w-6 text-primary" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="font-medium truncate">{club.name}</p>
+                {club.role !== "member" && (
+                  <Badge variant="secondary" className="text-xs capitalize">
+                    {club.role}
+                  </Badge>
+                )}
+                {club.motto && (
+                  <p className="text-xs text-muted-foreground truncate">{club.motto}</p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 
