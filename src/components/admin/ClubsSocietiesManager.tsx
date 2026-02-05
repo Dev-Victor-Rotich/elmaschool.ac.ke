@@ -14,6 +14,9 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ImageUploader } from "./ImageUploader";
 
+// Sentinel value for "no patron" - empty strings crash Radix Select
+const NO_PATRON = "__none__";
+
 interface ClubFormData {
   name: string;
   description: string;
@@ -38,7 +41,7 @@ const defaultFormData: ClubFormData = {
   image_url: "",
   member_count: 0,
   display_order: 0,
-  patron_id: "",
+  patron_id: NO_PATRON,
   motto: "",
   meeting_schedule: "",
   is_active: true,
@@ -117,13 +120,14 @@ export const ClubsSocietiesManager = () => {
 
   const createMutation = useMutation({
     mutationFn: async (data: ClubFormData) => {
+      const patronId = data.patron_id === NO_PATRON ? null : data.patron_id || null;
       const { error } = await supabase.from("clubs_societies").insert({
         name: data.name,
         description: data.description,
         image_url: data.image_url || null,
         member_count: data.member_count,
         display_order: data.display_order,
-        patron_id: data.patron_id || null,
+        patron_id: patronId,
         motto: data.motto || null,
         meeting_schedule: data.meeting_schedule || null,
         is_active: data.is_active,
@@ -136,17 +140,21 @@ export const ClubsSocietiesManager = () => {
       toast.success("Club added");
       resetForm();
     },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to add club");
+    },
   });
 
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: ClubFormData }) => {
+      const patronId = data.patron_id === NO_PATRON ? null : data.patron_id || null;
       const { error } = await supabase.from("clubs_societies").update({
         name: data.name,
         description: data.description,
         image_url: data.image_url || null,
         member_count: data.member_count,
         display_order: data.display_order,
-        patron_id: data.patron_id || null,
+        patron_id: patronId,
         motto: data.motto || null,
         meeting_schedule: data.meeting_schedule || null,
         is_active: data.is_active,
@@ -159,6 +167,9 @@ export const ClubsSocietiesManager = () => {
       toast.success("Club updated");
       resetForm();
     },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to update club");
+    },
   });
 
   const deleteMutation = useMutation({
@@ -169,6 +180,9 @@ export const ClubsSocietiesManager = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["clubs-societies"] });
       toast.success("Club deleted");
+    },
+    onError: (error: any) => {
+      toast.error(error.message || "Failed to delete club");
     },
   });
 
@@ -195,7 +209,7 @@ export const ClubsSocietiesManager = () => {
       image_url: club.image_url || "",
       member_count: club.member_count || 0,
       display_order: club.display_order || 0,
-      patron_id: club.patron_id || "",
+      patron_id: club.patron_id || NO_PATRON,
       motto: club.motto || "",
       meeting_schedule: club.meeting_schedule || "",
       is_active: club.is_active ?? true,
@@ -251,14 +265,14 @@ export const ClubsSocietiesManager = () => {
             <div>
               <Label>Patron (Teacher/Staff)</Label>
               <Select
-                value={formData.patron_id}
+                value={formData.patron_id || NO_PATRON}
                 onValueChange={(value) => setFormData({ ...formData, patron_id: value })}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Select patron" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">No patron assigned</SelectItem>
+                  <SelectItem value={NO_PATRON}>No patron assigned</SelectItem>
                   {patronOptions.map((profile) => (
                     <SelectItem key={profile.id} value={profile.id}>
                       {profile.full_name}

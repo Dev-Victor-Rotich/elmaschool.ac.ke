@@ -57,37 +57,39 @@ const AssignRoles = () => {
   const loadApprovedUsers = async () => {
     setLoading(true);
     
-    // Get approved users without student role
-    const { data: profiles } = await supabase
-      .from("profiles")
-      .select("id, full_name, phone_number")
-      .eq("approval_status", "approved");
+    try {
+      // Get approved users with email from profiles table
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, full_name, phone_number, email")
+        .eq("approval_status", "approved");
 
-    if (profiles) {
-      const usersWithRoles = await Promise.all(
-        profiles.map(async (profile) => {
-          // Get email
-          const { data: { user } } = await supabase.auth.admin.getUserById(profile.id);
-          
-          // Get current role
-          const { data: roleData } = await supabase
-            .from("user_roles")
-            .select("role")
-            .eq("user_id", profile.id)
-            .single();
+      if (profiles) {
+        const usersWithRoles = await Promise.all(
+          profiles.map(async (profile) => {
+            // Get current role
+            const { data: roleData } = await supabase
+              .from("user_roles")
+              .select("role")
+              .eq("user_id", profile.id)
+              .maybeSingle();
 
-          // Skip if student
-          if (roleData?.role === "student") return null;
+            // Skip if student
+            if (roleData?.role === "student") return null;
 
-          return {
-            ...profile,
-            email: user?.email,
-            currentRole: roleData?.role
-          };
-        })
-      );
+            return {
+              ...profile,
+              email: (profile as any).email || undefined,
+              currentRole: roleData?.role
+            };
+          })
+        );
 
-      setUsers(usersWithRoles.filter(Boolean) as ApprovedUser[]);
+        setUsers(usersWithRoles.filter(Boolean) as ApprovedUser[]);
+      }
+    } catch (error) {
+      console.error("Failed to load users:", error);
+      toast.error("Failed to load users");
     }
     setLoading(false);
   };
